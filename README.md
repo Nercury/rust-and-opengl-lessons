@@ -1,2 +1,2 @@
 # rust-and-opengl-lessons
-Collection of example code while learning OpenGL in Rust
+Collection of example code for learning OpenGL in Rust
