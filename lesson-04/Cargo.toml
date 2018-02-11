@@ -1,5 +1,5 @@
 [package]
-name = "lesson-03-shaders"
+name = "lesson-04-triangle"
 version = "0.1.0"
 authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
 
