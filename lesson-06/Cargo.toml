@@ -1,0 +1,14 @@
+[package]
+name = "lesson-06-gl-struct"
+version = "0.1.0"
+authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
+
+[dependencies]
+gl = { path = "lib/gl" }
+
+[dependencies.sdl2]
+version = "0.31.0"
+features = ["bundled", "static-link"]
+
+[features]
+gl_debug = ["gl/debug"]
