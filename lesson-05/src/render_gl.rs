@@ -62,9 +62,7 @@ impl Program {
 impl Drop for Program {
     fn drop(&mut self) {
         unsafe {
-            if gl::IsProgram(self.id) == gl::TRUE {
-                gl::DeleteProgram(self.id);
-            }
+            gl::DeleteProgram(self.id);
         }
     }
 }
@@ -98,9 +96,7 @@ impl Shader {
 impl Drop for Shader {
     fn drop(&mut self) {
         unsafe {
-            if gl::IsShader(self.id) == gl::TRUE {
-                gl::DeleteShader(self.id);
-            }
+            gl::DeleteShader(self.id);
         }
     }
 }
