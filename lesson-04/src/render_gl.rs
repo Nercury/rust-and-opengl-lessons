@@ -7,7 +7,7 @@ pub struct Program {
 }
 
 impl Program {
-    pub fn create_linked(shaders: &[&Shader]) -> Result<Program, String> {
+    pub fn from_shaders(shaders: &[Shader]) -> Result<Program, String> {
         let program_id = unsafe { gl::CreateProgram() };
 
         for shader in shaders {
@@ -72,20 +72,20 @@ pub struct Shader {
 }
 
 impl Shader {
-    pub fn create(
+    pub fn from_source(
         source: &CStr,
         kind: gl::types::GLenum
     ) -> Result<Shader, String> {
-        let id = create_shader(source, kind)?;
+        let id = shader_from_source(source, kind)?;
         Ok(Shader { id })
     }
 
-    pub fn create_vert(source: &CStr) -> Result<Shader, String> {
-        Shader::create(source, gl::VERTEX_SHADER)
+    pub fn from_vert_source(source: &CStr) -> Result<Shader, String> {
+        Shader::from_source(source, gl::VERTEX_SHADER)
     }
 
-    pub fn create_frag(source: &CStr) -> Result<Shader, String> {
-        Shader::create(source, gl::FRAGMENT_SHADER)
+    pub fn from_frag_source(source: &CStr) -> Result<Shader, String> {
+        Shader::from_source(source, gl::FRAGMENT_SHADER)
     }
 
     pub fn id(&self) -> gl::types::GLuint {
@@ -101,7 +101,7 @@ impl Drop for Shader {
     }
 }
 
-fn create_shader(
+fn shader_from_source(
     source: &CStr,
     kind: gl::types::GLenum
 ) -> Result<gl::types::GLuint, String> {

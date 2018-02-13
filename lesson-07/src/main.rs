@@ -1,9 +1,12 @@
 extern crate sdl2;
 extern crate gl;
+extern crate resources;
 
 pub mod render_gl;
 
 fn main() {
+    let res = resources::Resources::from_rel_path("shaders").unwrap();
+
     let sdl = sdl2::init().unwrap();
     let video_subsystem = sdl.video().unwrap();
 
@@ -24,18 +27,7 @@ fn main() {
 
     // set up shader program
 
-    use std::ffi::{CString};
-    let vert_shader = render_gl::Shader::create_vert(
-        &gl, &CString::new(include_str!("triangle.vert")).unwrap()
-    ).unwrap();
-
-    let frag_shader = render_gl::Shader::create_frag(
-        &gl, &CString::new(include_str!("triangle.frag")).unwrap()
-    ).unwrap();
-
-    let shader_program = render_gl::Program::create_linked(
-        &gl, &[&vert_shader, &frag_shader]
-    ).unwrap();
+    let shader_program = render_gl::Program::from_res(&gl, &res, "triangle").unwrap();
 
     // set up vertex buffer object
 

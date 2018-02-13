@@ -5,7 +5,7 @@ in VS_OUTPUT {
 } IN;
 
 out vec4 Color;
-
+ 
 void main()
 {
     Color = vec4(IN.Color, 1.0f);
