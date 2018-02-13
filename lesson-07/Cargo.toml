@@ -6,11 +6,11 @@ authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
 [dependencies]
 # We are using custom gl crate that employs StructGenerator
 # It was introduced in http://nercury.github.io/rust/opengl/tutorial/2018/02/12/opengl-in-rust-from-scratch-06-gl-generator.html
-gl = { path = "../lesson-06/lib/gl" }
+gl = { path = "../lib/gl" }
 
 [dependencies.sdl2]
 version = "0.31.0"
 features = ["bundled", "static-link"]
 
 [features]
-gl_debug = ["gl/debug"] # custom gl crate has "debug" feature
+gl_debug = ["gl/debug"] # custom gl crate has a "debug" feature
