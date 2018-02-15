@@ -1,11 +1,13 @@
 extern crate sdl2;
 extern crate gl;
-extern crate resources;
 
 pub mod render_gl;
+pub mod resources;
+
+use resources::Resources;
 
 fn main() {
-    let res = resources::Resources::from_rel_path("shaders").unwrap();
+    let res = Resources::from_exe_path().unwrap();
 
     let sdl = sdl2::init().unwrap();
     let video_subsystem = sdl.video().unwrap();
@@ -27,7 +29,7 @@ fn main() {
 
     // set up shader program
 
-    let shader_program = render_gl::Program::from_res(&gl, &res, "triangle").unwrap();
+    let shader_program = render_gl::Program::from_res(&gl, &res, "shaders/triangle").unwrap();
 
     // set up vertex buffer object
 
