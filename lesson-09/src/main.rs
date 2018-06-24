@@ -5,6 +5,7 @@ extern crate gl;
 pub mod render_gl;
 pub mod resources;
 
+use render_gl::data;
 use failure::err_msg;
 use resources::Resources;
 
@@ -40,11 +41,11 @@ fn run() -> Result<(), failure::Error> {
 
     // set up vertex buffer object
 
-    let vertices: Vec<f32> = vec![
+    let vertices: Vec<data::f32_f32_f32> = vec![
         // positions      // colors
-        0.5, -0.5, 0.0,   1.0, 0.0, 0.0,   // bottom right
-        -0.5, -0.5, 0.0,  0.0, 1.0, 0.0,   // bottom left
-        0.0,  0.5, 0.0,   0.0, 0.0, 1.0    // top
+        (0.5, -0.5, 0.0).into(),   (1.0, 0.0, 0.0).into(),   // bottom right
+        (-0.5, -0.5, 0.0).into(),  (0.0, 1.0, 0.0).into(),   // bottom left
+        (0.0,  0.5, 0.0).into(),   (0.0, 0.0, 1.0).into()    // top
     ];
 
     let mut vbo: gl::types::GLuint = 0;
@@ -56,7 +57,7 @@ fn run() -> Result<(), failure::Error> {
         gl.BindBuffer(gl::ARRAY_BUFFER, vbo);
         gl.BufferData(
             gl::ARRAY_BUFFER, // target
-            (vertices.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr, // size of data in bytes
+            (vertices.len() * std::mem::size_of::<data::f32_f32_f32>()) as gl::types::GLsizeiptr, // size of data in bytes
             vertices.as_ptr() as *const gl::types::GLvoid, // pointer to data
             gl::STATIC_DRAW, // usage
         );
