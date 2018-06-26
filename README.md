@@ -11,3 +11,4 @@ Collection of example code for learning OpenGL in Rust
 - 06 - [GL Generator](http://nercury.github.io/rust/opengl/tutorial/2018/02/12/opengl-in-rust-from-scratch-06-gl-generator.html)
 - 07 - [Basic Resources](http://nercury.github.io/rust/opengl/tutorial/2018/02/14/opengl-in-rust-from-scratch-07-basic-resources.html)
 - 08 - [Failure](http://nercury.github.io/rust/opengl/tutorial/2018/02/15/opengl-in-rust-from-scratch-08-failure.html)
+- 09 - [Vertex Attribute Format](http://nercury.github.io/rust/opengl/tutorial/2018/06/27/opengl-in-rust-from-scratch-09-vertex-attribute-format.html)
