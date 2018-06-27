@@ -29,7 +29,6 @@ impl f32_f32_f32 {
 }
 
 impl From<(f32, f32, f32)> for f32_f32_f32 {
-    /// Create this data type from (f32, f32, f32) tuple
     fn from(other: (f32, f32, f32)) -> Self {
         f32_f32_f32::new(other.0, other.1, other.2)
     }
