@@ -1,0 +1,7 @@
+[package]
+name = "resources"
+version = "0.1.0"
+authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
+
+[dependencies]
+failure = "0.1"

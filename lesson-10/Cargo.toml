@@ -4,6 +4,8 @@ version = "0.1.0"
 authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
 
 [dependencies]
+render_gl = { path = "render_gl" }
+resources = { path = "resources" }
 gl = { path = "../lib/gl" }
 failure = "0.1"
 

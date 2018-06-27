@@ -1,3 +1,5 @@
+#[macro_use] extern crate failure;
+
 use std::path::{Path, PathBuf};
 use std::fs;
 use std::io::{self, Read};

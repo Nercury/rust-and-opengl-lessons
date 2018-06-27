@@ -1,9 +1,8 @@
 extern crate sdl2;
 extern crate gl;
-#[macro_use] extern crate failure;
-
-pub mod render_gl;
-pub mod resources;
+extern crate render_gl;
+extern crate resources;
+extern crate failure;
 
 use render_gl::data;
 use failure::err_msg;

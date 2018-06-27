@@ -1,0 +1,9 @@
+[package]
+name = "render_gl"
+version = "0.1.0"
+authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
+
+[dependencies]
+resources = { path = "../resources" }
+gl = { path = "../../lib/gl" }
+failure = "0.1"
