@@ -1,9 +1,11 @@
 [package]
-name = "lesson-10-procedural-macros"
+name = "lesson-10-tmp-procedural-macros"
 version = "0.1.0"
 authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
 
 [dependencies]
+lesson_10_render_gl = { path = "render_gl" }
+lesson_10_resources = { path = "resources" }
 gl = { path = "../lib/gl" }
 failure = "0.1"
 

@@ -1,9 +1,10 @@
 [package]
-name = "render_gl"
+name = "lesson_10_render_gl"
 version = "0.1.0"
 authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
 
 [dependencies]
-resources = { path = "../resources" }
+lesson_10_resources = { path = "../resources" }
+lesson_10_render_gl_derive = { path = "render_gl_derive" }
 gl = { path = "../../lib/gl" }
 failure = "0.1"
