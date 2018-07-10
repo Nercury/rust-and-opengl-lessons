@@ -6,6 +6,7 @@ authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
 [dependencies]
 gl = { path = "../lib/gl" }
 failure = "0.1"
+lesson_10_render_gl_derive = { path = "render_gl_derive" }
 
 [dependencies.sdl2]
 version = "0.31.0"

@@ -1,7 +1,0 @@
-[package]
-name = "lesson_10_resources"
-version = "0.1.0"
-authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
-
-[dependencies]
-failure = "0.1"
