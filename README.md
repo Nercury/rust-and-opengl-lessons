@@ -13,3 +13,21 @@ Collection of example code for learning OpenGL in Rust
 - 08 - [Failure](http://nercury.github.io/rust/opengl/tutorial/2018/02/15/opengl-in-rust-from-scratch-08-failure.html)
 - 09 - [Vertex Attribute Format](http://nercury.github.io/rust/opengl/tutorial/2018/06/27/opengl-in-rust-from-scratch-09-vertex-attribute-format.html)
 - 10 - [Procedural Macros](http://nercury.github.io/rust/opengl/tutorial/2018/07/11/opengl-in-rust-from-scratch-10-procedural-macros.html)
+- 11 - [Vertex Data Types](http://nercury.github.io/rust/opengl/tutorial/2018/07/12/opengl-in-rust-from-scratch-11-vertex-data-types.html)
+
+## License
+
+This library is distributed under the terms of either of:
+
+* MIT license ([LICENSE-MIT](LICENSE-MIT) or
+[http://opensource.org/licenses/MIT](http://opensource.org/licenses/MIT))
+* Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or
+[http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0))
+
+at your option.
+
+### Contributing
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the
+work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any
+additional terms or conditions.

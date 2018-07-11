@@ -1,0 +1,21 @@
+[package]
+name = "lesson-11-vertex-data-types"
+version = "0.1.0"
+authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
+
+[dependencies]
+gl = { path = "../lib/gl" }
+failure = "0.1"
+lesson_11_render_gl_derive = { path = "render_gl_derive" }
+vec-2-10-10-10 = "0.1.2"
+half = "1.1.1"
+
+[dependencies.sdl2]
+version = "0.31.0"
+features = ["bundled", "static-link"]
+
+[build-dependencies]
+walkdir = "2.1"
+
+[features]
+gl_debug = ["gl/debug"]
