@@ -1460,7 +1460,7 @@ impl f16_ {
             location as gl::types::GLuint,
             1, // the number of components per generic vertex attribute
             gl::HALF_FLOAT, // data type
-            gl::TRUE, // normalized (int-to-float conversion)
+            gl::FALSE, // normalized (int-to-float conversion)
             stride as gl::types::GLint,
             offset as *const gl::types::GLvoid
         );
@@ -1494,7 +1494,7 @@ impl f16_f16 {
             location as gl::types::GLuint,
             2, // the number of components per generic vertex attribute
             gl::HALF_FLOAT, // data type
-            gl::TRUE, // normalized (int-to-float conversion)
+            gl::FALSE, // normalized (int-to-float conversion)
             stride as gl::types::GLint,
             offset as *const gl::types::GLvoid
         );
@@ -1529,7 +1529,7 @@ impl f16_f16_f16 {
             location as gl::types::GLuint,
             3, // the number of components per generic vertex attribute
             gl::HALF_FLOAT, // data type
-            gl::TRUE, // normalized (int-to-float conversion)
+            gl::FALSE, // normalized (int-to-float conversion)
             stride as gl::types::GLint,
             offset as *const gl::types::GLvoid
         );
@@ -1565,7 +1565,7 @@ impl f16_f16_f16_f16 {
             location as gl::types::GLuint,
             4, // the number of components per generic vertex attribute
             gl::HALF_FLOAT, // data type
-            gl::TRUE, // normalized (int-to-float conversion)
+            gl::FALSE, // normalized (int-to-float conversion)
             stride as gl::types::GLint,
             offset as *const gl::types::GLvoid
         );
@@ -1598,7 +1598,7 @@ impl f32_ {
             location as gl::types::GLuint,
             1, // the number of components per generic vertex attribute
             gl::FLOAT, // data type
-            gl::TRUE, // normalized (int-to-float conversion)
+            gl::FALSE, // normalized (int-to-float conversion)
             stride as gl::types::GLint,
             offset as *const gl::types::GLvoid
         );
@@ -1632,7 +1632,7 @@ impl f32_f32 {
             location as gl::types::GLuint,
             2, // the number of components per generic vertex attribute
             gl::FLOAT, // data type
-            gl::TRUE, // normalized (int-to-float conversion)
+            gl::FALSE, // normalized (int-to-float conversion)
             stride as gl::types::GLint,
             offset as *const gl::types::GLvoid
         );
@@ -1667,7 +1667,7 @@ impl f32_f32_f32 {
             location as gl::types::GLuint,
             3, // the number of components per generic vertex attribute
             gl::FLOAT, // data type
-            gl::TRUE, // normalized (int-to-float conversion)
+            gl::FALSE, // normalized (int-to-float conversion)
             stride as gl::types::GLint,
             offset as *const gl::types::GLvoid
         );
@@ -1703,7 +1703,7 @@ impl f32_f32_f32_f32 {
             location as gl::types::GLuint,
             4, // the number of components per generic vertex attribute
             gl::FLOAT, // data type
-            gl::TRUE, // normalized (int-to-float conversion)
+            gl::FALSE, // normalized (int-to-float conversion)
             stride as gl::types::GLint,
             offset as *const gl::types::GLvoid
         );
