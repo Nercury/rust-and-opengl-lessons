@@ -14,6 +14,7 @@ Collection of example code for learning OpenGL in Rust
 - 09 - [Vertex Attribute Format](http://nercury.github.io/rust/opengl/tutorial/2018/06/27/opengl-in-rust-from-scratch-09-vertex-attribute-format.html)
 - 10 - [Procedural Macros](http://nercury.github.io/rust/opengl/tutorial/2018/07/11/opengl-in-rust-from-scratch-10-procedural-macros.html)
 - 11 - [Vertex Data Types](http://nercury.github.io/rust/opengl/tutorial/2018/07/12/opengl-in-rust-from-scratch-11-vertex-data-types.html)
+- 12 - [Buffers](http://nercury.github.io/rust/opengl/tutorial/2018/07/25/opengl-in-rust-from-scratch-12-buffers.html)
 
 ## License
 
