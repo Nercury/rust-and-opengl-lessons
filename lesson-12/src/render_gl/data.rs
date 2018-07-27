@@ -1906,10 +1906,10 @@ impl u2_u10_u10_u10_rev {
     }
 }
 
-impl From<::vec_2_10_10_10::Vector> for u2_u10_u10_u10_rev {
-    fn from(other: ::vec_2_10_10_10::Vector) -> Self {
+impl From<(f32, f32, f32, f32)> for u2_u10_u10_u10_rev {
+    fn from(other: (f32, f32, f32, f32)) -> Self {
         u2_u10_u10_u10_rev {
-            inner: other
+            inner: ::vec_2_10_10_10::Vector::new(other.0, other.1, other.2, other.3)
         }
     }
 }
@@ -1995,10 +1995,10 @@ impl u2_u10_u10_u10_rev_float {
     }
 }
 
-impl From<::vec_2_10_10_10::Vector> for u2_u10_u10_u10_rev_float {
-    fn from(other: ::vec_2_10_10_10::Vector) -> Self {
+impl From<(f32, f32, f32, f32)> for u2_u10_u10_u10_rev_float {
+    fn from(other: (f32, f32, f32, f32)) -> Self {
         u2_u10_u10_u10_rev_float {
-            inner: other
+            inner: ::vec_2_10_10_10::Vector::new(other.0, other.1, other.2, other.3)
         }
     }
 }

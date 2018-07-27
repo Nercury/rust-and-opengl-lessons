@@ -1,6 +1,5 @@
 use gl;
 use failure;
-use vec_2_10_10_10;
 use render_gl::{self, data, buffer};
 use resources::Resources;
 
@@ -31,15 +30,15 @@ impl Triangle {
         let vertices: Vec<Vertex> = vec![
             Vertex {
                 pos: (0.5, -0.5, 0.0).into(),
-                clr: vec_2_10_10_10::Vector::new(1.0, 0.0, 0.0, 1.0).into()
+                clr: (1.0, 0.0, 0.0, 1.0).into()
             }, // bottom right
             Vertex {
                 pos: (-0.5, -0.5, 0.0).into(),
-                clr: vec_2_10_10_10::Vector::new(0.0, 1.0, 0.0, 1.0).into()
+                clr: (0.0, 1.0, 0.0, 1.0).into()
             }, // bottom left
             Vertex {
                 pos: (0.0,  0.5, 0.0).into(),
-                clr: vec_2_10_10_10::Vector::new(0.0, 0.0, 1.0, 1.0).into()
+                clr: (0.0, 0.0, 1.0, 1.0).into()
             }  // top
         ];
 

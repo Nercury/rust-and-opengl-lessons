@@ -101,7 +101,7 @@ pub struct i8_i8_i8_i8 {
 
 impl i8_i8_i8_i8 {
     pub fn new(d0: i8, d1: i8, d2: i8, d3: i8) -> i8_i8_i8_i8 {
-       i8_i8_i8_i8 { d0, d1, d2, d3 }
+        i8_i8_i8_i8 { d0, d1, d2, d3 }
     }
 
     pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
@@ -1906,10 +1906,10 @@ impl u2_u10_u10_u10_rev {
     }
 }
 
-impl From<::vec_2_10_10_10::Vector> for u2_u10_u10_u10_rev {
-    fn from(other: ::vec_2_10_10_10::Vector) -> Self {
+impl From<(f32, f32, f32, f32)> for u2_u10_u10_u10_rev {
+    fn from(other: (f32, f32, f32, f32)) -> Self {
         u2_u10_u10_u10_rev {
-            inner: other
+            inner: ::vec_2_10_10_10::Vector::new(other.0, other.1, other.2, other.3)
         }
     }
 }
@@ -1995,10 +1995,10 @@ impl u2_u10_u10_u10_rev_float {
     }
 }
 
-impl From<::vec_2_10_10_10::Vector> for u2_u10_u10_u10_rev_float {
-    fn from(other: ::vec_2_10_10_10::Vector) -> Self {
+impl From<(f32, f32, f32, f32)> for u2_u10_u10_u10_rev_float {
+    fn from(other: (f32, f32, f32, f32)) -> Self {
         u2_u10_u10_u10_rev_float {
-            inner: other
+            inner: ::vec_2_10_10_10::Vector::new(other.0, other.1, other.2, other.3)
         }
     }
 }
