@@ -2,6 +2,7 @@
 
 use gl;
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i8_ {
     pub d0: i8,
@@ -30,6 +31,7 @@ impl From<i8> for i8_ {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i8_i8 {
     pub d0: i8,
@@ -59,6 +61,7 @@ impl From<(i8, i8)> for i8_i8 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i8_i8_i8 {
     pub d0: i8,
@@ -91,6 +94,7 @@ impl From<(i8, i8, i8)> for i8_i8_i8 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i8_i8_i8_i8 {
     pub d0: i8,
@@ -101,7 +105,7 @@ pub struct i8_i8_i8_i8 {
 
 impl i8_i8_i8_i8 {
     pub fn new(d0: i8, d1: i8, d2: i8, d3: i8) -> i8_i8_i8_i8 {
-       i8_i8_i8_i8 { d0, d1, d2, d3 }
+        i8_i8_i8_i8 { d0, d1, d2, d3 }
     }
 
     pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
@@ -122,6 +126,7 @@ impl From<(i8, i8, i8, i8)> for i8_i8_i8_i8 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i8_float {
     pub d0: i8,
@@ -151,6 +156,7 @@ impl From<i8> for i8_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i8_i8_float {
     pub d0: i8,
@@ -181,6 +187,7 @@ impl From<(i8, i8)> for i8_i8_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i8_i8_i8_float {
     pub d0: i8,
@@ -212,6 +219,7 @@ impl From<(i8, i8, i8)> for i8_i8_i8_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i8_i8_i8_i8_float {
     pub d0: i8,
@@ -244,6 +252,7 @@ impl From<(i8, i8, i8, i8)> for i8_i8_i8_i8_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i16_ {
     pub d0: i16,
@@ -272,6 +281,7 @@ impl From<i16> for i16_ {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i16_i16 {
     pub d0: i16,
@@ -301,6 +311,7 @@ impl From<(i16, i16)> for i16_i16 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i16_i16_i16 {
     pub d0: i16,
@@ -331,6 +342,7 @@ impl From<(i16, i16, i16)> for i16_i16_i16 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i16_i16_i16_i16 {
     pub d0: i16,
@@ -362,6 +374,7 @@ impl From<(i16, i16, i16, i16)> for i16_i16_i16_i16 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i16_float {
     pub d0: i16,
@@ -391,6 +404,7 @@ impl From<i16> for i16_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i16_i16_float {
     pub d0: i16,
@@ -421,6 +435,7 @@ impl From<(i16, i16)> for i16_i16_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i16_i16_i16_float {
     pub d0: i16,
@@ -452,6 +467,7 @@ impl From<(i16, i16, i16)> for i16_i16_i16_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i16_i16_i16_i16_float {
     pub d0: i16,
@@ -484,6 +500,7 @@ impl From<(i16, i16, i16, i16)> for i16_i16_i16_i16_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i32_ {
     pub d0: i32,
@@ -512,6 +529,7 @@ impl From<i32> for i32_ {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i32_i32 {
     pub d0: i32,
@@ -541,6 +559,7 @@ impl From<(i32, i32)> for i32_i32 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i32_i32_i32 {
     pub d0: i32,
@@ -571,6 +590,7 @@ impl From<(i32, i32, i32)> for i32_i32_i32 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i32_i32_i32_i32 {
     pub d0: i32,
@@ -602,6 +622,7 @@ impl From<(i32, i32, i32, i32)> for i32_i32_i32_i32 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i32_float {
     pub d0: i32,
@@ -631,6 +652,7 @@ impl From<i32> for i32_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i32_i32_float {
     pub d0: i32,
@@ -661,6 +683,7 @@ impl From<(i32, i32)> for i32_i32_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i32_i32_i32_float {
     pub d0: i32,
@@ -692,6 +715,7 @@ impl From<(i32, i32, i32)> for i32_i32_i32_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i32_i32_i32_i32_float {
     pub d0: i32,
@@ -724,6 +748,7 @@ impl From<(i32, i32, i32, i32)> for i32_i32_i32_i32_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u8_ {
     pub d0: u8,
@@ -752,6 +777,7 @@ impl From<u8> for u8_ {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u8_u8 {
     pub d0: u8,
@@ -781,6 +807,7 @@ impl From<(u8, u8)> for u8_u8 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u8_u8_u8 {
     pub d0: u8,
@@ -811,6 +838,7 @@ impl From<(u8, u8, u8)> for u8_u8_u8 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u8_u8_u8_u8 {
     pub d0: u8,
@@ -842,6 +870,7 @@ impl From<(u8, u8, u8, u8)> for u8_u8_u8_u8 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u8_float {
     pub d0: u8,
@@ -871,6 +900,7 @@ impl From<u8> for u8_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u8_u8_float {
     pub d0: u8,
@@ -901,6 +931,7 @@ impl From<(u8, u8)> for u8_u8_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u8_u8_u8_float {
     pub d0: u8,
@@ -932,6 +963,7 @@ impl From<(u8, u8, u8)> for u8_u8_u8_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u8_u8_u8_u8_float {
     pub d0: u8,
@@ -964,6 +996,7 @@ impl From<(u8, u8, u8, u8)> for u8_u8_u8_u8_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u16_ {
     pub d0: u16,
@@ -992,6 +1025,7 @@ impl From<u16> for u16_ {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u16_u16 {
     pub d0: u16,
@@ -1021,6 +1055,7 @@ impl From<(u16, u16)> for u16_u16 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u16_u16_u16 {
     pub d0: u16,
@@ -1051,6 +1086,7 @@ impl From<(u16, u16, u16)> for u16_u16_u16 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u16_u16_u16_u16 {
     pub d0: u16,
@@ -1082,6 +1118,7 @@ impl From<(u16, u16, u16, u16)> for u16_u16_u16_u16 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u16_float {
     pub d0: u16,
@@ -1111,6 +1148,7 @@ impl From<u16> for u16_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u16_u16_float {
     pub d0: u16,
@@ -1141,6 +1179,7 @@ impl From<(u16, u16)> for u16_u16_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u16_u16_u16_float {
     pub d0: u16,
@@ -1172,6 +1211,7 @@ impl From<(u16, u16, u16)> for u16_u16_u16_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u16_u16_u16_u16_float {
     pub d0: u16,
@@ -1204,6 +1244,7 @@ impl From<(u16, u16, u16, u16)> for u16_u16_u16_u16_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u32_ {
     pub d0: u32,
@@ -1232,6 +1273,7 @@ impl From<u32> for u32_ {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u32_u32 {
     pub d0: u32,
@@ -1261,6 +1303,7 @@ impl From<(u32, u32)> for u32_u32 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u32_u32_u32 {
     pub d0: u32,
@@ -1291,6 +1334,7 @@ impl From<(u32, u32, u32)> for u32_u32_u32 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u32_u32_u32_u32 {
     pub d0: u32,
@@ -1322,6 +1366,7 @@ impl From<(u32, u32, u32, u32)> for u32_u32_u32_u32 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u32_float {
     pub d0: u32,
@@ -1351,6 +1396,7 @@ impl From<u32> for u32_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u32_u32_float {
     pub d0: u32,
@@ -1381,6 +1427,7 @@ impl From<(u32, u32)> for u32_u32_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u32_u32_u32_float {
     pub d0: u32,
@@ -1412,6 +1459,7 @@ impl From<(u32, u32, u32)> for u32_u32_u32_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u32_u32_u32_u32_float {
     pub d0: u32,
@@ -1444,6 +1492,7 @@ impl From<(u32, u32, u32, u32)> for u32_u32_u32_u32_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct f16_ {
     pub d0: ::half::f16,
@@ -1477,6 +1526,7 @@ impl From<::half::f16> for f16_ {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct f16_f16 {
     pub d0: ::half::f16,
@@ -1511,6 +1561,7 @@ impl From<(::half::f16, ::half::f16)> for f16_f16 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct f16_f16_f16 {
     pub d0: ::half::f16,
@@ -1546,6 +1597,7 @@ impl From<(::half::f16, ::half::f16, ::half::f16)> for f16_f16_f16 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct f16_f16_f16_f16 {
     pub d0: ::half::f16,
@@ -1582,6 +1634,7 @@ impl From<(::half::f16, ::half::f16, ::half::f16, ::half::f16)> for f16_f16_f16_
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct f32_ {
     pub d0: f32,
@@ -1615,6 +1668,7 @@ impl From<f32> for f32_ {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct f32_f32 {
     pub d0: f32,
@@ -1649,6 +1703,7 @@ impl From<(f32, f32)> for f32_f32 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct f32_f32_f32 {
     pub d0: f32,
@@ -1684,6 +1739,7 @@ impl From<(f32, f32, f32)> for f32_f32_f32 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct f32_f32_f32_f32 {
     pub d0: f32,
@@ -1720,6 +1776,7 @@ impl From<(f32, f32, f32, f32)> for f32_f32_f32_f32 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct f64_ {
     pub d0: f64,
@@ -1752,6 +1809,7 @@ impl From<f64> for f64_ {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct f64_f64 {
     pub d0: f64,
@@ -1785,6 +1843,7 @@ impl From<(f64, f64)> for f64_f64 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct f64_f64_f64 {
     pub d0: f64,
@@ -1819,6 +1878,7 @@ impl From<(f64, f64, f64)> for f64_f64_f64 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct f64_f64_f64_f64 {
     pub d0: f64,
@@ -1854,6 +1914,7 @@ impl From<(f64, f64, f64, f64)> for f64_f64_f64_f64 {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i2_i10_i10_i10_rev {
     pub inner: u32, // TODO: nicer abstraction
@@ -1881,6 +1942,7 @@ impl i2_i10_i10_i10_rev {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u2_u10_u10_u10_rev {
     pub inner: ::vec_2_10_10_10::Vector,
@@ -1916,6 +1978,7 @@ impl From<(f32, f32, f32, f32)> for u2_u10_u10_u10_rev {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u10_u11_u11_rev {
     pub inner: u32, // TODO: nicer abstraction
@@ -1943,6 +2006,7 @@ impl u10_u11_u11_rev {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct i2_i10_i10_i10_rev_float {
     pub inner: u32, // TODO: nicer abstraction
@@ -1970,6 +2034,7 @@ impl i2_i10_i10_i10_rev_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u2_u10_u10_u10_rev_float {
     pub inner: ::vec_2_10_10_10::Vector,
@@ -2005,6 +2070,7 @@ impl From<(f32, f32, f32, f32)> for u2_u10_u10_u10_rev_float {
 
 // -----------------------------------------
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct u10_u11_u11_rev_float {
     pub inner: u32, // TODO: nicer abstraction

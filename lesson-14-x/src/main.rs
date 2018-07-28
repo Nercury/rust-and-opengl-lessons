@@ -4,7 +4,7 @@ extern crate vec_2_10_10_10;
 extern crate half;
 extern crate nalgebra;
 #[macro_use] extern crate failure;
-#[macro_use] extern crate lesson_14_render_gl_derive as render_gl_derive;
+#[macro_use] extern crate lesson_14_x_render_gl_derive as render_gl_derive;
 
 pub mod render_gl;
 pub mod resources;
@@ -41,14 +41,27 @@ fn run() -> Result<(), failure::Error> {
     let gl = gl::Gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void);
 
     let mut viewport = render_gl::Viewport::for_window(900, 700);
-    let color_buffer = render_gl::ColorBuffer::from_color(na::Vector3::new(0.3, 0.3, 0.5));
-    let debug_lines = render_gl::DebugLines::new(&gl, &res);
-
+    let color_buffer = render_gl::ColorBuffer::new();
+    let mut debug_lines = render_gl::DebugLines::new(&gl, &res)?;
+    let mut _p = Some(debug_lines
+        .start_polyline(
+            [0.5, -0.5, 0.0].into(),
+            [1.0, 0.0, 0.0, 1.0].into()
+        )
+        .with_point(
+            [0.0, 0.5, 0.0].into(),
+            [0.0, 1.0, 0.0, 1.0].into(),
+        )
+        .with_point(
+            [-0.5, -0.5, 0.0].into(),
+            [1.0, 1.0, 0.0, 0.0].into(),
+        )
+        .close_and_finish());
 
     // set up shared state for window
 
     viewport.set_used(&gl);
-    color_buffer.set_used(&gl);
+    color_buffer.set_clear_color(&gl, na::Vector3::new(0.3, 0.3, 0.5));
 
     // main loop
 
@@ -69,6 +82,7 @@ fn run() -> Result<(), failure::Error> {
         }
 
         color_buffer.clear(&gl);
+        debug_lines.render(&gl, &color_buffer);
 
         window.gl_swap_window();
     }

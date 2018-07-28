@@ -9,6 +9,7 @@ use render_gl::data;
 use failure::err_msg;
 use resources::Resources;
 
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 struct Vertex {
     pos: data::f32_f32_f32,

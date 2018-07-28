@@ -11,6 +11,7 @@ use failure::err_msg;
 use resources::Resources;
 
 #[derive(VertexAttribPointers)]
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 struct Vertex {
     #[location = "0"]

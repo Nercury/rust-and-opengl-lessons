@@ -4,6 +4,7 @@ use render_gl::{self, data, buffer};
 use resources::Resources;
 
 #[derive(VertexAttribPointers)]
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 struct Vertex {
     #[location = "0"]
