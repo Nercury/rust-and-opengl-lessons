@@ -1,7 +1,7 @@
 use gl;
 
 #[allow(non_camel_case_types)]
-#[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
+#[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct f32_f32_f32 {
     pub d0: f32,
