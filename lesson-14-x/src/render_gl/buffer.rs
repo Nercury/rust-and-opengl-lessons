@@ -49,7 +49,7 @@ impl<B> Buffer<B> where B: BufferType {
     pub fn static_draw_data<T>(&self, data: &[T]) {
         unsafe {
             self.gl.BufferData(
-                gl::ARRAY_BUFFER, // target
+                B::BUFFER_TYPE, // target
                 (data.len() * ::std::mem::size_of::<T>()) as gl::types::GLsizeiptr, // size of data in bytes
                 data.as_ptr() as *const gl::types::GLvoid, // pointer to data
                 gl::STATIC_DRAW, // usage

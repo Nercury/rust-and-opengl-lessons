@@ -1,0 +1,11 @@
+[package]
+name = "lesson_15_x_render_gl_derive"
+version = "0.1.0"
+authors = []
+
+[dependencies]
+quote = "0.3.15"
+syn = "0.11.11"
+
+[lib]
+proc-macro = true
