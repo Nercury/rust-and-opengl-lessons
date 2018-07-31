@@ -34,7 +34,7 @@ fn run() -> Result<(), failure::Error> {
     let gl_attr = video_subsystem.gl_attr();
 
     gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
-    gl_attr.set_context_version(4, 2);
+    gl_attr.set_context_version(4, 1);
 
     let initial_window_size: (i32, i32) = (900, 700);
 
