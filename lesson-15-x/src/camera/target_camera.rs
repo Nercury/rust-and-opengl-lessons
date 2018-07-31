@@ -73,7 +73,12 @@ impl TargetCamera {
         }
 
         if self.movement.has_movement() {
-            let mov3 = self.movement.get_vector();
+            let mut mov3 = self.movement.get_vector();
+
+            let camera_pos = self.project_pos();
+            if camera_pos.z < self.target.z {
+                mov3.y = -mov3.y;
+            }
 
             let mov3_rotated = self.rotation * na::Vector3::new(mov3.x, mov3.y, 0.0);
 
