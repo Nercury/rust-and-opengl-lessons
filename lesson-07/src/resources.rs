@@ -21,7 +21,7 @@ pub struct Resources {
 }
 
 impl Resources {
-    pub fn from_exe_path() -> Result<Resources, Error> {
+    pub fn from_relative_exe_path(rel_path: &Path) -> Result<Resources, Error> {
         let exe_file_name = ::std::env::current_exe()
             .map_err(|_| Error::FailedToGetExePath)?;
 
@@ -29,8 +29,12 @@ impl Resources {
             .ok_or(Error::FailedToGetExePath)?;
 
         Ok(Resources {
-            root_path: PathBuf::from(exe_path)
+            root_path: exe_path.join(rel_path)
         })
+    }
+
+    pub fn from_exe_path() -> Result<Resources, Error> {
+        Resources::from_relative_exe_path(Path::new(""))
     }
 
     pub fn load_cstring(&self, resource_name: &str) -> Result<ffi::CString, Error> {

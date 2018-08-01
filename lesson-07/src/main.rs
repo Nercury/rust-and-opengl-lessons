@@ -5,9 +5,10 @@ pub mod render_gl;
 pub mod resources;
 
 use resources::Resources;
+use std::path::Path;
 
 fn main() {
-    let res = Resources::from_exe_path().unwrap();
+    let res = Resources::from_relative_exe_path(Path::new("assets-07")).unwrap();
 
     let sdl = sdl2::init().unwrap();
     let video_subsystem = sdl.video().unwrap();

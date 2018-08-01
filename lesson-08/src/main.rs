@@ -7,6 +7,7 @@ pub mod resources;
 
 use failure::err_msg;
 use resources::Resources;
+use std::path::Path;
 
 fn main() {
     if let Err(e) = run() {
@@ -15,7 +16,7 @@ fn main() {
 }
 
 fn run() -> Result<(), failure::Error> {
-    let res = Resources::from_exe_path()?;
+    let res = Resources::from_relative_exe_path(Path::new("assets-08")).unwrap();
 
     let sdl = sdl2::init().map_err(err_msg)?;
     let video_subsystem = sdl.video().map_err(err_msg)?;

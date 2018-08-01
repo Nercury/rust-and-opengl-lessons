@@ -9,6 +9,7 @@ pub mod resources;
 use render_gl::data;
 use failure::err_msg;
 use resources::Resources;
+use std::path::Path;
 
 #[derive(VertexAttribPointers)]
 #[derive(Copy, Clone, Debug)]
@@ -27,7 +28,7 @@ fn main() {
 }
 
 fn run() -> Result<(), failure::Error> {
-    let res = Resources::from_exe_path()?;
+    let res = Resources::from_relative_exe_path(Path::new("assets-10")).unwrap();
 
     let sdl = sdl2::init().map_err(err_msg)?;
     let video_subsystem = sdl.video().map_err(err_msg)?;
