@@ -88,8 +88,8 @@ fn run() -> Result<(), failure::Error> {
         3.14 / 4.0,
         2.0
     );
-    let camera_target_marker = debug_lines.marker(camera.target, 1.0);
-    let camera_position_marker = debug_lines.colored_marker(camera.project_pos(), [0.0, 1.0, 1.0, 1.0].into(),0.5);
+    let camera_target_marker = debug_lines.marker(camera.target, 0.25);
+    let camera_position_marker = debug_lines.colored_marker(camera.project_pos(), [0.0, 1.0, 1.0, 1.0].into(),0.25);
 
     let mut camera_target_markers = (0..2).map(|i| debug_lines.marker(camera.target + na::Vector3::new(i as f32 + 1.0, 0.0, 0.0), 0.5)).collect::<Vec<_>>();
     let camera_pos = camera.project_pos();
