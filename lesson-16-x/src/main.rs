@@ -101,7 +101,7 @@ fn run() -> Result<(), failure::Error> {
 
         let vp_matrix = camera.get_vp_matrix();
         unsafe {
-            //gl.Enable(gl::CULL_FACE);
+            gl.Enable(gl::CULL_FACE);
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
             gl.Enable(gl::DEPTH_TEST);
         }

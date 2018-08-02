@@ -13,5 +13,5 @@ out vec4 Color;
 void main()
 {
     float highlight = dot(normalize(CameraPos - IN.Position), IN.Normal);
-    Color = IN.Color * clamp(highlight, 0, 1);
+    Color = IN.Color * highlight;
 }
