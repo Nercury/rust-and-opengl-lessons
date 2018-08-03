@@ -15,22 +15,18 @@ struct Vertex {
     #[location = "2"]
     normal: data::f32_f32_f32,
     #[location = "3"]
-    tn: data::f32_f32_f32,
-    #[location = "4"]
     uv: data::f16_f16,
 }
 
 pub struct Cube {
     program: render_gl::Program,
     texture: render_gl::Texture,
-    texture_normal: render_gl::Texture,
     texture_specular: render_gl::Texture,
-    program_view_location: i32,
-    program_projection_location: i32,
-    camera_pos_location: i32,
-    tex_face_location: i32,
-    tex_normal_location: i32,
-    tex_specular_location: i32,
+    program_view_location: Option<i32>,
+    program_projection_location: Option<i32>,
+    camera_pos_location: Option<i32>,
+    tex_face_location: Option<i32>,
+    tex_specular_location: Option<i32>,
     _vbo: buffer::ArrayBuffer,
     _ebo: buffer::ElementArrayBuffer,
     index_count: i32,
@@ -45,27 +41,27 @@ impl Cube {
 
 //        let texture = render_gl::Texture::from_res_rgb("textures/dice_high_contrast.png").load(gl, res)?;
         let texture = render_gl::Texture::from_res_rgb("textures/dice.png").load(gl, res)?;
-        let texture_normal = render_gl::Texture::from_res_rgb("textures/dice_normal.png").load(gl, res)?;
         let texture_specular = render_gl::Texture::from_res_rgb("textures/dice_specular.png").load(gl, res)?;
-        let program = render_gl::Program::from_res(gl, res, "shaders/cube")?;
-        let program_view_location = program.get_uniform_location("View")?;
-        let program_projection_location = program.get_uniform_location("Projection")?;
-        let camera_pos_location = program.get_uniform_location("CameraPos")?;
-        let tex_face_location = program.get_uniform_location("TexFace")?;
-        let tex_normal_location = program.get_uniform_location("TexNormal")?;
-        let tex_specular_location = program.get_uniform_location("TexSpecular")?;
 
-        let v0 = (-1.0, -1.0, -1.0);
-        let v1 = (1.0,  -1.0, -1.0);
-        let v2 = (-1.0,  1.0, -1.0);
-        let v3 = (1.0,  1.0, -1.0);
-        let v4 = (-1.0, -1.0, 1.0);
-        let v5 = (1.0,  -1.0, 1.0);
-        let v6 = (-1.0,  1.0, 1.0);
-        let v7 = (1.0,  1.0, 1.0);
+        let program = render_gl::Program::from_res(gl, res, "shaders/cube")?;
+
+        let program_view_location = program.get_uniform_location("View");
+        let program_projection_location = program.get_uniform_location("Projection");
+        let camera_pos_location = program.get_uniform_location("CameraPos");
+        let tex_face_location = program.get_uniform_location("TexFace");
+        let tex_specular_location = program.get_uniform_location("TexSpecular");
 
         // ----------- A: stupid mapping
 
+//        let v0 = (-1.0, -1.0, -1.0);
+//        let v1 = (1.0,  -1.0, -1.0);
+//        let v2 = (-1.0,  1.0, -1.0);
+//        let v3 = (1.0,  1.0, -1.0);
+//        let v4 = (-1.0, -1.0, 1.0);
+//        let v5 = (1.0,  -1.0, 1.0);
+//        let v6 = (-1.0,  1.0, 1.0);
+//        let v7 = (1.0,  1.0, 1.0);
+//
 //        let vbo_data = vec![
 //            Vertex { pos: v0.into(), clr: (1.0, 0.0, 0.0, 1.0).into(), normal: (0.0, 0.0, -1.0).into(), uv: (0.0, 0.0).into() }, // 0
 //            Vertex { pos: v1.into(), clr: (0.0, 1.0, 0.0, 1.0).into(), normal: (0.0, 0.0, -1.0).into(), uv: (1.0, 0.0).into() }, // 1
@@ -98,9 +94,16 @@ impl Cube {
 //            Vertex { pos: v7.into(),  clr: (1.0, 0.1, 0.7, 1.0).into(), normal: (1.0, 0.0, 0.0).into(), uv: (1.0, 1.0).into() }, // 23
 //        ];
 
-        // ----------- A: omg annoying correct mapping
+        // ------------- B: Better mapping
 
-        // http://cpetry.github.io/NormalMap-Online/
+        let v0 = (-1.0, -1.0, -1.0);
+        let v1 = (1.0,  -1.0, -1.0);
+        let v2 = (-1.0,  1.0, -1.0);
+        let v3 = (1.0,  1.0, -1.0);
+        let v4 = (-1.0, -1.0, 1.0);
+        let v5 = (1.0,  -1.0, 1.0);
+        let v6 = (-1.0,  1.0, 1.0);
+        let v7 = (1.0,  1.0, 1.0);
 
         let a = 16.0 / 1024.0;
         let b = 336.0 / 1024.0;
@@ -111,40 +114,40 @@ impl Cube {
 
         let vbo_data = vec![
             // 6
-            Vertex { pos: v0.into(), clr: (1.0, 0.0, 0.0, 1.0).into(), normal: (0.0, 0.0, -1.0).into(), tn: (0.0, -1.0, 0.0).into(), uv: (e, c).into() }, // 0
-            Vertex { pos: v1.into(), clr: (0.0, 1.0, 0.0, 1.0).into(), normal: (0.0, 0.0, -1.0).into(), tn: (0.0, -1.0, 0.0).into(), uv: (f, c).into() }, // 1
-            Vertex { pos: v2.into(), clr: (0.0, 0.0, 1.0, 1.0).into(), normal: (0.0, 0.0, -1.0).into(), tn: (0.0, -1.0, 0.0).into(), uv: (e, d).into() }, // 2
-            Vertex { pos: v3.into(),  clr: (1.0, 1.0, 0.0, 1.0).into(), normal: (0.0, 0.0, -1.0).into(), tn: (0.0, -1.0, 0.0).into(), uv: (f, d).into() }, // 3
+            Vertex { pos: v0.into(), clr: (1.0, 0.0, 0.0, 1.0).into(), normal: (0.0, 0.0, -1.0).into(), uv:  (e, c).into() }, // 0
+            Vertex { pos: v1.into(), clr: (0.0, 1.0, 0.0, 1.0).into(), normal: (0.0, 0.0, -1.0).into(), uv:  (f, c).into() }, // 1
+            Vertex { pos: v2.into(), clr: (0.0, 0.0, 1.0, 1.0).into(), normal: (0.0, 0.0, -1.0).into(), uv:  (e, d).into() }, // 2
+            Vertex { pos: v3.into(),  clr: (1.0, 1.0, 0.0, 1.0).into(), normal: (0.0, 0.0, -1.0).into(), uv: (f, d).into() }, // 3
 
             // 1
-            Vertex { pos: v4.into(),  clr: (0.0, 0.3, 1.0, 1.0).into(), normal: (0.0, 0.0, 1.0).into(), tn: (0.0, -1.0, 0.0).into(), uv: (a, b).into() }, // 4
-            Vertex { pos: v5.into(),  clr: (1.0, 0.0, 0.3, 1.0).into(), normal: (0.0, 0.0, 1.0).into(), tn: (0.0, -1.0, 0.0).into(), uv: (b, b).into() }, // 5
-            Vertex { pos: v6.into(),  clr: (0.7, 0.5, 1.0, 1.0).into(), normal: (0.0, 0.0, 1.0).into(), tn: (0.0, -1.0, 0.0).into(), uv: (a, a).into() }, // 6
-            Vertex { pos: v7.into(),  clr: (1.0, 0.7, 0.5, 1.0).into(), normal: (0.0, 0.0, 1.0).into(), tn: (0.0, -1.0, 0.0).into(), uv: (b, a).into() }, // 7
+            Vertex { pos: v4.into(),  clr: (0.0, 0.3, 1.0, 1.0).into(), normal: (0.0, 0.0, 1.0).into(), uv: (a, b).into() }, // 4
+            Vertex { pos: v5.into(),  clr: (1.0, 0.0, 0.3, 1.0).into(), normal: (0.0, 0.0, 1.0).into(), uv: (b, b).into() }, // 5
+            Vertex { pos: v6.into(),  clr: (0.7, 0.5, 1.0, 1.0).into(), normal: (0.0, 0.0, 1.0).into(), uv: (a, a).into() }, // 6
+            Vertex { pos: v7.into(),  clr: (1.0, 0.7, 0.5, 1.0).into(), normal: (0.0, 0.0, 1.0).into(), uv: (b, a).into() }, // 7
 
             // 2
-            Vertex { pos: v0.into(),  clr: (0.0, 1.0, 0.3, 1.0).into(), normal: (0.0, -1.0, 0.0).into(), tn: (-1.0, 0.0, 0.0).into(), uv: (c, b).into() }, // 8
-            Vertex { pos: v1.into(),  clr: (1.0, 0.0, 1.0, 1.0).into(), normal: (0.0, -1.0, 0.0).into(), tn: (-1.0, 0.0, 0.0).into(), uv: (d, b).into() }, // 9
-            Vertex { pos: v4.into(),  clr: (0.5, 0.7, 1.0, 1.0).into(), normal: (0.0, -1.0, 0.0).into(), tn: (-1.0, 0.0, 0.0).into(), uv: (c, a).into() }, // 10
-            Vertex { pos: v5.into(),  clr: (1.0, 0.5, 0.1, 1.0).into(), normal: (0.0, -1.0, 0.0).into(), tn: (-1.0, 0.0, 0.0).into(), uv: (d, a).into() }, // 11
+            Vertex { pos: v0.into(),  clr: (0.0, 1.0, 0.3, 1.0).into(), normal: (0.0, -1.0, 0.0).into(), uv: (c, b).into() }, // 8
+            Vertex { pos: v1.into(),  clr: (1.0, 0.0, 1.0, 1.0).into(), normal: (0.0, -1.0, 0.0).into(), uv: (d, b).into() }, // 9
+            Vertex { pos: v4.into(),  clr: (0.5, 0.7, 1.0, 1.0).into(), normal: (0.0, -1.0, 0.0).into(), uv: (c, a).into() }, // 10
+            Vertex { pos: v5.into(),  clr: (1.0, 0.5, 0.1, 1.0).into(), normal: (0.0, -1.0, 0.0).into(), uv: (d, a).into() }, // 11
 
             // 4
-            Vertex { pos: v2.into(),  clr: (0.3, 1.0, 1.0, 1.0).into(), normal: (0.0, 1.0, 0.0).into(), tn: (-1.0, 0.0, 0.0).into(), uv: (a, c).into() }, // 12
-            Vertex { pos: v3.into(),  clr: (0.8, 0.0, 1.0, 1.0).into(), normal: (0.0, 1.0, 0.0).into(), tn: (-1.0, 0.0, 0.0).into(), uv: (b, c).into() }, // 13
-            Vertex { pos: v6.into(),  clr: (0.5, 0.5, 0.4, 1.0).into(), normal: (0.0, 1.0, 0.0).into(), tn: (-1.0, 0.0, 0.0).into(), uv: (a, d).into() }, // 14
-            Vertex { pos: v7.into(),  clr: (0.4, 0.0, 1.0, 1.0).into(), normal: (0.0, 1.0, 0.0).into(), tn: (-1.0, 0.0, 0.0).into(), uv: (b, d).into() }, // 15
+            Vertex { pos: v2.into(),  clr: (0.3, 1.0, 1.0, 1.0).into(), normal: (0.0, 1.0, 0.0).into(), uv: (a, c).into() }, // 12
+            Vertex { pos: v3.into(),  clr: (0.8, 0.0, 1.0, 1.0).into(), normal: (0.0, 1.0, 0.0).into(), uv: (b, c).into() }, // 13
+            Vertex { pos: v6.into(),  clr: (0.5, 0.5, 0.4, 1.0).into(), normal: (0.0, 1.0, 0.0).into(), uv: (a, d).into() }, // 14
+            Vertex { pos: v7.into(),  clr: (0.4, 0.0, 1.0, 1.0).into(), normal: (0.0, 1.0, 0.0).into(), uv: (b, d).into() }, // 15
 
             // 3
-            Vertex { pos: v0.into(),  clr: (0.0, 0.4, 1.0, 1.0).into(), normal: (-1.0, 0.0, 0.0).into(), tn: (0.0, 0.0, -1.0).into(), uv: (e, a).into() }, // 16
-            Vertex { pos: v2.into(),  clr: (1.0, 0.0, 0.4, 1.0).into(), normal: (-1.0, 0.0, 0.0).into(), tn: (0.0, 0.0, -1.0).into(), uv: (f, a).into() }, // 17
-            Vertex { pos: v4.into(),  clr: (0.7, 0.5, 1.0, 1.0).into(), normal: (-1.0, 0.0, 0.0).into(), tn: (0.0, 0.0, -1.0).into(), uv: (e, b).into() }, // 18
-            Vertex { pos: v6.into(),  clr: (1.0, 0.7, 0.5, 1.0).into(), normal: (-1.0, 0.0, 0.0).into(), tn: (0.0, 0.0, -1.0).into(), uv: (f, b).into() }, // 19
+            Vertex { pos: v0.into(),  clr: (0.0, 0.4, 1.0, 1.0).into(), normal: (-1.0, 0.0, 0.0).into(), uv: (f, b).into() }, // 16
+            Vertex { pos: v2.into(),  clr: (1.0, 0.0, 0.4, 1.0).into(), normal: (-1.0, 0.0, 0.0).into(), uv: (e, b).into() }, // 17
+            Vertex { pos: v4.into(),  clr: (0.7, 0.5, 1.0, 1.0).into(), normal: (-1.0, 0.0, 0.0).into(), uv: (f, a).into() }, // 18
+            Vertex { pos: v6.into(),  clr: (1.0, 0.7, 0.5, 1.0).into(), normal: (-1.0, 0.0, 0.0).into(), uv: (e, a).into() }, // 19
 
             // 5
-            Vertex { pos: v1.into(),  clr: (0.0, 1.0, 0.0, 1.0).into(), normal: (1.0, 0.0, 0.0).into(), tn: (0.0, 0.0, -1.0).into(), uv: (c, d).into() }, // 20
-            Vertex { pos: v3.into(),  clr: (0.1, 0.0, 1.0, 1.0).into(), normal: (1.0, 0.0, 0.0).into(), tn: (0.0, 0.0, -1.0).into(), uv: (d, d).into() }, // 21
-            Vertex { pos: v5.into(),  clr: (0.1, 0.7, 1.0, 1.0).into(), normal: (1.0, 0.0, 0.0).into(), tn: (0.0, 0.0, -1.0).into(), uv: (c, c).into() }, // 22
-            Vertex { pos: v7.into(),  clr: (1.0, 0.1, 0.7, 1.0).into(), normal: (1.0, 0.0, 0.0).into(), tn: (0.0, 0.0, -1.0).into(), uv: (d, c).into() }, // 23
+            Vertex { pos: v1.into(),  clr: (0.0, 1.0, 0.0, 1.0).into(), normal: (1.0, 0.0, 0.0).into(), uv: (d, c).into() }, // 20
+            Vertex { pos: v3.into(),  clr: (0.1, 0.0, 1.0, 1.0).into(), normal: (1.0, 0.0, 0.0).into(), uv: (c, c).into() }, // 21
+            Vertex { pos: v5.into(),  clr: (0.1, 0.7, 1.0, 1.0).into(), normal: (1.0, 0.0, 0.0).into(), uv: (d, d).into() }, // 22
+            Vertex { pos: v7.into(),  clr: (1.0, 0.1, 0.7, 1.0).into(), normal: (1.0, 0.0, 0.0).into(), uv: (c, d).into() }, // 23
         ];
 
         let ebo_data: Vec<u8> = vec![
@@ -174,7 +177,7 @@ impl Cube {
 
         let ebo = buffer::ElementArrayBuffer::new(gl);
         ebo.bind();
-        ebo.static_draw_data::<u8>(&ebo_data);
+        ebo.static_draw_data(&ebo_data);
         ebo.unbind();
 
         // set up vertex array object
@@ -187,18 +190,17 @@ impl Cube {
         Vertex::vertex_attrib_pointers(gl);
         vao.unbind();
 
-        ebo.unbind(); // do not unbind ebo until we finish with vao
+        vbo.unbind();
+        ebo.unbind();
 
         Ok(Cube {
             texture,
-            texture_normal,
             texture_specular,
             program,
             program_view_location,
             program_projection_location,
             camera_pos_location,
             tex_face_location,
-            tex_normal_location,
             tex_specular_location,
             _vbo: vbo,
             _ebo: ebo,
@@ -215,18 +217,25 @@ impl Cube {
     pub fn render(&self, gl: &gl::Gl, view_matrix: &na::Matrix4<f32>, proj_matrix: &na::Matrix4<f32>, camera_pos: &na::Vector3<f32>) {
         self.program.set_used();
 
-        self.texture.bind_at(0);
-        self.program.set_uniform_1i(self.tex_face_location, 0);
+        if let Some(loc) = self.tex_face_location {
+            self.texture.bind_at(0);
+            self.program.set_uniform_1i(loc, 0);
+        }
 
-        self.texture_normal.bind_at(1);
-        self.program.set_uniform_1i(self.tex_normal_location, 1);
+        if let Some(loc) = self.tex_specular_location {
+            self.texture_specular.bind_at(2);
+            self.program.set_uniform_1i(loc, 2);
+        }
 
-        self.texture_specular.bind_at(2);
-        self.program.set_uniform_1i(self.tex_specular_location, 2);
-
-        self.program.set_uniform_matrix_4fv(self.program_view_location, view_matrix);
-        self.program.set_uniform_matrix_4fv(self.program_projection_location, proj_matrix);
-        self.program.set_uniform_3f(self.camera_pos_location, camera_pos);
+        if let Some(loc) = self.program_view_location {
+            self.program.set_uniform_matrix_4fv(loc, view_matrix);
+        }
+        if let Some(loc) = self.program_projection_location {
+            self.program.set_uniform_matrix_4fv(loc, proj_matrix);
+        }
+        if let Some(loc) = self.camera_pos_location {
+            self.program.set_uniform_3f(loc, camera_pos);
+        }
         self.vao.bind();
 
         unsafe {

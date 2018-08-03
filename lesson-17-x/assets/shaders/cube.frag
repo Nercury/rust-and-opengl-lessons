@@ -1,39 +1,39 @@
 #version 330 core
 
 uniform sampler2D TexFace;
-uniform sampler2D TexNormal;
 uniform sampler2D TexSpecular;
 
 in VS_OUTPUT {
     vec4 Color;
-    vec3 Position;
     vec2 Uv;
-    vec3 TangentCameraPos;
-    vec3 TangentPosition;
+    vec3 Normal;
+    vec3 CameraPos;
+    vec3 Position;
 } IN;
 
 out vec4 Color;
 
 void main()
 {
-    vec3 specColor = texture(TexSpecular, IN.Uv).rgb;
+    vec3 LightPos = IN.CameraPos;
 
+    vec3 specColor = texture(TexSpecular, IN.Uv).rgb;
     vec3 color = texture(TexFace, IN.Uv).rgb;
 
-    vec3 normal = texture(TexNormal, IN.Uv).rgb; // obtain normal from normal map in range [0,1]
-    normal = normalize(normal * 2.0 - 1.0); // transform normal vector to range [-1,1]
+    // normal
+    vec3 normal = IN.Normal;
 
     // diffuse
-    vec3 lightDir = normalize(IN.TangentCameraPos - IN.TangentPosition);
+    vec3 lightDir = normalize(LightPos - IN.Position);
     float diff = max(dot(lightDir, normal), 0.0);
     vec3 diffuse = diff * color;
 
     // specular
-    vec3 viewDir = normalize(IN.TangentCameraPos - IN.TangentPosition);
+    vec3 viewDir = normalize(IN.CameraPos - IN.Position);
     vec3 reflectDir = reflect(-lightDir, normal);
     vec3 halfwayDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), 8.0);
 
     vec3 specular = specColor * spec;
-    Color = vec4(diffuse + specular, 1.0);
+    Color = vec4(mix(diffuse, specular, 0.3), 1.0);
 }

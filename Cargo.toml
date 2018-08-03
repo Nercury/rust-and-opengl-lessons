@@ -18,3 +18,12 @@ members = [
     "lesson-16-x",
     "lesson-17-x",
 ]
+
+[profile.dev]
+codegen-units = 32
+incremental = true
+overflow-checks = true
+debug-assertions = true
+lto = false
+debug = true
+opt-level = 2

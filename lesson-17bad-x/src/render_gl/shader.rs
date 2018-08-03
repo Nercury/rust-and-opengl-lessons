@@ -19,6 +19,7 @@ pub enum Error {
 pub struct Program {
     gl: gl::Gl,
     id: gl::types::GLuint,
+    name: String,
 }
 
 impl Program {
@@ -38,11 +39,11 @@ impl Program {
             })
             .collect::<Result<Vec<Shader>, Error>>()?;
 
-        Program::from_shaders(gl, &shaders[..])
+        Program::from_shaders(name, gl, &shaders[..])
             .map_err(|message| Error::LinkError { name: name.into(), message })
     }
 
-    pub fn from_shaders(gl: &gl::Gl, shaders: &[Shader]) -> Result<Program, String> {
+    pub fn from_shaders(name: &str, gl: &gl::Gl, shaders: &[Shader]) -> Result<Program, String> {
         let program_id = unsafe { gl.CreateProgram() };
 
         for shader in shaders {
@@ -80,7 +81,7 @@ impl Program {
             unsafe { gl.DetachShader(program_id, shader.id()); }
         }
 
-        Ok(Program { gl: gl.clone(), id: program_id })
+        Ok(Program { name: name.into(), gl: gl.clone(), id: program_id })
     }
 
     pub fn id(&self) -> gl::types::GLuint {

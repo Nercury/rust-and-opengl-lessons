@@ -77,7 +77,7 @@ impl Drop for Polyline {
 
 pub struct DebugLines {
     program: Program,
-    program_view_projection_location: Option<i32>,
+    program_view_projection_location: i32,
     containers: Rc<RefCell<SharedDebugLines>>,
     lines_vbo_count: i32,
     lines_vbo: buffer::ArrayBuffer,
@@ -96,7 +96,7 @@ impl DebugLines {
         lines_vao.unbind();
 
         let program = Program::from_res(gl, res, "shaders/render_gl/debug_lines")?;
-        let program_view_projection_location = program.get_uniform_location("ViewProjection");
+        let program_view_projection_location = program.get_uniform_location("ViewProjection")?;
 
         Ok(DebugLines {
             program,
@@ -155,9 +155,7 @@ impl DebugLines {
 
         if self.lines_vbo_count > 0 {
             self.program.set_used();
-            if let Some(loc) = self.program_view_projection_location {
-                self.program.set_uniform_matrix_4fv(loc, &vp_matrix);
-            }
+            self.program.set_uniform_matrix_4fv(self.program_view_projection_location, &vp_matrix);
 
             self.lines_vao.bind();
 
