@@ -114,6 +114,7 @@ impl Cube {
         let texture_location = program.get_uniform_location("Texture");
         let texture_normals_location = program.get_uniform_location("Normals");
 
+        // this loader does not support file names with spaces
         let imported_models = res.load_obj("objs/dice.obj")?;
 
         // take first material in obj
@@ -126,22 +127,26 @@ impl Cube {
             } else {
                 Some(render_gl::Texture::from_res_rgb(
                     &[&imported_models.imported_from_resource_path[..], "/", &material.diffuse_texture[..]].concat()
-                ).load(gl, res)?)
+                ).with_gen_mipmaps().load(gl, res)?)
             },
             None => None,
         };
         let texture_normals = match material {
-            Some(ref material) => match material.unknown_param.get("map_Bump") {
-                Some(ref name) => Some(render_gl::Texture::from_res_rgb(
-                    &[&imported_models.imported_from_resource_path[..], "/", &name[..]].concat()
-                ).load(gl, res)?),
-                None => None,
+            Some(ref material) => {
+                match material.unknown_param.iter()
+                    .filter(|(k, _)|
+                        k.to_lowercase() == "map_bump" || k.to_lowercase() == "bump"
+                    ).map(|(_, v)| v)
+                    .next()
+                {
+                    Some(ref name) => Some(render_gl::Texture::from_res_rgb(
+                        &[&imported_models.imported_from_resource_path[..], "/", &name[..]].concat()
+                    ).with_gen_mipmaps().load(gl, res)?),
+                    None => None,
+                }
             },
             None => None,
         };
-        if texture_normals.is_none() {
-            panic!("Normals failed");
-        }
 
         // match mesh to material id and get the mesh
         let mesh = imported_models.models.into_iter()
@@ -205,7 +210,7 @@ impl Cube {
                     {
                         let ref mut existing_tangent_vectors = vertices[*i as usize].tangent_vectors;
                         if existing_tangent_vectors.is_some() {
-                            println!("Existing vectors {}, new {}", existing_tangent_vectors.unwrap().n.unwrap(), face_tangent_vectors.n.unwrap());
+                            //println!("Existing vectors {}, new {}", existing_tangent_vectors.unwrap().n.unwrap(), face_tangent_vectors.n.unwrap());
                         } else {
                             *existing_tangent_vectors = Some(face_tangent_vectors);
                         }

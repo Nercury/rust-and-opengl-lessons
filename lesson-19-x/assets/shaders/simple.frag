@@ -1,31 +1,33 @@
 #version 330 core
 
 uniform sampler2D Texture;
-uniform sampler2D Normals;
 
 in VS_OUTPUT {
     vec2 Uv;
-    vec3 TangentCameraPos;
-    vec3 TangentPosition;
+    vec3 Normal;
+    vec3 CameraPos;
+    vec3 Position;
 } IN;
 
 out vec4 Color;
 
 void main()
 {
-    vec3 normal = texture(Normals, IN.Uv).rgb; // obtain normal from normal map in range [0,1]
-    normal = normalize(normal * 2.0 - 1.0); // transform normal vector to range [-1,1]
+    vec3 LightPos = IN.CameraPos;
 
-    // get diffuse color
     vec3 color = texture(Texture, IN.Uv).rgb;
+
+    // normal
+    vec3 normal = IN.Normal;
     // ambient
     vec3 ambient = 0.3 * color;
     // diffuse
-    vec3 lightDir = normalize(IN.TangentCameraPos - IN.TangentPosition);
+    vec3 lightDir = normalize(LightPos - IN.Position);
     float diff = max(dot(lightDir, normal), 0.0);
     vec3 diffuse = diff * color;
+
     // specular
-    vec3 viewDir = normalize(IN.TangentCameraPos - IN.TangentPosition);
+    vec3 viewDir = normalize(IN.CameraPos - IN.Position);
     vec3 reflectDir = reflect(-lightDir, normal);
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(normal, halfwayDir), 0.0), 12.0);

@@ -58,7 +58,7 @@ impl Resources {
     pub fn load_rgb_image(&self, image_file_name: &str) -> Result<image::RgbImage, Error> {
         let img = image::open(
             resource_name_to_path(&self.root_path,image_file_name)
-        )?;
+        ).map_err(|e| Error::FailedToLoadImage { name: image_file_name.into(), inner: e })?;
 
         Ok(img.to_rgb())
     }
@@ -66,7 +66,7 @@ impl Resources {
     pub fn load_rgba_image(&self, image_file_name: &str) -> Result<image::RgbaImage, Error> {
         let img = image::open(
             resource_name_to_path(&self.root_path,image_file_name)
-        )?;
+        ).map_err(|e| Error::FailedToLoadImage { name: image_file_name.into(), inner: e })?;
 
         if let image::ColorType::RGBA(_) = img.color() {
             Ok(img.to_rgba())
