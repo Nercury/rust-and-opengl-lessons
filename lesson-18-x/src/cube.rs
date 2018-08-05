@@ -18,7 +18,7 @@ struct Vertex {
 
 pub struct Cube {
     program: render_gl::Program,
-    texture: render_gl::Texture,
+    texture: Option<render_gl::Texture>,
     program_view_location: Option<i32>,
     program_projection_location: Option<i32>,
     camera_pos_location: Option<i32>,
@@ -46,11 +46,18 @@ impl Cube {
 
         // take first material in obj
         let material = imported_models.materials.into_iter().next();
-        let material_index = material.map(|_| 0); // it is first or None
+        let material_index = material.as_ref().map(|_| 0); // it is first or None
 
-        let texture = render_gl::Texture::from_res_rgb(
-            &[&imported_models.imported_from_resource_path[..], "/dice.png"].concat()
-        ).load(gl, res)?;
+        let texture = match material {
+            Some(material) => if &material.diffuse_texture == "" {
+                None
+            } else {
+                Some(render_gl::Texture::from_res_rgb(
+                    &[&imported_models.imported_from_resource_path[..], "/", &material.diffuse_texture[..]].concat()
+                ).load(gl, res)?)
+            },
+            None => None,
+        };
 
         // match mesh to material id and get the mesh
         let mesh = imported_models.models.into_iter()
@@ -113,8 +120,8 @@ impl Cube {
     pub fn render(&self, gl: &gl::Gl, view_matrix: &na::Matrix4<f32>, proj_matrix: &na::Matrix4<f32>, camera_pos: &na::Vector3<f32>) {
         self.program.set_used();
 
-        if let Some(loc) = self.tex_face_location {
-            self.texture.bind_at(0);
+        if let (Some(loc), &Some(ref texture)) = (self.tex_face_location, &self.texture) {
+            texture.bind_at(0);
             self.program.set_uniform_1i(loc, 0);
         }
 
