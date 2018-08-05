@@ -68,6 +68,7 @@ impl TangentVectors {
             (w.z * sy - v.z * ty) * dir_correction
         ));
         let bitangent = -na::Unit::new_normalize(na::Vector3::new(
+                     // ^--- WTF
             (w.x * sx - v.x * tx) * dir_correction,
             (w.y * sx - v.y * tx) * dir_correction,
             (w.z * sx - v.z * tx) * dir_correction
