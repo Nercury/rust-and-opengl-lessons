@@ -1,0 +1,14 @@
+# Blender MTL File: 'dice.blend'
+# Material Count: 1
+
+newmtl Dice_Baked
+Ns 401.960784
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd dice.png
+map_Bump dice_normals.png
