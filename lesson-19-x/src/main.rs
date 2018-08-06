@@ -38,7 +38,7 @@ fn run() -> Result<(), failure::Error> {
     gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
     gl_attr.set_context_version(4, 1);
 
-    let initial_window_size: (i32, i32) = (900, 700);
+    let initial_window_size: (i32, i32) = (960, 540);
 
     let window = video_subsystem
         .window("Game", initial_window_size.0 as u32, initial_window_size.1 as u32)
@@ -56,11 +56,11 @@ fn run() -> Result<(), failure::Error> {
 
     let mut camera = camera::TargetCamera::new(
         initial_window_size.0 as f32 / initial_window_size.1 as f32,
-        3.14 / 2.0,
+        3.14 / 2.5,
         0.01,
         1000.0,
         3.14 / 4.0,
-        3.0
+        5.0
     );
     let camera_target_marker = debug_lines.marker(camera.target, 0.25);
 
