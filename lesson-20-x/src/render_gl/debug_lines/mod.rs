@@ -83,6 +83,7 @@ pub struct DebugLines {
     lines_vbo: buffer::ArrayBuffer,
     lines_vbo_capacity: Option<usize>,
     lines_vao: buffer::VertexArray,
+    draw_enabled: bool,
 }
 
 impl DebugLines {
@@ -106,7 +107,12 @@ impl DebugLines {
             lines_vbo_count: 0,
             lines_vbo_capacity: None,
             lines_vao,
+            draw_enabled: false,
         })
+    }
+
+    pub fn toggle(&mut self) {
+        self.draw_enabled = !self.draw_enabled;
     }
 
     fn check_if_invalidated_and_reinitialize(&mut self) {
@@ -151,27 +157,29 @@ impl DebugLines {
     }
 
     pub fn render(&mut self, gl: &gl::Gl, target: &ColorBuffer, vp_matrix: &na::Matrix4<f32>) {
-        self.check_if_invalidated_and_reinitialize();
+        if self.draw_enabled {
+            self.check_if_invalidated_and_reinitialize();
 
-        if self.lines_vbo_count > 0 {
-            self.program.set_used();
-            if let Some(loc) = self.program_view_projection_location {
-                self.program.set_uniform_matrix_4fv(loc, &vp_matrix);
-            }
+            if self.lines_vbo_count > 0 {
+                self.program.set_used();
+                if let Some(loc) = self.program_view_projection_location {
+                    self.program.set_uniform_matrix_4fv(loc, &vp_matrix);
+                }
 
-            self.lines_vao.bind();
+                self.lines_vao.bind();
 
-            unsafe {
-                target.set_default_blend_func(gl);
-                target.enable_blend(gl);
+                unsafe {
+                    target.set_default_blend_func(gl);
+                    target.enable_blend(gl);
 
-                gl.DrawArrays(
-                    gl::LINES, // mode
-                    0, // starting index in the enabled arrays
-                    self.lines_vbo_count // number of indices to be rendered
-                );
+                    gl.DrawArrays(
+                        gl::LINES, // mode
+                        0, // starting index in the enabled arrays
+                        self.lines_vbo_count // number of indices to be rendered
+                    );
 
-                target.disable_blend(gl);
+                    target.disable_blend(gl);
+                }
             }
         }
     }

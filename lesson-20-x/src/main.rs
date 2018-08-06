@@ -73,15 +73,14 @@ fn run() -> Result<(), failure::Error> {
     // main loop
 
     let mut time = Instant::now();
-    let mut side_cam = false;
 
     let mut event_pump = sdl.event_pump().map_err(err_msg)?;
     'main: loop {
         for event in event_pump.poll_iter() {
             match event {
                 sdl2::event::Event::Quit {..} => break 'main,
-                sdl2::event::Event::KeyDown { scancode: Some(sdl2::keyboard::Scancode::C), .. } => {
-                    side_cam = !side_cam;
+                sdl2::event::Event::KeyDown { scancode: Some(sdl2::keyboard::Scancode::I), .. } => {
+                    debug_lines.toggle();
                 },
                 sdl2::event::Event::Window {
                     win_event: sdl2::event::WindowEvent::Resized(w, h),
