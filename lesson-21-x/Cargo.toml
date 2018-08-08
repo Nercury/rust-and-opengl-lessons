@@ -1,0 +1,27 @@
+[package]
+name = "lesson-21-x"
+version = "0.1.0"
+authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
+
+[dependencies]
+gl = { path = "../lib/gl" }
+failure = "0.1"
+lesson_21_x_render_gl_derive = { path = "render_gl_derive" }
+vec-2-10-10-10 = "0.1.2"
+half = "1.1.1"
+nalgebra = "0.16"
+ncollide3d = "0.17"
+slab = "0.4"
+floating-duration = "0.1.2"
+image = "0.19.0"
+tobj = "0.1.6"
+
+[dependencies.sdl2]
+version = "0.31.0"
+features = ["bundled", "static-link"]
+
+[build-dependencies]
+walkdir = "2.1"
+
+[features]
+gl_debug = ["gl/debug"]
