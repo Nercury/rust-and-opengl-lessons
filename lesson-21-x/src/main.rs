@@ -44,7 +44,7 @@ fn run() -> Result<(), failure::Error> {
     gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
     gl_attr.set_context_version(4, 1);
 
-    let mut window_size = render::WindowSize { width: 960, height: 540 };
+    let mut window_size = render::WindowSize { width: 960, height: 600 };
 
     let window = video_subsystem
         .window("Game", window_size.width as u32, window_size.height as u32)
@@ -61,7 +61,16 @@ fn run() -> Result<(), failure::Error> {
     let mut debug_lines = render_gl::DebugLines::new(&gl, &res)?;
     let selectables = selection::Selectables::new();
 
-    let mut dice = dice::Dice::new(&res, &gl, &debug_lines, &selectables)?;
+    let mut dices = Vec::new();
+    for x in -3..3 {
+        for y in -3..3 {
+            let mut dice = dice::Dice::new(&res, &gl, &debug_lines, &selectables)?;
+            dice.set_transform(na::Isometry3::from_parts(na::Translation3::from_vector(
+                [4.0 * x as f32, 4.0 * y as f32, 0.0].into()
+            ), na::UnitQuaternion::identity()));
+            dices.push(dice);
+        }
+    }
 
     let mut camera = camera::TargetCamera::new(
         window_size.width as f32 / window_size.height as f32,
@@ -108,7 +117,9 @@ fn run() -> Result<(), failure::Error> {
         if camera.update(delta) {
             camera_target_marker.update_position(camera.target);
         }
-        dice.update(delta);
+        for dice in &mut dices {
+            dice.update(delta);
+        }
 
         unsafe {
             //gl.Enable(gl::CULL_FACE);
@@ -122,7 +133,9 @@ fn run() -> Result<(), failure::Error> {
         };
 
         color_buffer.clear(&gl);
-        dice.render(&gl, &vp_matrix, &camera.project_pos().coords);
+        for dice in &mut dices {
+            dice.render(&gl, &vp_matrix, &camera.project_pos().coords);
+        }
         debug_lines.render(&gl, &color_buffer, &vp_matrix);
         editor_lines.render(&gl, &color_buffer, &vp_matrix);
 

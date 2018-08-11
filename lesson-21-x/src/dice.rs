@@ -35,7 +35,7 @@ pub struct Dice {
     _ebo: buffer::ElementArrayBuffer,
     index_count: i32,
     vao: buffer::VertexArray,
-    _debug_tangent_normals: Vec<render_gl::RayMarker>,
+    debug_tangent_normals: Vec<render_gl::RayMarker>,
     selectable_aabb: Option<SelectableAABB>,
 }
 
@@ -149,11 +149,13 @@ impl Dice {
             _ebo: ebo,
             index_count: ebo_data.len() as i32,
             vao,
-            _debug_tangent_normals: vbo_data.iter().map(|v| debug_lines.ray_marker(
+            debug_tangent_normals: vbo_data.iter().map(|v| debug_lines.ray_marker(
+                initial_isometry,
                 na::Point3::new(v.pos.d0, v.pos.d1, v.pos.d2),
                 na::Vector3::new(v.n.d0, v.n.d1, v.n.d2) * 0.2,
                 na::Vector4::new(0.0, 0.0, 1.0, 1.0),
             )).chain(vbo_data.iter().map(|v| debug_lines.ray_marker(
+                initial_isometry,
                 na::Point3::new(v.pos.d0, v.pos.d1, v.pos.d2),
                 na::Vector3::new(v.t.d0, v.t.d1, v.t.d2) * 0.2,
                 na::Vector4::new(0.0, 1.0, 0.0, 1.0),
@@ -205,17 +207,29 @@ impl Dice {
     }
 
     pub fn update(&mut self, _delta: f32) {
-        if let Some(ref selectable) = self.selectable_aabb {
+        let new_isometry = if let Some(ref selectable) = self.selectable_aabb {
             match selectable.take_pending_action() {
                 Some(selection::Action::Click) => {
-                    selectable.select()
+                    selectable.select();
+                    None
                 },
-                Some(selection::Action::Drag { new_isometry }) => {
-                    self.transform = new_isometry;
-                    selectable.update_isometry(self.transform);
-                },
-                None => (),
+                Some(selection::Action::Drag { new_isometry }) => Some(new_isometry),
+                None => None,
             }
+        } else { None };
+
+        if let Some(new_isometry) = new_isometry {
+            self.set_transform(new_isometry);
+        }
+    }
+
+    pub fn set_transform(&mut self, isometry: na::Isometry3<f32>) {
+        self.transform = isometry;
+        if let Some(ref selectable) = self.selectable_aabb {
+            selectable.update_isometry(isometry);
+        }
+        for debug_normals in &self.debug_tangent_normals {
+            debug_normals.update_isometry(isometry);
         }
     }
 
