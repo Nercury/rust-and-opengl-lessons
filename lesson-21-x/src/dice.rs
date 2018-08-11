@@ -210,8 +210,8 @@ impl Dice {
                 Some(selection::Action::Click) => {
                     selectable.select()
                 },
-                Some(selection::Action::Drag { diff }) => {
-                    self.transform = diff * self.transform;
+                Some(selection::Action::Drag { new_isometry }) => {
+                    self.transform = new_isometry;
                     selectable.update_isometry(self.transform);
                 },
                 None => (),

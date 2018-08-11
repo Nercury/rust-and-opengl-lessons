@@ -10,7 +10,7 @@ use self::shared_selectables::{SharedSelectables, ContainerHandle};
 #[derive(Copy, Clone, PartialEq)]
 pub enum Action {
     Click,
-    Drag { diff: na::Isometry3<f32> },
+    Drag { new_isometry: na::Isometry3<f32> },
 }
 
 pub struct SelectableAABB {
@@ -75,8 +75,8 @@ impl Selectables {
         }
     }
 
-    pub fn cast_cursor(&self, ray: &Ray<f32>, rel_motion: &na::Vector2<f32>) {
-        self.shared.borrow_mut().cast_cursor(ray, rel_motion);
+    pub fn cast_cursor(&self, ray: &Ray<f32>, camera_dir: &na::Vector3<f32>) {
+        self.shared.borrow_mut().cast_cursor(ray, camera_dir);
     }
 
     pub fn send_mouse_down(&self) {
@@ -85,5 +85,9 @@ impl Selectables {
 
     pub fn send_mouse_up(&self) {
         self.shared.borrow_mut().send_mouse_up();
+    }
+
+    pub fn cancel_drag(&self) {
+        self.shared.borrow_mut().cancel_drag();
     }
 }

@@ -22,6 +22,10 @@ impl TargetCamera {
         }
     }
 
+    pub fn direction(&self) -> na::Vector3<f32> {
+        self.rotation * na::Vector3::new(0.0, 0.0, -1.0)
+    }
+
     /// Calculate position of camera from a view matrix.
     pub fn project_pos(&self) -> na::Point3<f32> {
         na::Translation3::<f32>::from_vector(self.target.coords)

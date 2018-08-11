@@ -11,19 +11,24 @@ struct PendingAction {
     action: Action,
 }
 
+#[derive(Clone)]
+enum DragState {
+    NoObject,
+    ViewPlane {
+        handle: ContainerHandle,
+        initial_isometry: na::Isometry3<f32>,
+        point: na::Point3<f32>,
+    },
+}
+
 pub struct SharedSelectables {
     containers: Slab<Container>,
     under_cursor: Option<ContainerHandle>,
     selected: Option<ContainerHandle>,
-    dragged: Option<ContainerHandle>,
     query: Option<PendingAction>,
 
     mouse_down: bool,
-    accumulated_motion: na::Vector2<f32>,
-    drag_started: bool,
-
-    min_distance2_for_drag: f32,
-    start_drag_point: Option<na::Point3<f32>>,
+    drag_state: Option<DragState>,
 }
 
 impl SharedSelectables {
@@ -32,22 +37,18 @@ impl SharedSelectables {
             containers: Slab::new(),
             under_cursor: None,
             selected: None,
-            dragged: None,
             query: None,
 
             mouse_down: false,
-            accumulated_motion: na::zero(),
-            drag_started: false,
-
-            min_distance2_for_drag: (1.0 / 100.0) * (1.0 / 100.0),
-            start_drag_point: None,
+            drag_state: None,
         }
     }
 
     pub fn new_container(&mut self, aabb: AABB<f32>, isometry: na::Isometry3<f32>) -> ContainerHandle {
         ContainerHandle(
             self.containers.insert(Container {
-                aabb, isometry
+                aabb,
+                isometry,
             })
         )
     }
@@ -66,9 +67,10 @@ impl SharedSelectables {
         }
     }
 
-    pub fn cast_cursor(&mut self, ray: &Ray<f32>, rel_motion: &na::Vector2<f32>) {
+    pub fn cast_cursor(&mut self, ray: &Ray<f32>, camera_dir: &na::Vector3<f32>) {
         let mut closest = None;
         let mut impact_point = None;
+        let mut impact_obj_isometry = None;
         let mut closest_distance2 = None;
 
         for (handle, c) in &self.containers {
@@ -83,6 +85,7 @@ impl SharedSelectables {
                 if new_closest {
                     closest_distance2 = Some(distance2);
                     impact_point = Some(point);
+                    impact_obj_isometry = Some(c.isometry);
                     closest = Some(handle);
                 }
             }
@@ -90,46 +93,49 @@ impl SharedSelectables {
 
         self.under_cursor = closest.map(ContainerHandle);
 
-        let drag_object = if self.drag_started {
-            self.dragged
-        } else {
-            self.under_cursor
-        };
-
-        if let Some(drag_object) = drag_object {
-            if let (true, Some(start_drag_point)) = (self.mouse_down, self.start_drag_point) {
-                self.dragged = Some(drag_object);
-                self.accumulated_motion += rel_motion;
-                if na::norm_squared(&self.accumulated_motion) > self.min_distance2_for_drag || self.drag_started {
-
-                    let movement_plane = Plane::new(na::Unit::new_normalize(-ray.dir));
-                    let plane_position = na::Isometry3::from_parts(na::Translation3::from_vector(start_drag_point.coords), na::UnitQuaternion::identity());
-                    if let Some(toi) = movement_plane.toi_with_ray(&plane_position, ray, true) {
-                        let dragged_to_point_on_place = ray.origin + ray.dir * toi;
-                        self.query = Some(PendingAction {
-                            handle: drag_object,
-                            action: Action::Drag {
-                                diff: na::Isometry3::from_parts(
-                                    na::Translation3::from_vector(dragged_to_point_on_place - start_drag_point),
-                                    na::UnitQuaternion::identity()
-                                )
-                            }
-                        });
-                        self.accumulated_motion = na::zero();
-                        self.start_drag_point = Some(impact_point.unwrap_or(dragged_to_point_on_place));
+        match self.drag_state {
+            None => if self.mouse_down {
+                match (self.under_cursor, impact_point, impact_obj_isometry) {
+                    (Some(under_cursor_obj), Some(start_point), Some(impact_obj_isometry)) => {
+                        self.drag_state = Some(DragState::ViewPlane {
+                            handle: under_cursor_obj,
+                            initial_isometry: impact_obj_isometry,
+                            point: start_point,
+                        })
                     }
-
-                    self.drag_started = true;
+                    (None, _, _) => self.drag_state = Some(DragState::NoObject), // dragging empty space until mouse up
+                    _ => (),
                 }
-            } else {
-                self.accumulated_motion = na::zero();
-                self.start_drag_point = impact_point;
+            },
+            Some(DragState::ViewPlane { handle, initial_isometry, point }) => {
+                let plane = Plane::new(na::Unit::new_normalize(-camera_dir));
+                let plane_isometry = na::Isometry3::from_parts(
+                    na::Translation3::from_vector(point.coords),
+                    na::UnitQuaternion::identity(),
+                );
+                if let Some(toi) = plane.toi_with_ray(&plane_isometry, ray, true) {
+                    let dragged_to_point_on_place = ray.origin + ray.dir * toi;
+                    let drag_vector = dragged_to_point_on_place - point;
+                    if na::norm_squared(&drag_vector) > 0.1 * 0.1 {
+                        self.query = Some(PendingAction {
+                            handle: handle,
+                            action: Action::Drag {
+                                new_isometry: na::Isometry3::from_parts(
+                                    na::Translation3::from_vector(drag_vector),
+                                    na::UnitQuaternion::identity(),
+                                ) * initial_isometry
+                            },
+                        });
+                    } else {
+                        self.query = Some(PendingAction {
+                            handle: handle,
+                            action: Action::Drag { new_isometry: initial_isometry },
+                        });
+                    }
+                }
             }
-        } else {
-            if self.mouse_down {
-                self.drag_started = true; // dragging empty space until mouse up
-            }
-        }
+            _ => (),
+        };
     }
 
     pub fn send_mouse_down(&mut self) {
@@ -141,9 +147,20 @@ impl SharedSelectables {
 
     pub fn send_mouse_up(&mut self) {
         self.mouse_down = false;
-        self.dragged = None;
-        self.start_drag_point = None;
-        self.drag_started = false;
+        self.drag_state = None;
+    }
+
+    pub fn cancel_drag(&mut self) {
+        match self.drag_state {
+            Some(DragState::ViewPlane { handle, initial_isometry, .. }) => {
+                self.drag_state = Some(DragState::NoObject);
+                self.query = Some(PendingAction {
+                    handle,
+                    action: Action::Drag { new_isometry: initial_isometry },
+                });
+            },
+            _ => (),
+        }
     }
 
     pub fn take_pending_action(&mut self, consumer_handle: ContainerHandle) -> Option<Action> {
