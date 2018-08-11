@@ -211,10 +211,7 @@ impl Dice {
             let action = self.selectable_aabb.as_ref().and_then(|s| s.drain_pending_action());
 
             match action {
-                Some(selection::Action::Click) => {
-                    println!("select");
-                    self.selectable_aabb.as_ref().map(|s| s.select());
-                },
+                Some(selection::Action::Click) => { self.selectable_aabb.as_ref().map(|s| s.select()); },
                 Some(selection::Action::Drag { new_isometry }) => self.set_transform(new_isometry),
                 _ => break,
             }
