@@ -7,8 +7,7 @@ layout (location = 3) in vec3 B;
 layout (location = 4) in vec3 N;
 
 uniform vec3 CameraPos;
-uniform mat4 View;
-uniform mat4 Projection;
+uniform mat4 ViewProjection;
 
 out VS_OUTPUT {
     vec2 Uv;
@@ -18,7 +17,7 @@ out VS_OUTPUT {
 
 void main()
 {
-    gl_Position = Projection * View * vec4(Position, 1.0);
+    gl_Position = ViewProjection * vec4(Position, 1.0);
 
     OUT.Uv = Uv;
 

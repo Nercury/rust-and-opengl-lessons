@@ -114,7 +114,7 @@ fn run() -> Result<(), failure::Error> {
         let vp_matrix = camera.get_vp_matrix();
 
         color_buffer.clear(&gl);
-        cube.render(&gl, &camera.get_view_matrix(), &camera.get_p_matrix(), &camera.project_pos().coords);
+        cube.render(&gl, &vp_matrix, &camera.project_pos().coords);
         debug_lines.render(&gl, &color_buffer, &vp_matrix);
         editor_lines.render(&gl, &color_buffer, &vp_matrix);
 

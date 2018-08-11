@@ -27,8 +27,7 @@ pub struct Cube {
     program: render_gl::Program,
     texture: Option<render_gl::Texture>,
     texture_normals: Option<render_gl::Texture>,
-    program_view_location: Option<i32>,
-    program_projection_location: Option<i32>,
+    program_viewprojection_location: Option<i32>,
     camera_pos_location: Option<i32>,
     texture_location: Option<i32>,
     texture_normals_location: Option<i32>,
@@ -48,8 +47,7 @@ impl Cube {
 
         let program = render_gl::Program::from_res(gl, res, "shaders/cube")?;
 
-        let program_view_location = program.get_uniform_location("View");
-        let program_projection_location = program.get_uniform_location("Projection");
+        let program_viewprojection_location = program.get_uniform_location("ViewProjection");
         let camera_pos_location = program.get_uniform_location("CameraPos");
         let texture_location = program.get_uniform_location("Texture");
         let texture_normals_location = program.get_uniform_location("Normals");
@@ -140,8 +138,7 @@ impl Cube {
             texture,
             texture_normals,
             program,
-            program_view_location,
-            program_projection_location,
+            program_viewprojection_location: program_viewprojection_location,
             camera_pos_location,
             texture_location,
             texture_normals_location,
@@ -210,7 +207,7 @@ impl Cube {
         })
     }
 
-    pub fn render(&self, gl: &gl::Gl, view_matrix: &na::Matrix4<f32>, proj_matrix: &na::Matrix4<f32>, camera_pos: &na::Vector3<f32>) {
+    pub fn render(&self, gl: &gl::Gl, viewprojection_matrix: &na::Matrix4<f32>, camera_pos: &na::Vector3<f32>) {
         self.program.set_used();
 
         if let (Some(loc), &Some(ref texture)) = (self.texture_location, &self.texture) {
@@ -223,11 +220,8 @@ impl Cube {
             self.program.set_uniform_1i(loc, 1);
         }
 
-        if let Some(loc) = self.program_view_location {
-            self.program.set_uniform_matrix_4fv(loc, view_matrix);
-        }
-        if let Some(loc) = self.program_projection_location {
-            self.program.set_uniform_matrix_4fv(loc, proj_matrix);
+        if let Some(loc) = self.program_viewprojection_location {
+            self.program.set_uniform_matrix_4fv(loc, viewprojection_matrix);
         }
         if let Some(loc) = self.camera_pos_location {
             self.program.set_uniform_3f(loc, camera_pos);
