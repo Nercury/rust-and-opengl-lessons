@@ -17,7 +17,7 @@ pub mod resources;
 pub mod mesh;
 pub mod selection;
 mod debug;
-mod cube;
+mod dice;
 
 use failure::err_msg;
 use resources::Resources;
@@ -59,7 +59,8 @@ fn run() -> Result<(), failure::Error> {
     let mut debug_lines = render_gl::DebugLines::new(&gl, &res)?;
     let selectables = selection::Selectables::new();
 
-    let cube = cube::Cube::new(&res, &gl, &debug_lines, &selectables)?;
+    let mut cube = dice::Cube::new(&res, &gl, &debug_lines, &selectables)?;
+    cube.transform(&na::Matrix4::new_translation(&[0.0, 2.0, 0.0].into()));
 
     let mut camera = camera::TargetCamera::new(
         initial_window_size.0 as f32 / initial_window_size.1 as f32,

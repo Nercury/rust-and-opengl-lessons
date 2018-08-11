@@ -18,16 +18,16 @@ struct Vertex {
     #[location = "2"]
     t: data::f32_f32_f32,
     #[location = "3"]
-    b: data::f32_f32_f32,
-    #[location = "4"]
     n: data::f32_f32_f32,
 }
 
 pub struct Cube {
+    transform: na::Matrix4<f32>,
     program: render_gl::Program,
     texture: Option<render_gl::Texture>,
     texture_normals: Option<render_gl::Texture>,
     program_viewprojection_location: Option<i32>,
+    program_model_location: Option<i32>,
     camera_pos_location: Option<i32>,
     texture_location: Option<i32>,
     texture_normals_location: Option<i32>,
@@ -36,7 +36,6 @@ pub struct Cube {
     index_count: i32,
     vao: buffer::VertexArray,
     _debug_tangent_normals: Vec<render_gl::RayMarker>,
-    _debug_normals: Vec<render_gl::RayMarker>,
     _selectable_aabb: Option<SelectableAABB>,
 }
 
@@ -45,9 +44,10 @@ impl Cube {
 
         // set up shader program
 
-        let program = render_gl::Program::from_res(gl, res, "shaders/cube")?;
+        let program = render_gl::Program::from_res(gl, res, "shaders/shiny")?;
 
         let program_viewprojection_location = program.get_uniform_location("ViewProjection");
+        let program_model_location = program.get_uniform_location("Model");
         let camera_pos_location = program.get_uniform_location("CameraPos");
         let texture_location = program.get_uniform_location("Texture");
         let texture_normals_location = program.get_uniform_location("Normals");
@@ -103,7 +103,6 @@ impl Cube {
                     pos: (v.pos.x, v.pos.y, v.pos.z).into(),
                     uv: (uv.x, -uv.y).into(),
                     t: (tv.tangent.x, tv.tangent.y, tv.tangent.z).into(),
-                    b: (tv.bitangent.x, tv.bitangent.y, tv.bitangent.z).into(),
                     n: (normal.x, normal.y, normal.z).into()
                 }
             })
@@ -135,10 +134,12 @@ impl Cube {
         ebo.unbind();
 
         Ok(Cube {
+            transform: na::Matrix4::identity(),
             texture,
             texture_normals,
             program,
-            program_viewprojection_location: program_viewprojection_location,
+            program_viewprojection_location,
+            program_model_location,
             camera_pos_location,
             texture_location,
             texture_normals_location,
@@ -154,19 +155,8 @@ impl Cube {
                 na::Point3::new(v.pos.d0, v.pos.d1, v.pos.d2),
                 na::Vector3::new(v.t.d0, v.t.d1, v.t.d2) * 0.2,
                 na::Vector4::new(0.0, 1.0, 0.0, 1.0)
-            ))).chain(vbo_data.iter().map(|v| debug_lines.ray_marker(
-                na::Point3::new(v.pos.d0, v.pos.d1, v.pos.d2),
-                na::Vector3::new(v.b.d0, v.b.d1, v.b.d2) * 0.2,
-                na::Vector4::new(1.0, 0.0, 0.0, 1.0)
             )))
                 .collect(),
-            _debug_normals: vec![],
-//            _debug_normals: vertices.iter().map(|v| debug_lines.ray_marker(
-//                na::Point3::new(v.pos.x, v.pos.y, v.pos.z),
-//                na::Vector3::new(v.normal.x, v.normal.y, v.normal.z) * 0.2,
-//                na::Vector4::new(0.1, 0.9, 0.1, 0.6)
-//            )).collect()
-
             _selectable_aabb: {
                 let mut min_x = None;
                 let mut min_y = None;
@@ -207,6 +197,10 @@ impl Cube {
         })
     }
 
+    pub fn transform(&mut self, matrix: &na::Matrix4<f32>) {
+        self.transform = matrix * self.transform;
+    }
+
     pub fn render(&self, gl: &gl::Gl, viewprojection_matrix: &na::Matrix4<f32>, camera_pos: &na::Vector3<f32>) {
         self.program.set_used();
 
@@ -222,6 +216,9 @@ impl Cube {
 
         if let Some(loc) = self.program_viewprojection_location {
             self.program.set_uniform_matrix_4fv(loc, viewprojection_matrix);
+        }
+        if let Some(loc) = self.program_model_location {
+            self.program.set_uniform_matrix_4fv(loc, &self.transform);
         }
         if let Some(loc) = self.camera_pos_location {
             self.program.set_uniform_3f(loc, camera_pos);
