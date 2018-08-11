@@ -5,7 +5,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 mod shared_selectables;
-use self::shared_selectables::{SharedSelectables, ContainerHandle};
+use self::shared_selectables::{SharedSelectables, ContainerHandle, Container};
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum Action {
@@ -37,8 +37,8 @@ impl SelectableAABB {
         }
     }
 
-    pub fn take_pending_action(&self) -> Option<Action> {
-        self.shared.borrow_mut().take_pending_action(self.handle)
+    pub fn drain_pending_action(&self) -> Option<Action> {
+        self.shared.borrow_mut().drain_pending_action(self.handle)
     }
 
     pub fn select(&self) {
@@ -49,7 +49,6 @@ impl SelectableAABB {
 impl Drop for SelectableAABB {
     fn drop(&mut self) {
         let mut shared_ref = self.shared.borrow_mut();
-        shared_ref.remove_from_selection(self.handle);
         shared_ref.remove_container(self.handle);
     }
 }
@@ -89,5 +88,13 @@ impl Selectables {
 
     pub fn cancel_drag(&self) {
         self.shared.borrow_mut().cancel_drag();
+    }
+
+    pub fn get_hover_aabb(&self) -> Option<(ContainerHandle, Container)> {
+        self.shared.borrow().get_hover_aabb()
+    }
+
+    pub fn get_selected_aabb(&self) -> Option<(ContainerHandle, Container)> {
+        self.shared.borrow().get_selected_aabb()
     }
 }

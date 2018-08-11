@@ -60,6 +60,7 @@ fn run() -> Result<(), failure::Error> {
     let mut editor_lines = render_gl::DebugLines::new(&gl, &res)?;
     let mut debug_lines = render_gl::DebugLines::new(&gl, &res)?;
     let selectables = selection::Selectables::new();
+    let mut render_selectables = system::render::selectables::RenderSelectables::new();
 
     let mut dices = Vec::new();
     for x in -3..3 {
@@ -120,9 +121,10 @@ fn run() -> Result<(), failure::Error> {
         for dice in &mut dices {
             dice.update(delta);
         }
+        render_selectables.update(&selectables, &debug_lines);
 
         unsafe {
-            //gl.Enable(gl::CULL_FACE);
+            gl.Enable(gl::CULL_FACE);
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
             gl.Enable(gl::DEPTH_TEST);
         }

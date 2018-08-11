@@ -6,6 +6,7 @@ use resources::Resources;
 use gl;
 use failure;
 use nalgebra as na;
+use ncollide3d;
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -206,6 +207,76 @@ impl DebugLines {
             containers: self.containers.clone(),
             id: new_id,
         }
+    }
+
+    pub fn aabb_marker(&self, isometry: na::Isometry3<f32>, aabb: ncollide3d::bounding_volume::aabb::AABB<f32>, color: na::Vector4<f32>) -> AabbMarker {
+        let a = aabb.mins();
+        let b = aabb.maxs();
+
+        let new_id = self.containers.borrow_mut()
+            .new_container(isometry,
+                           vec![
+                               LinePoint { pos: render_p3([a.x, a.y, a.z].into()), color: render_color_vec4(color) },
+                               LinePoint { pos: render_p3([b.x, a.y, a.z].into()), color: render_color_vec4(color) },
+
+                               LinePoint { pos: render_p3([a.x, a.y, a.z].into()), color: render_color_vec4(color) },
+                               LinePoint { pos: render_p3([a.x, b.y, a.z].into()), color: render_color_vec4(color) },
+
+                               LinePoint { pos: render_p3([a.x, a.y, a.z].into()), color: render_color_vec4(color) },
+                               LinePoint { pos: render_p3([a.x, a.y, b.z].into()), color: render_color_vec4(color) },
+
+                               LinePoint { pos: render_p3([a.x, b.y, b.z].into()), color: render_color_vec4(color) },
+                               LinePoint { pos: render_p3([b.x, b.y, b.z].into()), color: render_color_vec4(color) },
+
+                               LinePoint { pos: render_p3([b.x, a.y, b.z].into()), color: render_color_vec4(color) },
+                               LinePoint { pos: render_p3([b.x, b.y, b.z].into()), color: render_color_vec4(color) },
+
+                               LinePoint { pos: render_p3([b.x, b.y, a.z].into()), color: render_color_vec4(color) },
+                               LinePoint { pos: render_p3([b.x, b.y, b.z].into()), color: render_color_vec4(color) },
+
+
+                               LinePoint { pos: render_p3([a.x, b.y, a.z].into()), color: render_color_vec4(color) },
+                               LinePoint { pos: render_p3([b.x, b.y, a.z].into()), color: render_color_vec4(color) },
+
+                               LinePoint { pos: render_p3([a.x, b.y, a.z].into()), color: render_color_vec4(color) },
+                               LinePoint { pos: render_p3([a.x, b.y, b.z].into()), color: render_color_vec4(color) },
+
+                               LinePoint { pos: render_p3([a.x, a.y, b.z].into()), color: render_color_vec4(color) },
+                               LinePoint { pos: render_p3([a.x, b.y, b.z].into()), color: render_color_vec4(color) },
+
+                               LinePoint { pos: render_p3([a.x, a.y, b.z].into()), color: render_color_vec4(color) },
+                               LinePoint { pos: render_p3([b.x, a.y, b.z].into()), color: render_color_vec4(color) },
+
+                               LinePoint { pos: render_p3([b.x, a.y, a.z].into()), color: render_color_vec4(color) },
+                               LinePoint { pos: render_p3([b.x, b.y, a.z].into()), color: render_color_vec4(color) },
+
+                               LinePoint { pos: render_p3([b.x, a.y, a.z].into()), color: render_color_vec4(color) },
+                               LinePoint { pos: render_p3([b.x, a.y, b.z].into()), color: render_color_vec4(color) },
+                           ]);
+
+        AabbMarker {
+            containers: self.containers.clone(),
+            id: new_id,
+        }
+    }
+}
+
+pub struct AabbMarker {
+    containers: Rc<RefCell<SharedDebugLines>>,
+    pub id: i32,
+}
+
+impl AabbMarker {
+    pub fn update_isometry(&self, isometry: na::Isometry3<f32>) {
+        if let Some(data) = self.containers.borrow_mut().get_container_mut(self.id) {
+            data.isometry = isometry;
+        }
+    }
+}
+
+impl Drop for AabbMarker {
+    fn drop(&mut self) {
+        self.containers.borrow_mut().remove_container(self.id);
     }
 }
 

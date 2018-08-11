@@ -207,19 +207,17 @@ impl Dice {
     }
 
     pub fn update(&mut self, _delta: f32) {
-        let new_isometry = if let Some(ref selectable) = self.selectable_aabb {
-            match selectable.take_pending_action() {
-                Some(selection::Action::Click) => {
-                    selectable.select();
-                    None
-                },
-                Some(selection::Action::Drag { new_isometry }) => Some(new_isometry),
-                None => None,
-            }
-        } else { None };
+        loop {
+            let action = self.selectable_aabb.as_ref().and_then(|s| s.drain_pending_action());
 
-        if let Some(new_isometry) = new_isometry {
-            self.set_transform(new_isometry);
+            match action {
+                Some(selection::Action::Click) => {
+                    println!("select");
+                    self.selectable_aabb.as_ref().map(|s| s.select());
+                },
+                Some(selection::Action::Drag { new_isometry }) => self.set_transform(new_isometry),
+                _ => break,
+            }
         }
     }
 
