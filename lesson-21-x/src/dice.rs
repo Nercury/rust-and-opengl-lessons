@@ -1,7 +1,7 @@
 use gl;
 use failure;
 use render_gl::{self, data, buffer, DebugLines};
-use selection::{Selectables, SelectableAABB};
+use selection::{self, Selectables, SelectableAABB};
 use resources::Resources;
 use nalgebra as na;
 use ncollide3d::bounding_volume::aabb::AABB;
@@ -21,8 +21,8 @@ struct Vertex {
     n: data::f32_f32_f32,
 }
 
-pub struct Cube {
-    transform: na::Matrix4<f32>,
+pub struct Dice {
+    transform: na::Isometry3<f32>,
     program: render_gl::Program,
     texture: Option<render_gl::Texture>,
     texture_normals: Option<render_gl::Texture>,
@@ -36,11 +36,11 @@ pub struct Cube {
     index_count: i32,
     vao: buffer::VertexArray,
     _debug_tangent_normals: Vec<render_gl::RayMarker>,
-    _selectable_aabb: Option<SelectableAABB>,
+    selectable_aabb: Option<SelectableAABB>,
 }
 
-impl Cube {
-    pub fn new(res: &Resources, gl: &gl::Gl, debug_lines: &DebugLines, selectables: &Selectables) -> Result<Cube, failure::Error> {
+impl Dice {
+    pub fn new(res: &Resources, gl: &gl::Gl, debug_lines: &DebugLines, selectables: &Selectables) -> Result<Dice, failure::Error> {
 
         // set up shader program
 
@@ -103,7 +103,7 @@ impl Cube {
                     pos: (v.pos.x, v.pos.y, v.pos.z).into(),
                     uv: (uv.x, -uv.y).into(),
                     t: (tv.tangent.x, tv.tangent.y, tv.tangent.z).into(),
-                    n: (normal.x, normal.y, normal.z).into()
+                    n: (normal.x, normal.y, normal.z).into(),
                 }
             })
             .collect::<Vec<_>>();
@@ -133,8 +133,10 @@ impl Cube {
         vbo.unbind();
         ebo.unbind();
 
-        Ok(Cube {
-            transform: na::Matrix4::identity(),
+        let initial_isometry = na::Isometry3::identity();
+
+        Ok(Dice {
+            transform: initial_isometry,
             texture,
             texture_normals,
             program,
@@ -150,14 +152,14 @@ impl Cube {
             _debug_tangent_normals: vbo_data.iter().map(|v| debug_lines.ray_marker(
                 na::Point3::new(v.pos.d0, v.pos.d1, v.pos.d2),
                 na::Vector3::new(v.n.d0, v.n.d1, v.n.d2) * 0.2,
-                na::Vector4::new(0.0, 0.0, 1.0, 1.0)
+                na::Vector4::new(0.0, 0.0, 1.0, 1.0),
             )).chain(vbo_data.iter().map(|v| debug_lines.ray_marker(
                 na::Point3::new(v.pos.d0, v.pos.d1, v.pos.d2),
                 na::Vector3::new(v.t.d0, v.t.d1, v.t.d2) * 0.2,
-                na::Vector4::new(0.0, 1.0, 0.0, 1.0)
+                na::Vector4::new(0.0, 1.0, 0.0, 1.0),
             )))
                 .collect(),
-            _selectable_aabb: {
+            selectable_aabb: {
                 let mut min_x = None;
                 let mut min_y = None;
                 let mut min_z = None;
@@ -168,14 +170,14 @@ impl Cube {
                 fn update_min(val: &mut Option<f32>, new: f32) {
                     *val = match val {
                         None => Some(new),
-                        Some(val) => if new < *val { Some(new) } else { return },
+                        Some(val) => if new < *val { Some(new) } else { return; },
                     };
                 }
 
                 fn update_max(val: &mut Option<f32>, new: f32) {
                     *val = match val {
                         None => Some(new),
-                        Some(val) => if new > *val { Some(new) } else { return },
+                        Some(val) => if new > *val { Some(new) } else { return; },
                     };
                 }
 
@@ -189,16 +191,32 @@ impl Cube {
                 }
 
                 if let (Some(min_x), Some(min_y), Some(min_z), Some(max_x), Some(max_y), Some(max_z)) = (min_x, min_y, min_z, max_x, max_y, max_z) {
-                    Some(selectables.selectable(AABB::new([min_x, min_y, min_z].into(), [max_x, max_y, max_z].into())))
+                    Some(
+                        selectables.selectable(
+                            AABB::new([min_x, min_y, min_z].into(), [max_x, max_y, max_z].into()),
+                            initial_isometry,
+                        )
+                    )
                 } else {
                     None
                 }
-            }
+            },
         })
     }
 
-    pub fn transform(&mut self, matrix: &na::Matrix4<f32>) {
-        self.transform = matrix * self.transform;
+    pub fn update(&mut self, _delta: f32) {
+        if let Some(ref selectable) = self.selectable_aabb {
+            match selectable.take_pending_action() {
+                Some(selection::Action::Click) => {
+                    selectable.select()
+                },
+                Some(selection::Action::Drag { diff }) => {
+                    self.transform = diff * self.transform;
+                    selectable.update_isometry(self.transform);
+                },
+                None => (),
+            }
+        }
     }
 
     pub fn render(&self, gl: &gl::Gl, viewprojection_matrix: &na::Matrix4<f32>, camera_pos: &na::Vector3<f32>) {
@@ -218,7 +236,7 @@ impl Cube {
             self.program.set_uniform_matrix_4fv(loc, viewprojection_matrix);
         }
         if let Some(loc) = self.program_model_location {
-            self.program.set_uniform_matrix_4fv(loc, &self.transform);
+            self.program.set_uniform_matrix_4fv(loc, &self.transform.to_homogeneous());
         }
         if let Some(loc) = self.camera_pos_location {
             self.program.set_uniform_3f(loc, camera_pos);
@@ -230,7 +248,7 @@ impl Cube {
                 gl::TRIANGLES, // mode
                 self.index_count, // index vertex count
                 gl::UNSIGNED_INT, // index type
-                ::std::ptr::null() // pointer to indices (we are using ebo configured at vao creation)
+                ::std::ptr::null(), // pointer to indices (we are using ebo configured at vao creation)
             );
         }
     }

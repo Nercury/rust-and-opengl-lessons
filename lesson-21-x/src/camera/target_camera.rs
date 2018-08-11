@@ -34,6 +34,14 @@ impl TargetCamera {
         self.projection.set_aspect(aspect);
     }
 
+    pub fn get_inverse_view_matrix(&self) -> na::Matrix4<f32> {
+        (
+            na::Translation3::<f32>::from_vector(self.target.coords)
+                * self.rotation
+                * na::Translation3::<f32>::from_vector(na::Vector3::z() * self.distance)
+        ).to_homogeneous()
+    }
+
     pub fn get_view_matrix(&self) -> na::Matrix4<f32> {
         (
             na::Translation3::<f32>::from_vector(self.target.coords)
@@ -44,6 +52,11 @@ impl TargetCamera {
 
     pub fn get_p_matrix(&self) -> na::Matrix4<f32> {
         self.projection.unwrap()
+    }
+
+    pub fn get_inverse_p_matrix(&self) -> na::Matrix4<f32> {
+        let proj: na::Matrix4<f32> = self.projection.unwrap();
+        proj.try_inverse().expect("get_inverse_p_matrix")
     }
 
     pub fn get_vp_matrix(&self) -> na::Matrix4<f32> {
