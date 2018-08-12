@@ -59,6 +59,7 @@ fn run() -> Result<(), failure::Error> {
     let color_buffer = render_gl::ColorBuffer::new();
     let mut editor_lines = render_gl::DebugLines::new(&gl, &res)?;
     let mut debug_lines = render_gl::DebugLines::new(&gl, &res)?;
+    let _grid = editor_lines.grid_marker(na::Isometry3::identity(), 1.0, 100, [0.5, 0.5, 0.5, 1.0].into());
     let selectables = selection::Selectables::new();
     let mut render_selectables = system::render::selectables::RenderSelectables::new();
 
@@ -121,7 +122,7 @@ fn run() -> Result<(), failure::Error> {
         for dice in &mut dices {
             dice.update(delta);
         }
-        render_selectables.update(&selectables, &debug_lines);
+        render_selectables.update(&selectables, &editor_lines);
 
         unsafe {
             gl.Enable(gl::CULL_FACE);

@@ -259,6 +259,39 @@ impl DebugLines {
             id: new_id,
         }
     }
+
+    pub fn grid_marker(&self, isometry: na::Isometry3<f32>, spacing: f32, count: i32, color: na::Vector4<f32>) -> GridMarker {
+        let mut lines = Vec::new();
+
+        let mut half_count = count / 2;
+        if half_count == 0 {
+            half_count = 1;
+        }
+
+        for x in -half_count..=half_count {
+            let start = na::Point3::new(x as f32 * spacing, -half_count as f32 * spacing, 0.0);
+            let end = na::Point3::new(x as f32 * spacing, half_count as f32 * spacing, 0.0);
+
+            lines.push(LinePoint { pos: render_p3(start), color: render_color_vec4(color) });
+            lines.push(LinePoint { pos: render_p3(end), color: render_color_vec4(color) });
+        }
+
+        for y in -half_count..=half_count {
+            let start = na::Point3::new(-half_count as f32 * spacing, y as f32 * spacing, 0.0);
+            let end = na::Point3::new(half_count as f32 * spacing, y as f32 * spacing, 0.0);
+
+            lines.push(LinePoint { pos: render_p3(start), color: render_color_vec4(color) });
+            lines.push(LinePoint { pos: render_p3(end), color: render_color_vec4(color) });
+        }
+
+        let new_id = self.containers.borrow_mut()
+            .new_container(isometry,lines);
+
+        GridMarker {
+            containers: self.containers.clone(),
+            id: new_id,
+        }
+    }
 }
 
 pub struct AabbMarker {
@@ -275,6 +308,25 @@ impl AabbMarker {
 }
 
 impl Drop for AabbMarker {
+    fn drop(&mut self) {
+        self.containers.borrow_mut().remove_container(self.id);
+    }
+}
+
+pub struct GridMarker {
+    containers: Rc<RefCell<SharedDebugLines>>,
+    pub id: i32,
+}
+
+impl GridMarker {
+    pub fn update_isometry(&self, isometry: na::Isometry3<f32>) {
+        if let Some(data) = self.containers.borrow_mut().get_container_mut(self.id) {
+            data.isometry = isometry;
+        }
+    }
+}
+
+impl Drop for GridMarker {
     fn drop(&mut self) {
         self.containers.borrow_mut().remove_container(self.id);
     }
