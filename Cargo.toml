@@ -21,6 +21,7 @@ members = [
     "lesson-19-x",
     "lesson-20-x",
     "lesson-21-x",
+    "lesson-22-x",
 ]
 
 [profile.dev]
