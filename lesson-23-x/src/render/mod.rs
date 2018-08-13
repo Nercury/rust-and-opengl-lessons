@@ -27,4 +27,6 @@ pub fn color_gray() -> Vector3<f32> {
 pub struct WindowSize {
     pub width: i32,
     pub height: i32,
+    pub highdpi_width: i32,
+    pub highdpi_height: i32,
 }

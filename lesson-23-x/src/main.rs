@@ -45,7 +45,12 @@ fn run() -> Result<(), failure::Error> {
     gl_attr.set_accelerated_visual(true);
     gl_attr.set_double_buffer(true);
 
-    let mut window_size = render::WindowSize { width: 960, height: 600 };
+    let mut window_size = render::WindowSize {
+        width: 960,
+        height: 600,
+        highdpi_width: 960,
+        highdpi_height: 600
+    };
 
     let window = video_subsystem
         .window("Game", window_size.width as u32, window_size.height as u32)
@@ -53,6 +58,10 @@ fn run() -> Result<(), failure::Error> {
         .resizable()
         .allow_highdpi()
         .build()?;
+
+    let drawable_size = window.drawable_size();
+    window_size.highdpi_width = drawable_size.0 as i32;
+    window_size.highdpi_height = drawable_size.1 as i32;
 
     let _gl_context = window.gl_create_context().map_err(err_msg)?;
     let gl = gl::Gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void);
@@ -65,7 +74,7 @@ fn run() -> Result<(), failure::Error> {
     video_subsystem.gl_set_swap_interval(if vsync { 1 } else { 0 });
 
     let mut profiler = render_gl::Profiler::new(&gl, &res)?;
-    let mut viewport = render_gl::Viewport::for_window(window_size.width, window_size.height);
+    let mut viewport = render_gl::Viewport::for_window(window_size.highdpi_width, window_size.highdpi_height);
     let color_buffer = render_gl::ColorBuffer::new();
     let mut editor_lines = render_gl::DebugLines::new(&gl, &res)?;
     let mut debug_lines = render_gl::DebugLines::new(&gl, &res)?;
@@ -109,7 +118,7 @@ fn run() -> Result<(), failure::Error> {
         profiler.begin();
 
         for event in event_pump.poll_iter() {
-            if system::input::window::handle_default_window_events(&event, &gl, &mut window_size, &mut viewport, &mut camera) == system::input::window::HandleResult::Quit {
+            if system::input::window::handle_default_window_events(&event, &gl, &window, &mut window_size, &mut viewport, &mut camera) == system::input::window::HandleResult::Quit {
                 break 'main;
             }
             system::input::camera::handle_camera_events(&event, &mut camera);
@@ -173,11 +182,13 @@ fn run() -> Result<(), failure::Error> {
         profiler.push(render::color_gray());
 
         let left = 0;
-        let top = window_size.height;
-        let right = window_size.width;
+        let top = window_size.highdpi_height;
+        let right = window_size.highdpi_width;
         let bottom = 0;
 
-        profiler.render(&gl, &color_buffer, &na::Matrix4::new_orthographic(left as f32, right as f32, bottom as f32, top as f32, -10.0, 10.0), window_size.width, window_size.height);
+        profiler.render(&gl, &color_buffer,
+                        &na::Matrix4::new_orthographic(left as f32, right as f32, bottom as f32, top as f32, -10.0, 10.0),
+                        window_size.highdpi_width, window_size.highdpi_height);
         profiler.push(render::color_green());
 
         window.gl_swap_window();
