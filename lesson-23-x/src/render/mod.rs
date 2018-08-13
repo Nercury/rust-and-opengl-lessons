@@ -8,6 +8,10 @@ pub fn color_green() -> Vector3<f32> {
     Vector3::<f32>::new(0.0, 1.0, 0.0)
 }
 
+pub fn color_yellow() -> Vector3<f32> {
+    Vector3::<f32>::new(1.0, 1.0, 0.0)
+}
+
 pub fn color_blue() -> Vector3<f32> {
     Vector3::<f32>::new(0.0, 0.0, 1.0)
 }

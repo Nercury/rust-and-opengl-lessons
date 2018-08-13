@@ -17,8 +17,8 @@ pub mod render;
 pub mod resources;
 pub mod mesh;
 pub mod selection;
+pub mod entities;
 mod debug;
-mod dice;
 mod system;
 
 use failure::err_msg;
@@ -40,9 +40,10 @@ fn run() -> Result<(), failure::Error> {
     let video_subsystem = sdl.video().map_err(err_msg)?;
 
     let gl_attr = video_subsystem.gl_attr();
-
     gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
     gl_attr.set_context_version(4, 1);
+    gl_attr.set_accelerated_visual(true);
+    gl_attr.set_double_buffer(true);
 
     let mut window_size = render::WindowSize { width: 960, height: 600 };
 
@@ -50,10 +51,18 @@ fn run() -> Result<(), failure::Error> {
         .window("Game", window_size.width as u32, window_size.height as u32)
         .opengl()
         .resizable()
+        .allow_highdpi()
         .build()?;
 
     let _gl_context = window.gl_create_context().map_err(err_msg)?;
     let gl = gl::Gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void);
+
+    // 0 for immediate updates,
+    // 1 for updates synchronized with the vertical retrace,
+    // -1 for late swap tearing
+
+    let vsync = false;
+    video_subsystem.gl_set_swap_interval(if vsync { 1 } else { 0 });
 
     let mut profiler = render_gl::Profiler::new(&gl, &res)?;
     let mut viewport = render_gl::Viewport::for_window(window_size.width, window_size.height);
@@ -67,7 +76,7 @@ fn run() -> Result<(), failure::Error> {
     let mut dices = Vec::new();
     for x in -3..3 {
         for y in -3..3 {
-            let mut dice = dice::Dice::new(&res, &gl, &debug_lines, &selectables)?;
+            let mut dice = entities::dice::Dice::new(&res, &gl, &debug_lines, &selectables)?;
             dice.set_transform(na::Isometry3::from_parts(na::Translation3::from_vector(
                 [4.0 * x as f32, 4.0 * y as f32, 0.0].into()
             ), na::UnitQuaternion::identity()));
@@ -132,7 +141,7 @@ fn run() -> Result<(), failure::Error> {
         }
         render_selectables.update(&selectables, &editor_lines);
 
-        profiler.push(render::color_green());
+        profiler.push(render::color_yellow());
 
         unsafe {
             gl.Enable(gl::CULL_FACE);
@@ -167,8 +176,8 @@ fn run() -> Result<(), failure::Error> {
         let top = window_size.height;
         let right = window_size.width;
         let bottom = 0;
-        profiler.render(&gl, &color_buffer, &na::Matrix4::new_orthographic(left as f32, right as f32, bottom as f32, top as f32, -10.0, 10.0), window_size.width);
 
+        profiler.render(&gl, &color_buffer, &na::Matrix4::new_orthographic(left as f32, right as f32, bottom as f32, top as f32, -10.0, 10.0), window_size.width, window_size.height);
         profiler.push(render::color_green());
 
         window.gl_swap_window();

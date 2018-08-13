@@ -58,6 +58,7 @@ pub struct Profiler {
     frame_data_history: VecDeque<FrameData>,
     frame_data_pool: Vec<FrameData>,
     view_width_pixels: i32,
+    view_height_pixels: i32,
 }
 
 impl Profiler {
@@ -85,6 +86,7 @@ impl Profiler {
             frame_data_history: VecDeque::with_capacity(1000),
             frame_data_pool: Vec::with_capacity(1000),
             view_width_pixels: 500,
+            view_height_pixels: 500,
         })
     }
 
@@ -114,6 +116,13 @@ impl Profiler {
         });
     }
 
+    pub fn push_with_time(&mut self, color: na::Vector3<f32>, time: Instant) {
+        self.frame_data.items.push(Item {
+            color: (color.x, color.y, color.z, 0.6).into(),
+            time,
+        });
+    }
+
     fn update_buffer(&mut self) {
         let fps_bar_30 = 2;
         let fps_bar_60 = 2;
@@ -139,7 +148,9 @@ impl Profiler {
             self.lines_vbo_capacity = Some(new_capacity);
         }
 
-        const Y_SCALE: f32 = 10.0;
+        let p90 = self.view_height_pixels as f32 * 0.9;
+        let p90_fps15_ms = 1000.0 / 30.0;
+        let y_scale = p90 / p90_fps15_ms;
 
         if let Some(_) = self.lines_vbo_capacity {
             if let Some(mut buffer) = unsafe { self.lines_vbo.map_buffer_range_write_invalidate::<LinePoint>(0, all_data_len) } {
@@ -151,14 +162,14 @@ impl Profiler {
                         let item_end_diff = (item.time - frame.start).as_fractional_millis() as f32;
 
                         let line_point = LinePoint {
-                            pos: (index as f32, item_start_diff * Y_SCALE).into(),
+                            pos: (index as f32, item_start_diff * y_scale).into(),
                             color: item.color,
                         };
                         *unsafe { buffer.get_unchecked_mut(buffer_index) } = line_point;
                         buffer_index += 1;
 
                         let line_point = LinePoint {
-                            pos: (index as f32, item_end_diff * Y_SCALE).into(),
+                            pos: (index as f32, item_end_diff * y_scale).into(),
                             color: item.color,
                         };
                         *unsafe { buffer.get_unchecked_mut(buffer_index) } = line_point;
@@ -169,7 +180,7 @@ impl Profiler {
                 }
 
                 // 30 fps bar, red
-                let bar_height = 33.333 * Y_SCALE;
+                let bar_height = 33.333 * y_scale;
 
                 let line_point = LinePoint {
                     pos: (0.0, bar_height).into(),
@@ -184,7 +195,7 @@ impl Profiler {
                 *unsafe { buffer.get_unchecked_mut(buffer_index) } = line_point; buffer_index += 1;
 
                 // 60 fps bar, yellow
-                let bar_height = 16.666 * Y_SCALE;
+                let bar_height = 16.666 * y_scale;
 
                 let line_point = LinePoint {
                     pos: (0.0, bar_height).into(),
@@ -199,7 +210,7 @@ impl Profiler {
                 *unsafe { buffer.get_unchecked_mut(buffer_index) } = line_point; buffer_index += 1;
 
                 // 144 fps bar, green
-                let bar_height = 6.9 * Y_SCALE;
+                let bar_height = 6.9 * y_scale;
 
                 let line_point = LinePoint {
                     pos: (0.0, bar_height).into(),
@@ -220,8 +231,10 @@ impl Profiler {
         self.lines_vbo.unbind();
     }
 
-    pub fn render(&mut self, gl: &gl::Gl, target: &ColorBuffer, vp_matrix: &na::Matrix4<f32>, view_width_pixels: i32) {
+    pub fn render(&mut self, gl: &gl::Gl, target: &ColorBuffer, vp_matrix: &na::Matrix4<f32>, view_width_pixels: i32, view_height_pixels: i32) {
         self.view_width_pixels = view_width_pixels;
+        self.view_height_pixels = view_height_pixels;
+
         if self.draw_enabled {
             self.update_buffer();
 

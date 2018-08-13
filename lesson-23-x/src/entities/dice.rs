@@ -1,36 +1,88 @@
 use gl;
 use failure;
-use render_gl::{self, data, buffer, DebugLines};
+use render_gl::{self, buffer, DebugLines};
 use selection::{self, Selectables, SelectableAABB};
 use resources::Resources;
 use nalgebra as na;
 use ncollide3d::bounding_volume::aabb::AABB;
 use mesh;
 
-#[derive(VertexAttribPointers)]
-#[derive(Copy, Clone, Debug)]
-#[repr(C, packed)]
-struct Vertex {
-    #[location = "0"]
-    pos: data::f32_f32_f32,
-    #[location = "1"]
-    uv: data::f16_f16,
-    #[location = "2"]
-    t: data::f32_f32_f32,
-    #[location = "3"]
-    n: data::f32_f32_f32,
+mod dice_material_mesh {
+    use render_gl::{data};
+
+    #[derive(VertexAttribPointers)]
+    #[derive(Copy, Clone, Debug)]
+    #[repr(C, packed)]
+    pub struct Vertex {
+        #[location = "0"]
+        pub pos: data::f32_f32_f32,
+        #[location = "1"]
+        pub uv: data::f16_f16,
+        #[location = "2"]
+        pub t: data::f32_f32_f32,
+        #[location = "3"]
+        pub n: data::f32_f32_f32,
+    }
 }
+
+mod dice_material {
+    use render_gl;
+    use nalgebra as na;
+
+    pub struct Material {
+        texture_location: Option<i32>,
+        texture_normals_location: Option<i32>,
+
+        program_viewprojection_location: Option<i32>,
+        program_model_location: Option<i32>,
+        camera_pos_location: Option<i32>,
+    }
+
+    impl Material {
+        pub fn load_for(program: &render_gl::Program) -> Material {
+            Material {
+                texture_location: program.get_uniform_location("Texture"),
+                texture_normals_location: program.get_uniform_location("Normals"),
+
+                program_viewprojection_location: program.get_uniform_location("ViewProjection"),
+                program_model_location: program.get_uniform_location("Model"),
+                camera_pos_location: program.get_uniform_location("CameraPos"),
+            }
+        }
+
+        pub fn bind(&self, program: &render_gl::Program, viewprojection_matrix: &na::Matrix4<f32>, model_matrix: &na::Matrix4<f32>, camera_pos: &na::Vector3<f32>,
+                    texture: &Option<render_gl::Texture>, texture_normals: &Option<render_gl::Texture>) {
+            if let (Some(loc), &Some(ref texture)) = (self.texture_location, texture) {
+                texture.bind_at(0);
+                program.set_uniform_1i(loc, 0);
+            }
+
+            if let (Some(loc), &Some(ref texture)) = (self.texture_normals_location, texture_normals) {
+                texture.bind_at(1);
+                program.set_uniform_1i(loc, 1);
+            }
+
+            if let Some(loc) = self.program_viewprojection_location {
+                program.set_uniform_matrix_4fv(loc, viewprojection_matrix);
+            }
+            if let Some(loc) = self.program_model_location {
+                program.set_uniform_matrix_4fv(loc, model_matrix);
+            }
+            if let Some(loc) = self.camera_pos_location {
+                program.set_uniform_3f(loc, camera_pos);
+            }
+        }
+    }
+}
+
+
 
 pub struct Dice {
     transform: na::Isometry3<f32>,
     program: render_gl::Program,
     texture: Option<render_gl::Texture>,
     texture_normals: Option<render_gl::Texture>,
-    program_viewprojection_location: Option<i32>,
-    program_model_location: Option<i32>,
-    camera_pos_location: Option<i32>,
-    texture_location: Option<i32>,
-    texture_normals_location: Option<i32>,
+    material: dice_material::Material,
     _vbo: buffer::ArrayBuffer,
     _ebo: buffer::ElementArrayBuffer,
     index_count: i32,
@@ -45,12 +97,7 @@ impl Dice {
         // set up shader program
 
         let program = render_gl::Program::from_res(gl, res, "shaders/shiny")?;
-
-        let program_viewprojection_location = program.get_uniform_location("ViewProjection");
-        let program_model_location = program.get_uniform_location("Model");
-        let camera_pos_location = program.get_uniform_location("CameraPos");
-        let texture_location = program.get_uniform_location("Texture");
-        let texture_normals_location = program.get_uniform_location("Normals");
+        let p_material = dice_material::Material::load_for(&program);
 
         // this loader does not support file names with spaces
         let imported_models = res.load_obj("objs/dice.obj")?;
@@ -99,7 +146,7 @@ impl Dice {
                     println!("Missing normal vectors");
                     [0.0, 0.0, 0.0].into()
                 });
-                Vertex {
+                dice_material_mesh::Vertex {
                     pos: (v.pos.x, v.pos.y, v.pos.z).into(),
                     uv: (uv.x, -uv.y).into(),
                     t: (tv.tangent.x, tv.tangent.y, tv.tangent.z).into(),
@@ -127,7 +174,7 @@ impl Dice {
         vao.bind();
         vbo.bind();
         ebo.bind();
-        Vertex::vertex_attrib_pointers(gl);
+        dice_material_mesh::Vertex::vertex_attrib_pointers(gl);
         vao.unbind();
 
         vbo.unbind();
@@ -140,11 +187,7 @@ impl Dice {
             texture,
             texture_normals,
             program,
-            program_viewprojection_location,
-            program_model_location,
-            camera_pos_location,
-            texture_location,
-            texture_normals_location,
+            material: p_material,
             _vbo: vbo,
             _ebo: ebo,
             index_count: ebo_data.len() as i32,
@@ -231,25 +274,11 @@ impl Dice {
     pub fn render(&self, gl: &gl::Gl, viewprojection_matrix: &na::Matrix4<f32>, camera_pos: &na::Vector3<f32>) {
         self.program.set_used();
 
-        if let (Some(loc), &Some(ref texture)) = (self.texture_location, &self.texture) {
-            texture.bind_at(0);
-            self.program.set_uniform_1i(loc, 0);
-        }
-
-        if let (Some(loc), &Some(ref texture)) = (self.texture_normals_location, &self.texture_normals) {
-            texture.bind_at(1);
-            self.program.set_uniform_1i(loc, 1);
-        }
-
-        if let Some(loc) = self.program_viewprojection_location {
-            self.program.set_uniform_matrix_4fv(loc, viewprojection_matrix);
-        }
-        if let Some(loc) = self.program_model_location {
-            self.program.set_uniform_matrix_4fv(loc, &self.transform.to_homogeneous());
-        }
-        if let Some(loc) = self.camera_pos_location {
-            self.program.set_uniform_3f(loc, camera_pos);
-        }
+        self.material.bind(
+            &self.program,
+            viewprojection_matrix, &self.transform.to_homogeneous(), camera_pos,
+            &self.texture, &self.texture_normals
+        );
         self.vao.bind();
 
         unsafe {
