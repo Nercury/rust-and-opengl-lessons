@@ -17,6 +17,8 @@ Collection of example code for learning OpenGL in Rust
 - 12 - [Buffers](http://nercury.github.io/rust/opengl/tutorial/2018/07/25/opengl-in-rust-from-scratch-12-buffers.html)
 - 13 - [Safe Triangle and nalgebra](http://nercury.github.io/rust/opengl/tutorial/2018/07/27/opengl-in-rust-from-scratch-13-safe-triangle-nalgebra.html)
 
+The code directories with `-x` at the end contain experimental hacks where I explore future solutions.
+
 ## License
 
 This library is distributed under the terms of either of:
