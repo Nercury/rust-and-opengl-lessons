@@ -29,7 +29,7 @@ pub struct DebugLines {
     program_model_matrix_location: Option<i32>,
     containers: Rc<RefCell<SharedDebugLines>>,
     multi_draw_items: Vec<MultiDrawItem>,
-    lines_vbo: buffer::ArrayBuffer,
+    lines_vbo: buffer::Buffer,
     lines_vbo_capacity: Option<usize>,
     lines_vao: buffer::VertexArray,
     draw_enabled: bool,
@@ -37,7 +37,7 @@ pub struct DebugLines {
 
 impl DebugLines {
     pub fn new(gl: &gl::Gl, res: &Resources) -> Result<DebugLines, failure::Error> {
-        let lines_vbo = buffer::ArrayBuffer::new(&gl);
+        let lines_vbo = buffer::Buffer::new_array(&gl);
         let lines_vao = buffer::VertexArray::new(gl);
         lines_vao.bind();
         lines_vbo.bind();

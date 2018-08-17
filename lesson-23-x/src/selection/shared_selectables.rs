@@ -17,7 +17,8 @@ enum DragState {
     ViewPlane {
         handle: ContainerHandle,
         initial_isometry: na::Isometry3<f32>,
-        point: na::Point3<f32>,
+        drag_start_point: na::Point3<f32>,
+        drag_start_camera_target_pos: na::Point3<f32>,
     },
 }
 
@@ -25,7 +26,7 @@ pub struct SharedSelectables {
     containers: Slab<Container>,
     under_cursor: Option<ContainerHandle>,
     selected: Option<ContainerHandle>,
-    query: Vec<PendingAction>,
+    query: Option<PendingAction>,
 
     mouse_down: bool,
     drag_state: Option<DragState>,
@@ -37,7 +38,7 @@ impl SharedSelectables {
             containers: Slab::new(),
             under_cursor: None,
             selected: None,
-            query: Vec::with_capacity(5),
+            query: None,
 
             mouse_down: false,
             drag_state: None,
@@ -72,7 +73,7 @@ impl SharedSelectables {
         self.containers.get_mut(handle.0)
     }
 
-    pub fn cast_cursor(&mut self, ray: &Ray<f32>, camera_dir: &na::Vector3<f32>) {
+    pub fn cast_cursor(&mut self, ray: &Ray<f32>, camera_target_pos: &na::Point3<f32>, camera_dir: &na::Vector3<f32>) {
         let mut closest = None;
         let mut impact_point = None;
         let mut impact_obj_isometry = None;
@@ -107,24 +108,26 @@ impl SharedSelectables {
                         self.drag_state = Some(DragState::ViewPlane {
                             handle: under_cursor_obj,
                             initial_isometry: impact_obj_isometry,
-                            point: start_point,
+                            drag_start_point: start_point,
+                            drag_start_camera_target_pos: *camera_target_pos,
                         })
                     }
                     (None, _, _) => self.drag_state = Some(DragState::NoObject), // dragging empty space until mouse up
                     _ => (),
                 }
             },
-            Some(DragState::ViewPlane { handle, initial_isometry, point }) => {
+            Some(DragState::ViewPlane { handle, initial_isometry, drag_start_point, drag_start_camera_target_pos }) => {
                 let plane = Plane::new(na::Unit::new_normalize(-camera_dir));
+                let movement_difference = camera_target_pos - drag_start_camera_target_pos;
                 let plane_isometry = na::Isometry3::from_parts(
-                    na::Translation3::from_vector(point.coords),
+                    na::Translation3::from_vector(drag_start_point.coords + movement_difference),
                     na::UnitQuaternion::identity(),
                 );
                 if let Some(toi) = plane.toi_with_ray(&plane_isometry, ray, true) {
                     let dragged_to_point_on_plane = ray.origin + ray.dir * toi;
-                    let drag_vector = dragged_to_point_on_plane - point;
+                    let drag_vector = dragged_to_point_on_plane - drag_start_point;
                     if na::norm_squared(&drag_vector) > DRAG_SNAP_DISTANCE * DRAG_SNAP_DISTANCE {
-                        self.query.push(PendingAction {
+                        self.query = Some(PendingAction {
                             handle: handle,
                             action: Action::Drag {
                                 new_isometry: na::Isometry3::from_parts(
@@ -134,7 +137,7 @@ impl SharedSelectables {
                             },
                         });
                     } else {
-                        self.query.push(PendingAction {
+                        self.query = Some(PendingAction {
                             handle: handle,
                             action: Action::Drag { new_isometry: initial_isometry },
                         });
@@ -166,7 +169,7 @@ impl SharedSelectables {
         match self.drag_state {
             Some(DragState::ViewPlane { handle, initial_isometry, .. }) => {
                 self.drag_state = Some(DragState::NoObject);
-                self.query.push(PendingAction {
+                self.query = Some(PendingAction {
                     handle,
                     action: Action::Drag { new_isometry: initial_isometry },
                 });
@@ -180,7 +183,7 @@ impl SharedSelectables {
             &PendingAction { handle, .. } if consumer_handle == handle => Some(index),
             _ => None,
         }).next() {
-            return Some(self.query.remove(matching_action_index).action);
+            return self.query.take().map(|p| p.action);
         }
         None
     }

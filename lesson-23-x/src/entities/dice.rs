@@ -83,8 +83,8 @@ pub struct Dice {
     texture: Option<render_gl::Texture>,
     texture_normals: Option<render_gl::Texture>,
     material: dice_material::Material,
-    _vbo: buffer::ArrayBuffer,
-    _ebo: buffer::ElementArrayBuffer,
+    _vbo: buffer::Buffer,
+    _ebo: buffer::Buffer,
     index_count: i32,
     vao: buffer::VertexArray,
     debug_tangent_normals: Vec<render_gl::RayMarker>,
@@ -157,14 +157,14 @@ impl Dice {
 
         let ebo_data = mesh.triangle_indices();
 
-        let vbo = buffer::ArrayBuffer::new(gl);
+        let vbo = buffer::Buffer::new_array(gl);
         vbo.bind();
-        vbo.static_draw_data(&vbo_data);
+        vbo.stream_draw_data(&vbo_data);
         vbo.unbind();
 
-        let ebo = buffer::ElementArrayBuffer::new(gl);
+        let ebo = buffer::Buffer::new_element_array(gl);
         ebo.bind();
-        ebo.static_draw_data(&ebo_data);
+        ebo.stream_draw_data(&ebo_data);
         ebo.unbind();
 
         // set up vertex array object
@@ -289,5 +289,7 @@ impl Dice {
                 ::std::ptr::null(), // pointer to indices (we are using ebo configured at vao creation)
             );
         }
+
+        self.vao.unbind();
     }
 }

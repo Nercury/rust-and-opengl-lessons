@@ -8,6 +8,7 @@ extern crate ncollide3d;
 extern crate image;
 extern crate floating_duration;
 extern crate tobj;
+extern crate once_cell;
 #[macro_use] extern crate failure;
 #[macro_use] extern crate lesson_23_x_render_gl_derive as render_gl_derive;
 
@@ -18,14 +19,19 @@ pub mod resources;
 pub mod mesh;
 pub mod selection;
 pub mod entities;
+pub mod propagation;
+pub mod system;
 mod debug;
-mod system;
 
 use failure::err_msg;
 use resources::Resources;
 use nalgebra as na;
 use std::time::Instant;
 use floating_duration::TimeAsFloat;
+use system::alloc::alloc_watch::PeekAlloc;
+
+#[global_allocator]
+static GLOBAL: PeekAlloc = PeekAlloc;
 
 fn main() {
     if let Err(e) = run() {
@@ -34,6 +40,8 @@ fn main() {
 }
 
 fn run() -> Result<(), failure::Error> {
+    PeekAlloc::init();
+
     let res = Resources::from_relative_exe_path("assets-23-x").unwrap();
 
     let sdl = sdl2::init().map_err(err_msg)?;
@@ -73,7 +81,9 @@ fn run() -> Result<(), failure::Error> {
     let vsync = false;
     video_subsystem.gl_set_swap_interval(if vsync { 1 } else { 0 });
 
-    let mut profiler = render_gl::Profiler::new(&gl, &res)?;
+    let mut frame_profiler = render_gl::FrameProfiler::new(&gl, &res, 60)?;
+    let mut event_count_profiler = render_gl::EventCountProfiler::new(&gl, &res, 3)?;
+
     let mut viewport = render_gl::Viewport::for_window(window_size.highdpi_width, window_size.highdpi_height);
     let color_buffer = render_gl::ColorBuffer::new();
     let mut editor_lines = render_gl::DebugLines::new(&gl, &res)?;
@@ -81,10 +91,11 @@ fn run() -> Result<(), failure::Error> {
     let _grid = editor_lines.grid_marker(na::Isometry3::identity(), 1.0, 100, [0.5, 0.5, 0.5, 1.0].into());
     let selectables = selection::Selectables::new();
     let mut render_selectables = system::render::selectables::RenderSelectables::new();
+    let mut input_selectables = system::input::selectables::SelectablesInput::new();
 
     let mut dices = Vec::new();
-    for x in -3..3 {
-        for y in -3..3 {
+    for x in -3..=3 {
+        for y in -3..=3 {
             let mut dice = entities::dice::Dice::new(&res, &gl, &debug_lines, &selectables)?;
             dice.set_transform(na::Isometry3::from_parts(na::Translation3::from_vector(
                 [4.0 * x as f32, 4.0 * y as f32, 0.0].into()
@@ -115,14 +126,17 @@ fn run() -> Result<(), failure::Error> {
 
     let mut event_pump = sdl.event_pump().map_err(err_msg)?;
     'main: loop {
-        profiler.begin();
+        PeekAlloc::reset();
+
+        frame_profiler.begin();
+        event_count_profiler.begin();
 
         for event in event_pump.poll_iter() {
             if system::input::window::handle_default_window_events(&event, &gl, &window, &mut window_size, &mut viewport, &mut camera) == system::input::window::HandleResult::Quit {
                 break 'main;
             }
             system::input::camera::handle_camera_events(&event, &mut camera);
-            system::input::selectables::handle_selectable_events(&event, &window_size, &camera, &selectables);
+            input_selectables.handle_selectable_events(&event, &window_size, &camera, &selectables);
 
             match event {
                 sdl2::event::Event::KeyDown { scancode: Some(sdl2::keyboard::Scancode::C), .. } => {
@@ -132,25 +146,26 @@ fn run() -> Result<(), failure::Error> {
                     debug_lines.toggle();
                 },
                 sdl2::event::Event::KeyDown { scancode: Some(sdl2::keyboard::Scancode::P), .. } => {
-                    profiler.toggle();
+                    frame_profiler.toggle();
                 },
                 _ => (),
             }
         }
 
-        profiler.push(render::color_white());
+        frame_profiler.push(render::color_white());
 
         let delta = time.elapsed().as_fractional_secs() as f32;
         time = Instant::now();
         if camera.update(delta) {
             camera_target_marker.update_position(camera.target);
         }
+        input_selectables.update(&camera, &selectables);
         for dice in &mut dices {
             dice.update(delta);
         }
         render_selectables.update(&selectables, &editor_lines);
 
-        profiler.push(render::color_yellow());
+        frame_profiler.push(render::color_yellow());
 
         unsafe {
             gl.Enable(gl::CULL_FACE);
@@ -165,31 +180,43 @@ fn run() -> Result<(), failure::Error> {
 
         color_buffer.clear(&gl);
 
-        profiler.push(render::color_white());
+        frame_profiler.push(render::color_white());
 
         for dice in &mut dices {
             dice.render(&gl, &vp_matrix, &camera.project_pos().coords);
         }
 
-        profiler.push(render::color_red());
+        frame_profiler.push(render::color_red());
 
         debug_lines.render(&gl, &color_buffer, &vp_matrix);
 
-        profiler.push(render::color_white());
+        frame_profiler.push(render::color_white());
 
         editor_lines.render(&gl, &color_buffer, &vp_matrix);
 
-        profiler.push(render::color_gray());
+        frame_profiler.push(render::color_gray());
 
         let left = 0;
         let top = window_size.highdpi_height;
         let right = window_size.highdpi_width;
         let bottom = 0;
 
-        profiler.render(&gl, &color_buffer,
-                        &na::Matrix4::new_orthographic(left as f32, right as f32, bottom as f32, top as f32, -10.0, 10.0),
+        let ui_matrix = na::Matrix4::new_orthographic(left as f32, right as f32, bottom as f32, top as f32, -10.0, 10.0);
+
+        frame_profiler.render(&gl, &color_buffer,&ui_matrix,
                         window_size.highdpi_width, window_size.highdpi_height);
-        profiler.push(render::color_green());
+        event_count_profiler.render(&gl, &color_buffer,&ui_matrix, window_size.highdpi_width);
+
+        frame_profiler.push(render::color_green());
+
+        if let Some(values) = PeekAlloc::peek() {
+            if values.alloc_num > 0 {
+                event_count_profiler.push(values.alloc_num, render::color_red());
+            }
+            if values.dealloc_num > 0 {
+                event_count_profiler.push(values.dealloc_num, render::color_blue());
+            }
+        }
 
         window.gl_swap_window();
     }

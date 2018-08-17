@@ -4,7 +4,7 @@ extern crate proc_macro;
 extern crate syn;
 #[macro_use] extern crate quote;
 
-#[proc_macro_derive(VertexAttribPointers, attributes(location))]
+#[proc_macro_derive(VertexAttribPointers, attributes(location, divisor))]
 pub fn vertex_attrib_pointers_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let s = input.to_string();
     let ast = syn::parse_derive_input(&s).unwrap();
@@ -62,10 +62,32 @@ fn generate_struct_field_vertex_attrib_pointer_call(field: &syn::Field) -> quote
             _ => panic!("Field {} location attribute value must be a string literal", field_name)
         };
 
+        let divisor_call = match field.attrs
+            .iter()
+            .filter(|a| a.value.name() == "divisor")
+            .next()
+        {
+            Some(attr) => {
+                let divisor_value: u32 = match attr.value {
+                    syn::MetaItem::NameValue(_, syn::Lit::Str(ref s, _)) => s.parse()
+                        .unwrap_or_else(
+                            |_| panic!("Field {} divisor attribute value must contain an integer", field_name)
+                        ),
+                    _ => panic!("Field {} divisor attribute value must be a string literal", field_name)
+                };
+
+                quote! {
+                    gl.VertexAttribDivisor(#location_value as u32, #divisor_value);
+                }
+            },
+            None => quote! {},
+        };
+
         quote! {
             let location = #location_value;
             unsafe {
                 #field_ty::vertex_attrib_pointer(gl, stride, location, offset);
+                #divisor_call
             }
             let offset = offset + ::std::mem::size_of::<#field_ty>();
         }

@@ -5,7 +5,7 @@ use gl;
 use resources::Resources;
 use render_gl::Program;
 use render_gl::ColorBuffer;
-use render_gl::buffer::{ArrayBuffer, VertexArray};
+use render_gl::buffer::{Buffer, VertexArray};
 use render_gl::data;
 use std::time::Instant;
 use floating_duration::TimeAsFloat;
@@ -49,7 +49,7 @@ struct Item {
 pub struct Profiler {
     program: Program,
     program_view_projection_location: Option<i32>,
-    lines_vbo: ArrayBuffer,
+    lines_vbo: Buffer,
     lines_vbo_capacity: Option<usize>,
     lines_vbo_count: i32,
     lines_vao: VertexArray,
@@ -65,7 +65,7 @@ impl Profiler {
         let program = Program::from_res(gl, res, "shaders/render_gl/profiler_lines")?;
         let program_view_projection_location = program.get_uniform_location("ViewProjection");
 
-        let lines_vbo = ArrayBuffer::new(&gl);
+        let lines_vbo = Buffer::new_array(&gl);
         let lines_vao = VertexArray::new(gl);
         lines_vao.bind();
         lines_vbo.bind();

@@ -14,7 +14,7 @@ use std::cell::RefCell;
 mod line_point;
 mod shared_debug_lines;
 
-use self::line_point::LinePoint;
+use self::line_point::{LinePoint, Instance};
 use self::shared_debug_lines::{SharedDebugLines};
 
 struct MultiDrawItem {
@@ -23,28 +23,85 @@ struct MultiDrawItem {
     index_count: i32,
 }
 
+struct Buffers {
+    vbo_capacity: usize,
+    multi_draw_items: Vec<MultiDrawItem>,
+    lines_vbo: buffer::Buffer,
+    lines_instances_vbo: buffer::Buffer,
+    lines_ebo: buffer::Buffer,
+    lines_vao: buffer::VertexArray,
+}
+
+impl Buffers {
+    pub fn new(gl: &gl::Gl, vbo_capacity: usize) -> Buffers {
+        let lines_vbo = buffer::Buffer::new_array(&gl);
+        let lines_instances_vbo = buffer::Buffer::new_array(&gl);
+        let lines_ebo = buffer::Buffer::new_element_array(&gl);
+
+        let lines_vao = buffer::VertexArray::new(gl);
+        lines_vao.bind();
+        lines_ebo.bind();
+
+        lines_vbo.bind();
+        LinePoint::vertex_attrib_pointers(gl);
+        lines_vbo.unbind();
+
+//        lines_instances_vbo.bind();
+//        Instance::vertex_attrib_pointers(gl);
+//        lines_instances_vbo.unbind();
+
+        lines_vao.unbind();
+
+        // resize vbo buffer
+
+        lines_vbo.bind();
+        lines_vbo.stream_draw_data_null::<LinePoint>(vbo_capacity);
+
+        // resize index buffer and upload indices
+
+        lines_ebo.bind();
+        lines_ebo.stream_draw_data_null::<u32>(vbo_capacity);
+        if let Some(mut buffer) = unsafe { lines_ebo.map_buffer_range_write_invalidate::<u32>(0, vbo_capacity) } {
+            for i in 0..vbo_capacity {
+                buffer[i] = i as u32;
+            }
+        }
+
+        lines_vbo.unbind();
+        lines_ebo.unbind();
+
+        Buffers {
+            vbo_capacity,
+            lines_vbo,
+            lines_instances_vbo,
+            lines_ebo,
+            multi_draw_items: Vec::new(),
+            lines_vao,
+        }
+    }
+
+    pub fn upload_vertices(&self, items: impl Iterator<Item = LinePoint>) {
+        self.lines_vbo.bind();
+        if let Some(mut buffer) = unsafe { self.lines_vbo.map_buffer_range_write_invalidate::<LinePoint>(0, self.vbo_capacity) } {
+            for (index, item) in items.enumerate().take(self.vbo_capacity) {
+                *unsafe { buffer.get_unchecked_mut(index) } = item;
+            }
+        }
+        self.lines_vbo.unbind();
+    }
+}
+
 pub struct DebugLines {
     program: Program,
     program_view_projection_location: Option<i32>,
     program_model_matrix_location: Option<i32>,
     containers: Rc<RefCell<SharedDebugLines>>,
-    multi_draw_items: Vec<MultiDrawItem>,
-    lines_vbo: buffer::ArrayBuffer,
-    lines_vbo_capacity: Option<usize>,
-    lines_vao: buffer::VertexArray,
+    buffers: Option<Buffers>,
     draw_enabled: bool,
 }
 
 impl DebugLines {
     pub fn new(gl: &gl::Gl, res: &Resources) -> Result<DebugLines, failure::Error> {
-        let lines_vbo = buffer::ArrayBuffer::new(&gl);
-        let lines_vao = buffer::VertexArray::new(gl);
-        lines_vao.bind();
-        lines_vbo.bind();
-        LinePoint::vertex_attrib_pointers(gl);
-        lines_vbo.unbind();
-        lines_vao.unbind();
-
         let program = Program::from_res(gl, res, "shaders/render_gl/debug_lines")?;
         let program_view_projection_location = program.get_uniform_location("ViewProjection");
         let program_model_matrix_location = program.get_uniform_location("Model");
@@ -54,10 +111,7 @@ impl DebugLines {
             program_view_projection_location,
             program_model_matrix_location,
             containers: Rc::new(RefCell::new(SharedDebugLines::new())),
-            lines_vbo,
-            multi_draw_items: Vec::new(),
-            lines_vbo_capacity: None,
-            lines_vao,
+            buffers: None,
             draw_enabled: true,
         })
     }
@@ -66,51 +120,45 @@ impl DebugLines {
         self.draw_enabled = !self.draw_enabled;
     }
 
-    fn check_if_invalidated_and_reinitialize(&mut self) {
+    fn check_if_invalidated_and_reinitialize(&mut self, gl: &gl::Gl) {
         let mut shared_debug_lines = self.containers.borrow_mut();
 
         if shared_debug_lines.invalidated {
-            let all_data_len = shared_debug_lines
+            let num_items = shared_debug_lines
                 .containers
                 .values()
                 .flat_map(|v| v.data.iter())
                 .count();
 
-            self.lines_vbo.bind();
-
-            let should_recreate_buffer = match self.lines_vbo_capacity {
+            let should_recreate_buffer = match self.buffers {
                 None => true,
-                Some(lines_vbo_capacity) if lines_vbo_capacity < all_data_len => true,
+                Some(ref buffers) if buffers.vbo_capacity < num_items => true,
                 _ => false,
             };
 
             if should_recreate_buffer {
-                self.lines_vbo.dynamic_draw_data_null::<LinePoint>(all_data_len);
-                self.lines_vbo_capacity = Some(all_data_len);
+                self.buffers = Some(Buffers::new(gl, num_items));
             }
 
-            if let Some(_) = self.lines_vbo_capacity {
-                if let Some(mut buffer) = unsafe { self.lines_vbo.map_buffer_range_write_invalidate::<LinePoint>(0, all_data_len) } {
-                    for (index, item) in shared_debug_lines
-                        .containers
-                        .values()
-                        .flat_map(|v| v.data.iter()).enumerate() {
-                        *unsafe { buffer.get_unchecked_mut(index) } = *item;
-                    }
+            if let Some(ref mut buffers) = self.buffers {
+                buffers.upload_vertices(shared_debug_lines
+                    .containers
+                    .values()
+                    .flat_map(|v| v.data.iter())
+                    .map(|item| *item)
+                );
 
-                    self.multi_draw_items.clear();
-                    let mut offset = 0;
-                    for container in shared_debug_lines.containers.values() {
-                        self.multi_draw_items.push(MultiDrawItem {
-                            model_matrix: container.isometry.to_homogeneous(),
-                            starting_index: offset,
-                            index_count: container.data.len() as i32,
-                        });
-                        offset += container.data.len() as i32;
-                    }
+                buffers.multi_draw_items.clear();
+                let mut offset = 0;
+                for container in shared_debug_lines.containers.values() {
+                    buffers.multi_draw_items.push(MultiDrawItem {
+                        model_matrix: container.isometry.to_homogeneous(),
+                        starting_index: offset,
+                        index_count: container.data.len() as i32,
+                    });
+                    offset += container.data.len() as i32;
                 }
             }
-            self.lines_vbo.unbind();
 
             shared_debug_lines.invalidated = false;
         }
@@ -118,33 +166,38 @@ impl DebugLines {
 
     pub fn render(&mut self, gl: &gl::Gl, target: &ColorBuffer, vp_matrix: &na::Matrix4<f32>) {
         if self.draw_enabled {
-            self.check_if_invalidated_and_reinitialize();
+            self.check_if_invalidated_and_reinitialize(gl);
 
-            if self.multi_draw_items.len() > 0 {
-                self.program.set_used();
-                if let Some(loc) = self.program_view_projection_location {
-                    self.program.set_uniform_matrix_4fv(loc, &vp_matrix);
-                }
-
-                let program_model_matrix_location = self.program_model_matrix_location.expect("Debug lines Model uniform must exist");
-
-                self.lines_vao.bind();
-
-                unsafe {
-                    target.set_default_blend_func(gl);
-                    target.enable_blend(gl);
-
-                    for instance in &self.multi_draw_items {
-                        self.program.set_uniform_matrix_4fv(program_model_matrix_location, &instance.model_matrix);
-
-                        gl.DrawArrays(
-                            gl::LINES, // mode
-                            instance.starting_index,
-                            instance.index_count,
-                        );
+            if let Some(ref buffers) = self.buffers {
+                if buffers.multi_draw_items.len() > 0 {
+                    self.program.set_used();
+                    if let Some(loc) = self.program_view_projection_location {
+                        self.program.set_uniform_matrix_4fv(loc, &vp_matrix);
                     }
 
-                    target.disable_blend(gl);
+                    let program_model_matrix_location = self.program_model_matrix_location.expect("Debug lines Model uniform must exist");
+
+                    buffers.lines_vao.bind();
+
+                    unsafe {
+                        target.set_default_blend_func(gl);
+                        target.enable_blend(gl);
+
+                        for instance in buffers.multi_draw_items.iter() {
+                            self.program.set_uniform_matrix_4fv(program_model_matrix_location, &instance.model_matrix);
+
+                            gl.DrawElements(
+                                gl::LINES, // mode
+                                instance.index_count,
+                                gl::UNSIGNED_INT,
+                                (instance.starting_index * ::std::mem::size_of::<u32>() as i32) as *const ::std::os::raw::c_void
+                            );
+                        }
+
+                        target.disable_blend(gl);
+                    }
+
+                    buffers.lines_vao.unbind();
                 }
             }
         }

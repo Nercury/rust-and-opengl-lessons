@@ -74,8 +74,8 @@ impl Selectables {
         }
     }
 
-    pub fn cast_cursor(&self, ray: &Ray<f32>, camera_dir: &na::Vector3<f32>) {
-        self.shared.borrow_mut().cast_cursor(ray, camera_dir);
+    pub fn cast_cursor(&self, ray: &Ray<f32>, camera_target_pos: &na::Point3<f32>, camera_dir: &na::Vector3<f32>) {
+        self.shared.borrow_mut().cast_cursor(ray, camera_target_pos, camera_dir);
     }
 
     pub fn send_mouse_down(&self) {
