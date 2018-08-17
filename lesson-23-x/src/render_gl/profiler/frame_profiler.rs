@@ -162,7 +162,7 @@ impl FrameProfiler {
                 }
 
                 // 30 fps bar, red
-                let bar_height = 33.333 * y_scale;
+                let bar_height = bottom_offset + 33.333 * y_scale;
 
                 buffer.push(LinePoint {
                     pos: (0.0, bar_height).into(),
@@ -175,7 +175,7 @@ impl FrameProfiler {
                 });
 
                 // 60 fps bar, yellow
-                let bar_height = 16.666 * y_scale;
+                let bar_height = bottom_offset + 16.666 * y_scale;
 
                 buffer.push(LinePoint {
                     pos: (0.0, bar_height).into(),
@@ -188,7 +188,7 @@ impl FrameProfiler {
                 });
 
                 // 144 fps bar, green
-                let bar_height = 6.9 * y_scale;
+                let bar_height = bottom_offset + 6.9 * y_scale;
 
                 buffer.push(LinePoint {
                     pos: (0.0, bar_height).into(),

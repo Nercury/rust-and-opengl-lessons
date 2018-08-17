@@ -1,10 +1,5 @@
 use gl;
 
-//pub struct BufferData<T> {
-//    buffer: Buffer,
-//    _marker: ::std::marker::PhantomData<T>,
-//}
-
 pub struct Buffer {
     gl: gl::Gl,
     buffer_type: gl::types::GLuint,

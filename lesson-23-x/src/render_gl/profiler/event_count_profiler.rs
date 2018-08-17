@@ -56,11 +56,12 @@ pub struct EventCountProfiler {
     frame_data_history: VecDeque<FrameData>,
     frame_data_pool: Vec<FrameData>,
     view_width_pixels: i32,
-    single_alloc_height: i32,
+    single_item_height: i32,
+    bottom_offset_px: i32,
 }
 
 impl EventCountProfiler {
-    pub fn new(gl: &gl::Gl, res: &Resources, single_alloc_height: i32) -> Result<EventCountProfiler, failure::Error> {
+    pub fn new(gl: &gl::Gl, res: &Resources, single_item_height: i32, bottom_offset_px: i32) -> Result<EventCountProfiler, failure::Error> {
         let program = Program::from_res(gl, res, "shaders/render_gl/profiler_lines")?;
         let program_view_projection_location = program.get_uniform_location("ViewProjection");
 
@@ -73,7 +74,8 @@ impl EventCountProfiler {
             frame_data_history: VecDeque::with_capacity(4000),
             frame_data_pool: vec![FrameData::new(); 4000],
             view_width_pixels: 500,
-            single_alloc_height,
+            single_item_height,
+            bottom_offset_px,
         })
     }
 
@@ -121,7 +123,8 @@ impl EventCountProfiler {
             self.buffers = Some(Buffers::new(gl, new_capacity));
         }
 
-        let y_scale = self.single_alloc_height as f32;
+        let y_scale = self.single_item_height as f32;
+        let bottom_offset = self.bottom_offset_px as f32;
 
         if let Some(ref mut buffers) = self.buffers {
             buffers.lines_vbo.bind();
@@ -135,12 +138,12 @@ impl EventCountProfiler {
                         let item_end_diff = sum;
 
                         buffer.push(LinePoint {
-                            pos: (index as f32, item_start_diff * y_scale).into(),
+                            pos: (index as f32, bottom_offset + item_start_diff * y_scale).into(),
                             color: item.color,
                         });
 
                         buffer.push(LinePoint {
-                            pos: (index as f32, item_end_diff * y_scale).into(),
+                            pos: (index as f32, bottom_offset + item_end_diff * y_scale).into(),
                             color: item.color,
                         });
                     }

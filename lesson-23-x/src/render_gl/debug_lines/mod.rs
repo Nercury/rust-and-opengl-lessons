@@ -11,85 +11,11 @@ use ncollide3d;
 use std::rc::Rc;
 use std::cell::RefCell;
 
-mod line_point;
 mod shared_debug_lines;
+mod buffers;
 
-use self::line_point::{LinePoint, Instance};
+use self::buffers::{Buffers, MultiDrawItem, LinePoint, Instance};
 use self::shared_debug_lines::{SharedDebugLines};
-
-struct MultiDrawItem {
-    model_matrix: na::Matrix4<f32>,
-    starting_index: i32,
-    index_count: i32,
-}
-
-struct Buffers {
-    vbo_capacity: usize,
-    multi_draw_items: Vec<MultiDrawItem>,
-    lines_vbo: buffer::Buffer,
-    lines_instances_vbo: buffer::Buffer,
-    lines_ebo: buffer::Buffer,
-    lines_vao: buffer::VertexArray,
-}
-
-impl Buffers {
-    pub fn new(gl: &gl::Gl, vbo_capacity: usize) -> Buffers {
-        let lines_vbo = buffer::Buffer::new_array(&gl);
-        let lines_instances_vbo = buffer::Buffer::new_array(&gl);
-        let lines_ebo = buffer::Buffer::new_element_array(&gl);
-
-        let lines_vao = buffer::VertexArray::new(gl);
-        lines_vao.bind();
-        lines_ebo.bind();
-
-        lines_vbo.bind();
-        LinePoint::vertex_attrib_pointers(gl);
-        lines_vbo.unbind();
-
-//        lines_instances_vbo.bind();
-//        Instance::vertex_attrib_pointers(gl);
-//        lines_instances_vbo.unbind();
-
-        lines_vao.unbind();
-
-        // resize vbo buffer
-
-        lines_vbo.bind();
-        lines_vbo.stream_draw_data_null::<LinePoint>(vbo_capacity);
-
-        // resize index buffer and upload indices
-
-        lines_ebo.bind();
-        lines_ebo.stream_draw_data_null::<u32>(vbo_capacity);
-        if let Some(mut buffer) = unsafe { lines_ebo.map_buffer_range_write_invalidate::<u32>(0, vbo_capacity) } {
-            for i in 0..vbo_capacity {
-                buffer[i] = i as u32;
-            }
-        }
-
-        lines_vbo.unbind();
-        lines_ebo.unbind();
-
-        Buffers {
-            vbo_capacity,
-            lines_vbo,
-            lines_instances_vbo,
-            lines_ebo,
-            multi_draw_items: Vec::new(),
-            lines_vao,
-        }
-    }
-
-    pub fn upload_vertices(&self, items: impl Iterator<Item = LinePoint>) {
-        self.lines_vbo.bind();
-        if let Some(mut buffer) = unsafe { self.lines_vbo.map_buffer_range_write_invalidate::<LinePoint>(0, self.vbo_capacity) } {
-            for (index, item) in items.enumerate().take(self.vbo_capacity) {
-                *unsafe { buffer.get_unchecked_mut(index) } = item;
-            }
-        }
-        self.lines_vbo.unbind();
-    }
-}
 
 pub struct DebugLines {
     program: Program,

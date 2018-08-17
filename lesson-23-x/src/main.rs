@@ -28,7 +28,8 @@ use resources::Resources;
 use nalgebra as na;
 use std::time::Instant;
 use floating_duration::TimeAsFloat;
-use system::alloc::alloc_watch::PeekAlloc;
+use system::profiling::alloc_watch::PeekAlloc;
+use system::profiling::gl_watch;
 
 #[global_allocator]
 static GLOBAL: PeekAlloc = PeekAlloc;
@@ -81,8 +82,9 @@ fn run() -> Result<(), failure::Error> {
     let vsync = false;
     video_subsystem.gl_set_swap_interval(if vsync { 1 } else { 0 });
 
-    let mut frame_profiler = render_gl::FrameProfiler::new(&gl, &res, 60)?;
-    let mut event_count_profiler = render_gl::EventCountProfiler::new(&gl, &res, 3)?;
+    let mut frame_profiler = render_gl::FrameProfiler::new(&gl, &res, 80)?;
+    let mut allocation_profiler = render_gl::EventCountProfiler::new(&gl, &res, 3, 0)?;
+    let mut gl_call_profiler = render_gl::EventCountProfiler::new(&gl, &res, 1, 20)?;
 
     let mut viewport = render_gl::Viewport::for_window(window_size.highdpi_width, window_size.highdpi_height);
     let color_buffer = render_gl::ColorBuffer::new();
@@ -127,9 +129,11 @@ fn run() -> Result<(), failure::Error> {
     let mut event_pump = sdl.event_pump().map_err(err_msg)?;
     'main: loop {
         PeekAlloc::reset();
+        gl_watch::reset();
 
         frame_profiler.begin();
-        event_count_profiler.begin();
+        allocation_profiler.begin();
+        gl_call_profiler.begin();
 
         for event in event_pump.poll_iter() {
             if system::input::window::handle_default_window_events(&event, &gl, &window, &mut window_size, &mut viewport, &mut camera) == system::input::window::HandleResult::Quit {
@@ -205,17 +209,28 @@ fn run() -> Result<(), failure::Error> {
 
         frame_profiler.render(&gl, &color_buffer,&ui_matrix,
                         window_size.highdpi_width, window_size.highdpi_height);
-        event_count_profiler.render(&gl, &color_buffer,&ui_matrix, window_size.highdpi_width);
+        allocation_profiler.render(&gl, &color_buffer,&ui_matrix, window_size.highdpi_width);
+        gl_call_profiler.render(&gl, &color_buffer,&ui_matrix, window_size.highdpi_width);
 
         frame_profiler.push(render::color_green());
 
         if let Some(values) = PeekAlloc::peek() {
             if values.alloc_num > 0 {
-                event_count_profiler.push(values.alloc_num, render::color_red());
+                allocation_profiler.push(values.alloc_num, render::color_red());
             }
             if values.dealloc_num > 0 {
-                event_count_profiler.push(values.dealloc_num, render::color_blue());
+                allocation_profiler.push(values.dealloc_num, render::color_blue());
             }
+        }
+
+        let gl_errors = gl_watch::errors();
+        if gl_errors > 0 {
+            gl_call_profiler.push(gl_errors, render::color_red());
+        }
+
+        let gl_calls = gl_watch::calls();
+        if gl_calls > 0 {
+            gl_call_profiler.push(gl_calls, render::color_light_blue());
         }
 
         window.gl_swap_window();

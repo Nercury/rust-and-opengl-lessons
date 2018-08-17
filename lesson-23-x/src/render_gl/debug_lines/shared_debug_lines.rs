@@ -1,6 +1,6 @@
 use nalgebra as na;
 use std::collections::BTreeMap;
-use super::LinePoint;
+use super::buffers::LinePoint;
 
 pub struct Container {
     pub isometry: na::Isometry3<f32>,
