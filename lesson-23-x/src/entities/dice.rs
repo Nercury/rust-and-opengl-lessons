@@ -87,7 +87,7 @@ pub struct Dice {
     _ebo: buffer::Buffer,
     index_count: i32,
     vao: buffer::VertexArray,
-    debug_tangent_normals: Vec<render_gl::RayMarker>,
+    debug_tangent_normals: render_gl::RayMarkers,
     selectable_aabb: Option<SelectableAABB>,
 }
 
@@ -192,18 +192,18 @@ impl Dice {
             _ebo: ebo,
             index_count: ebo_data.len() as i32,
             vao,
-            debug_tangent_normals: vbo_data.iter().map(|v| debug_lines.ray_marker(
+            debug_tangent_normals: debug_lines.ray_markers(
                 initial_isometry,
-                na::Point3::new(v.pos.d0, v.pos.d1, v.pos.d2),
-                na::Vector3::new(v.n.d0, v.n.d1, v.n.d2) * 0.2,
-                na::Vector4::new(0.0, 0.0, 1.0, 1.0),
-            )).chain(vbo_data.iter().map(|v| debug_lines.ray_marker(
-                initial_isometry,
-                na::Point3::new(v.pos.d0, v.pos.d1, v.pos.d2),
-                na::Vector3::new(v.t.d0, v.t.d1, v.t.d2) * 0.2,
-                na::Vector4::new(0.0, 1.0, 0.0, 1.0),
-            )))
-                .collect(),
+                vbo_data.iter().map(|v| (
+                    na::Point3::new(v.pos.d0, v.pos.d1, v.pos.d2),
+                    na::Vector3::new(v.n.d0, v.n.d1, v.n.d2) * 0.2,
+                    na::Vector4::new(0.0, 0.0, 1.0, 1.0),
+                )).chain(vbo_data.iter().map(|v| (
+                    na::Point3::new(v.pos.d0, v.pos.d1, v.pos.d2),
+                    na::Vector3::new(v.t.d0, v.t.d1, v.t.d2) * 0.2,
+                    na::Vector4::new(0.0, 1.0, 0.0, 1.0),
+                )))
+            ),
             selectable_aabb: {
                 let mut min_x = None;
                 let mut min_y = None;
@@ -266,9 +266,7 @@ impl Dice {
         if let Some(ref selectable) = self.selectable_aabb {
             selectable.update_isometry(isometry);
         }
-        for debug_normals in &self.debug_tangent_normals {
-            debug_normals.update_isometry(isometry);
-        }
+        self.debug_tangent_normals.update_isometry(isometry);
     }
 
     pub fn render(&self, gl: &gl::Gl, viewprojection_matrix: &na::Matrix4<f32>, camera_pos: &na::Vector3<f32>) {

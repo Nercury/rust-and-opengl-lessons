@@ -14,7 +14,7 @@ pub use self::shader::{Shader, Program, Error};
 pub use self::texture::{Texture, TextureLoadBuilder, TextureLoadOptions};
 pub use self::viewport::Viewport;
 pub use self::color_buffer::ColorBuffer;
-pub use self::debug_lines::{DebugLines, RayMarker, AabbMarker};
+pub use self::debug_lines::{DebugLines, RayMarkers, AabbMarker};
 pub use self::profiler::{FrameProfiler, EventCountProfiler};
 
 fn gl_error_to_str(error: u32) -> &'static str {

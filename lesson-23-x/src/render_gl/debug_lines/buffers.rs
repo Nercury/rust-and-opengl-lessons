@@ -39,57 +39,31 @@ pub struct Buffers {
     pub vbo_capacity: usize,
     pub multi_draw_items: Vec<MultiDrawItem>,
     lines_vbo: Buffer,
-    lines_instances_vbo: Buffer,
-    lines_ebo: Buffer,
     pub lines_vao: VertexArray,
 }
 
 impl Buffers {
     pub fn new(gl: &gl::Gl, vbo_capacity: usize) -> Buffers {
         let lines_vbo = Buffer::new_array(&gl);
-        let lines_instances_vbo = Buffer::new_array(&gl);
-        let lines_ebo = Buffer::new_element_array(&gl);
-
         let lines_vao = VertexArray::new(gl);
+
         lines_vao.bind();
-        lines_ebo.bind();
 
         lines_vbo.bind();
         LinePoint::vertex_attrib_pointers(gl);
         lines_vbo.unbind();
 
-        lines_instances_vbo.bind();
-        Instance::vertex_attrib_pointers(gl);
-        lines_instances_vbo.unbind();
-
         lines_vao.unbind();
-        lines_ebo.unbind();
 
         if vbo_capacity > 0 {
-            // resize vbo buffer
-
             lines_vbo.bind();
             lines_vbo.stream_draw_data_null::<LinePoint>(vbo_capacity);
-
-            // resize index buffer and upload indices
-
-            lines_ebo.bind();
-            lines_ebo.stream_draw_data_null::<u32>(vbo_capacity);
-            if let Some(mut buffer) = unsafe { lines_ebo.map_buffer_range_write_invalidate::<u32>(0, vbo_capacity) } {
-                for i in 0..vbo_capacity {
-                    buffer[i] = i as u32;
-                }
-            }
-
             lines_vbo.unbind();
-            lines_ebo.unbind();
         }
 
         Buffers {
             vbo_capacity,
             lines_vbo,
-            lines_instances_vbo,
-            lines_ebo,
             multi_draw_items: Vec::new(),
             lines_vao,
         }

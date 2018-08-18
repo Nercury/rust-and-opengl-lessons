@@ -15,6 +15,10 @@ impl Buffer where {
         Self::new(gl, gl::ELEMENT_ARRAY_BUFFER)
     }
 
+    pub fn new_draw_indirect(gl: &gl::Gl) -> Buffer {
+        Self::new(gl, gl::DRAW_INDIRECT_BUFFER)
+    }
+
     pub fn new(gl: &gl::Gl, buffer_type: gl::types::GLuint) -> Buffer {
         let mut vbo: gl::types::GLuint = 0;
         unsafe {
