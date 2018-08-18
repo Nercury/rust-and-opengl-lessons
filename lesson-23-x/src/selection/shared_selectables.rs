@@ -179,7 +179,7 @@ impl SharedSelectables {
     }
 
     pub fn drain_pending_action(&mut self, consumer_handle: ContainerHandle) -> Option<Action> {
-        if let Some(matching_action_index) = self.query.iter().enumerate().filter_map(|(index, a)| match a {
+        if let Some(_) = self.query.iter().enumerate().filter_map(|(index, a)| match a {
             &PendingAction { handle, .. } if consumer_handle == handle => Some(index),
             _ => None,
         }).next() {

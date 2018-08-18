@@ -1,16 +1,14 @@
 use gl;
 use failure;
-use render_gl::{self, buffer, DebugLines};
+use render_gl::{self, DebugLines};
 use selection::{self, Selectables, SelectableAABB};
 use resources::Resources;
 use nalgebra as na;
-use ncollide3d::bounding_volume::aabb::AABB;
-use mesh;
 
 mod buffers;
 mod dice_material;
 
-use self::buffers::{Buffers, ModelVertex};
+use self::buffers::{Buffers};
 
 pub struct Dice {
     transform: na::Isometry3<f32>,

@@ -1,6 +1,5 @@
 use render_gl::Program;
 use render_gl::ColorBuffer;
-use render_gl::buffer;
 use render_gl::data;
 use resources::Resources;
 use gl;
@@ -14,7 +13,7 @@ use std::cell::RefCell;
 mod shared_debug_lines;
 mod buffers;
 
-use self::buffers::{Buffers, MultiDrawItem, LinePoint, Instance};
+use self::buffers::{Buffers, MultiDrawItem, LinePoint};
 use self::shared_debug_lines::SharedDebugLines;
 
 pub struct DebugLines {

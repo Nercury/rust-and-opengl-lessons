@@ -5,7 +5,6 @@ use gl;
 use resources::Resources;
 use render_gl::Program;
 use render_gl::ColorBuffer;
-use render_gl::buffer::{Buffer, VertexArray};
 use render_gl::data;
 use super::buffers::{LinePoint, Buffers};
 
@@ -42,7 +41,7 @@ impl FrameData {
 }
 
 #[derive(Copy, Clone)]
-struct Item {
+pub struct Item {
     count: usize,
     color: data::u2_u10_u10_u10_rev_float,
 }
@@ -130,7 +129,6 @@ impl EventCountProfiler {
             if all_data_len > 0 {
                 buffers.lines_vbo.bind();
                 if let Some(mut buffer) = unsafe { buffers.lines_vbo.map_buffer_range_write_invalidate::<LinePoint>(0, all_data_len) } {
-                    let mut buffer_index = 0;
                     for (index, frame) in self.frame_data_history.iter().enumerate() {
                         let mut sum: f32 = 0.0;
                         for item in frame.iter() {

@@ -19,7 +19,6 @@ pub mod resources;
 pub mod mesh;
 pub mod selection;
 pub mod dices;
-pub mod propagation;
 pub mod system;
 mod debug;
 
