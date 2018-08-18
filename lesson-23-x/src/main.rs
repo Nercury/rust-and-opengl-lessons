@@ -26,7 +26,7 @@ mod debug;
 use failure::err_msg;
 use resources::Resources;
 use nalgebra as na;
-use std::time::Instant;
+use std::time::{Instant, Duration};
 use floating_duration::TimeAsFloat;
 use system::profiling::alloc_watch::PeekAlloc;
 use system::profiling::gl_watch;
@@ -216,12 +216,16 @@ fn run() -> Result<(), failure::Error> {
 
         frame_profiler.push(render::color_green());
 
+        while time.elapsed() < Duration::from_millis(12) {
+            ::std::thread::yield_now()
+        }
+
         if let Some(values) = PeekAlloc::peek() {
             if values.alloc_num > 0 {
-                allocation_profiler.push(values.alloc_num, render::color_red());
+                allocation_profiler.push(values.alloc_num, render::color_white());
             }
             if values.dealloc_num > 0 {
-                allocation_profiler.push(values.dealloc_num, render::color_blue());
+                allocation_profiler.push(values.dealloc_num, render::color_black());
             }
         }
 

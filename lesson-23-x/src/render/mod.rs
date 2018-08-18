@@ -24,6 +24,10 @@ pub fn color_white() -> Vector3<f32> {
     Vector3::<f32>::new(1.0, 1.0, 1.0)
 }
 
+pub fn color_black() -> Vector3<f32> {
+    Vector3::<f32>::new(0.0, 0.0, 0.0)
+}
+
 pub fn color_gray() -> Vector3<f32> {
     Vector3::<f32>::new(0.5, 0.5, 0.5)
 }
