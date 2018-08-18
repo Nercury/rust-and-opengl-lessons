@@ -138,70 +138,73 @@ impl FrameProfiler {
         let bottom_offset = self.bottom_offset_px as f32;
 
         if let Some(ref mut buffers) = self.buffers {
-            buffers.lines_vbo.bind();
-            if let Some(mut buffer) = unsafe { buffers.lines_vbo.map_buffer_range_write_invalidate::<LinePoint>(0, all_data_len) } {
-                let mut buffer_index = 0;
-                for (index, frame) in self.frame_data_history.iter().enumerate() {
-                    let mut previous_instant = frame.start;
-                    for item in frame.iter() {
-                        let item_start_diff = (previous_instant - frame.start).as_fractional_millis() as f32;
-                        let item_end_diff = (item.time - frame.start).as_fractional_millis() as f32;
+            if all_data_len > 0 {
+                buffers.lines_vbo.bind();
+                if let Some(mut buffer) = unsafe { buffers.lines_vbo.map_buffer_range_write_invalidate::<LinePoint>(0, all_data_len) } {
+                    let mut buffer_index = 0;
+                    for (index, frame) in self.frame_data_history.iter().enumerate() {
+                        let mut previous_instant = frame.start;
+                        for item in frame.iter() {
+                            let item_start_diff = (previous_instant - frame.start).as_fractional_millis() as f32;
+                            let item_end_diff = (item.time - frame.start).as_fractional_millis() as f32;
 
-                        buffer.push(LinePoint {
-                            pos: (index as f32, bottom_offset + item_start_diff * y_scale).into(),
-                            color: item.color,
-                        });
+                            buffer.push(LinePoint {
+                                pos: (index as f32, bottom_offset + item_start_diff * y_scale).into(),
+                                color: item.color,
+                            });
 
-                        buffer.push(LinePoint {
-                            pos: (index as f32, bottom_offset + item_end_diff * y_scale).into(),
-                            color: item.color,
-                        });
+                            buffer.push(LinePoint {
+                                pos: (index as f32, bottom_offset + item_end_diff * y_scale).into(),
+                                color: item.color,
+                            });
 
-                        previous_instant = item.time;
+                            previous_instant = item.time;
+                        }
                     }
+
+                    // 30 fps bar, red
+                    let bar_height = bottom_offset + 33.333 * y_scale;
+
+                    buffer.push(LinePoint {
+                        pos: (0.0, bar_height).into(),
+                        color: (1.0, 0.0, 0.0, 0.6).into(),
+                    });
+
+                    buffer.push(LinePoint {
+                        pos: (self.view_width_pixels as f32, bar_height).into(),
+                        color: (1.0, 0.0, 0.0, 0.3).into(),
+                    });
+
+                    // 60 fps bar, yellow
+                    let bar_height = bottom_offset + 16.666 * y_scale;
+
+                    buffer.push(LinePoint {
+                        pos: (0.0, bar_height).into(),
+                        color: (1.0, 1.0, 0.0, 0.6).into(),
+                    });
+
+                    buffer.push(LinePoint {
+                        pos: (self.view_width_pixels as f32, bar_height).into(),
+                        color: (1.0, 1.0, 0.0, 0.3).into(),
+                    });
+
+                    // 144 fps bar, green
+                    let bar_height = bottom_offset + 6.9 * y_scale;
+
+                    buffer.push(LinePoint {
+                        pos: (0.0, bar_height).into(),
+                        color: (0.0, 1.0, 0.0, 0.6).into(),
+                    });
+
+                    buffer.push(LinePoint {
+                        pos: (self.view_width_pixels as f32, bar_height).into(),
+                        color: (0.0, 1.0, 0.0, 0.3).into(),
+                    });
                 }
-
-                // 30 fps bar, red
-                let bar_height = bottom_offset + 33.333 * y_scale;
-
-                buffer.push(LinePoint {
-                    pos: (0.0, bar_height).into(),
-                    color: (1.0, 0.0, 0.0, 0.6).into(),
-                });
-
-                buffer.push(LinePoint {
-                    pos: (self.view_width_pixels as f32, bar_height).into(),
-                    color: (1.0, 0.0, 0.0, 0.3).into(),
-                });
-
-                // 60 fps bar, yellow
-                let bar_height = bottom_offset + 16.666 * y_scale;
-
-                buffer.push(LinePoint {
-                    pos: (0.0, bar_height).into(),
-                    color: (1.0, 1.0, 0.0, 0.6).into(),
-                });
-
-                buffer.push(LinePoint {
-                    pos: (self.view_width_pixels as f32, bar_height).into(),
-                    color: (1.0, 1.0, 0.0, 0.3).into(),
-                });
-
-                // 144 fps bar, green
-                let bar_height = bottom_offset + 6.9 * y_scale;
-
-                buffer.push(LinePoint {
-                    pos: (0.0, bar_height).into(),
-                    color: (0.0, 1.0, 0.0, 0.6).into(),
-                });
-
-                buffer.push(LinePoint {
-                    pos: (self.view_width_pixels as f32, bar_height).into(),
-                    color: (0.0, 1.0, 0.0, 0.3).into(),
-                });
+                buffers.lines_vbo.unbind();
             }
-            buffers.lines_vbo.unbind();
-            buffers.vertex_count = all_data_len + fps_bar_30 + fps_bar_60 + fps_bar_144;
+
+            buffers.vertex_count = all_data_len;
         }
     }
 

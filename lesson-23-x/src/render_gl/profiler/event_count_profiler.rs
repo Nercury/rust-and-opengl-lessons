@@ -127,30 +127,33 @@ impl EventCountProfiler {
         let bottom_offset = self.bottom_offset_px as f32;
 
         if let Some(ref mut buffers) = self.buffers {
-            buffers.lines_vbo.bind();
-            if let Some(mut buffer) = unsafe { buffers.lines_vbo.map_buffer_range_write_invalidate::<LinePoint>(0, all_data_len) } {
-                let mut buffer_index = 0;
-                for (index, frame) in self.frame_data_history.iter().enumerate() {
-                    let mut sum: f32 = 0.0;
-                    for item in frame.iter() {
-                        let item_start_diff = sum;
-                        sum += item.count as f32;
-                        let item_end_diff = sum;
+            if all_data_len > 0 {
+                buffers.lines_vbo.bind();
+                if let Some(mut buffer) = unsafe { buffers.lines_vbo.map_buffer_range_write_invalidate::<LinePoint>(0, all_data_len) } {
+                    let mut buffer_index = 0;
+                    for (index, frame) in self.frame_data_history.iter().enumerate() {
+                        let mut sum: f32 = 0.0;
+                        for item in frame.iter() {
+                            let item_start_diff = sum;
+                            sum += item.count as f32;
+                            let item_end_diff = sum;
 
-                        buffer.push(LinePoint {
-                            pos: (index as f32, bottom_offset + item_start_diff * y_scale).into(),
-                            color: item.color,
-                        });
+                            buffer.push(LinePoint {
+                                pos: (index as f32, bottom_offset + item_start_diff * y_scale).into(),
+                                color: item.color,
+                            });
 
-                        buffer.push(LinePoint {
-                            pos: (index as f32, bottom_offset + item_end_diff * y_scale).into(),
-                            color: item.color,
-                        });
+                            buffer.push(LinePoint {
+                                pos: (index as f32, bottom_offset + item_end_diff * y_scale).into(),
+                                color: item.color,
+                            });
+                        }
                     }
                 }
+                buffers.lines_vbo.unbind();
             }
+
             buffers.vertex_count = all_data_len;
-            buffers.lines_vbo.unbind();
         }
     }
 

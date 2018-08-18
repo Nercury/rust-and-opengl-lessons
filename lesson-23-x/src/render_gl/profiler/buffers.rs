@@ -29,9 +29,11 @@ impl Buffers {
         lines_vbo.unbind();
         lines_vao.unbind();
 
-        lines_vbo.bind();
-        lines_vbo.stream_draw_data_null::<LinePoint>(vertex_capacity);
-        lines_vbo.unbind();
+        if vertex_capacity > 0 {
+            lines_vbo.bind();
+            lines_vbo.stream_draw_data_null::<LinePoint>(vertex_capacity);
+            lines_vbo.unbind();
+        }
 
         Buffers {
             vertex_capacity,

@@ -58,29 +58,32 @@ impl Buffers {
         LinePoint::vertex_attrib_pointers(gl);
         lines_vbo.unbind();
 
-//        lines_instances_vbo.bind();
-//        Instance::vertex_attrib_pointers(gl);
-//        lines_instances_vbo.unbind();
+        lines_instances_vbo.bind();
+        Instance::vertex_attrib_pointers(gl);
+        lines_instances_vbo.unbind();
 
         lines_vao.unbind();
-
-        // resize vbo buffer
-
-        lines_vbo.bind();
-        lines_vbo.stream_draw_data_null::<LinePoint>(vbo_capacity);
-
-        // resize index buffer and upload indices
-
-        lines_ebo.bind();
-        lines_ebo.stream_draw_data_null::<u32>(vbo_capacity);
-        if let Some(mut buffer) = unsafe { lines_ebo.map_buffer_range_write_invalidate::<u32>(0, vbo_capacity) } {
-            for i in 0..vbo_capacity {
-                buffer[i] = i as u32;
-            }
-        }
-
-        lines_vbo.unbind();
         lines_ebo.unbind();
+
+        if vbo_capacity > 0 {
+            // resize vbo buffer
+
+            lines_vbo.bind();
+            lines_vbo.stream_draw_data_null::<LinePoint>(vbo_capacity);
+
+            // resize index buffer and upload indices
+
+            lines_ebo.bind();
+            lines_ebo.stream_draw_data_null::<u32>(vbo_capacity);
+            if let Some(mut buffer) = unsafe { lines_ebo.map_buffer_range_write_invalidate::<u32>(0, vbo_capacity) } {
+                for i in 0..vbo_capacity {
+                    buffer[i] = i as u32;
+                }
+            }
+
+            lines_vbo.unbind();
+            lines_ebo.unbind();
+        }
 
         Buffers {
             vbo_capacity,
@@ -93,12 +96,14 @@ impl Buffers {
     }
 
     pub fn upload_vertices(&self, items: impl Iterator<Item = LinePoint>) {
-        self.lines_vbo.bind();
-        if let Some(mut buffer) = unsafe { self.lines_vbo.map_buffer_range_write_invalidate::<LinePoint>(0, self.vbo_capacity) } {
-            for (index, item) in items.enumerate().take(self.vbo_capacity) {
-                *unsafe { buffer.get_unchecked_mut(index) } = item;
+        if self.vbo_capacity > 0 {
+            self.lines_vbo.bind();
+            if let Some(mut buffer) = unsafe { self.lines_vbo.map_buffer_range_write_invalidate::<LinePoint>(0, self.vbo_capacity) } {
+                for (index, item) in items.enumerate().take(self.vbo_capacity) {
+                    *unsafe { buffer.get_unchecked_mut(index) } = item;
+                }
             }
+            self.lines_vbo.unbind();
         }
-        self.lines_vbo.unbind();
     }
 }

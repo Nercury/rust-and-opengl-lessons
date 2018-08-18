@@ -151,6 +151,8 @@ fn run() -> Result<(), failure::Error> {
                 },
                 sdl2::event::Event::KeyDown { scancode: Some(sdl2::keyboard::Scancode::P), .. } => {
                     frame_profiler.toggle();
+                    allocation_profiler.toggle();
+                    gl_call_profiler.toggle();
                 },
                 _ => (),
             }
