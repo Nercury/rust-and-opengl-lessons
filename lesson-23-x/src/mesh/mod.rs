@@ -1,4 +1,5 @@
 use nalgebra as na;
+use ncollide3d::bounding_volume::aabb::AABB;
 use resources::ResourcePathBuf;
 
 #[derive(Clone, Debug)]
@@ -22,7 +23,7 @@ pub enum Primitive {
 
 #[derive(Copy, Clone, Debug)]
 pub struct Vertex {
-    pub pos: na::Vector3<f32>,
+    pub pos: na::Point3<f32>,
     pub normal: Option<na::Vector3<f32>>,
     pub tangents: Option<Tangents>,
     pub uv: Option<na::Vector2<f32>>,
@@ -49,7 +50,7 @@ impl Tangents {
         }
     }
 
-    pub fn from_triangle(p0: &na::Vector3<f32>, p1: &na::Vector3<f32>, p2: &na::Vector3<f32>, uv0: &na::Vector2<f32>, uv1: &na::Vector2<f32>, uv2: &na::Vector2<f32>) -> Tangents {
+    pub fn from_triangle(p0: &na::Point3<f32>, p1: &na::Point3<f32>, p2: &na::Point3<f32>, uv0: &na::Vector2<f32>, uv1: &na::Vector2<f32>, uv2: &na::Vector2<f32>) -> Tangents {
         // position differences p1->p2 and p1->p3
 
         let v = p1 - p0;
@@ -103,6 +104,44 @@ impl Mesh {
         }
 
         result
+    }
+
+    pub fn aabb(&self) -> Option<AABB<f32>> {
+        let mut min_x = None;
+        let mut min_y = None;
+        let mut min_z = None;
+        let mut max_x = None;
+        let mut max_y = None;
+        let mut max_z = None;
+
+        fn update_min(val: &mut Option<f32>, new: f32) {
+            *val = match val {
+                None => Some(new),
+                Some(val) => if new < *val { Some(new) } else { return; },
+            };
+        }
+
+        fn update_max(val: &mut Option<f32>, new: f32) {
+            *val = match val {
+                None => Some(new),
+                Some(val) => if new > *val { Some(new) } else { return; },
+            };
+        }
+
+        for v in &self.vertices {
+            update_min(&mut min_x, v.pos.x);
+            update_min(&mut min_y, v.pos.y);
+            update_min(&mut min_z, v.pos.z);
+            update_max(&mut max_x, v.pos.x);
+            update_max(&mut max_y, v.pos.y);
+            update_max(&mut max_z, v.pos.z);
+        }
+
+        if let (Some(min_x), Some(min_y), Some(min_z), Some(max_x), Some(max_y), Some(max_z)) = (min_x, min_y, min_z, max_x, max_y, max_z) {
+            Some(AABB::new([min_x, min_y, min_z].into(), [max_x, max_y, max_z].into()))
+        } else {
+            None
+        }
     }
 
     pub fn calculate_tangents(&mut self) {

@@ -18,7 +18,7 @@ pub mod render;
 pub mod resources;
 pub mod mesh;
 pub mod selection;
-pub mod entities;
+pub mod dices;
 pub mod propagation;
 pub mod system;
 mod debug;
@@ -98,7 +98,7 @@ fn run() -> Result<(), failure::Error> {
     let mut dices = Vec::new();
     for x in -3..=3 {
         for y in -3..=3 {
-            let mut dice = entities::dice::Dice::new(&res, &gl, &debug_lines, &selectables)?;
+            let mut dice = dices::Dice::new(&res, &gl, &debug_lines, &selectables)?;
             dice.set_transform(na::Isometry3::from_parts(na::Translation3::from_vector(
                 [4.0 * x as f32, 4.0 * y as f32, 0.0].into()
             ), na::UnitQuaternion::identity()));
