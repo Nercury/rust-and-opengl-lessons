@@ -1,0 +1,9 @@
+[package]
+name = "resources"
+version = "0.1.0"
+authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
+
+[dependencies]
+failure = "0.1"
+slab = "0.4"
+twox-hash = "1.1"

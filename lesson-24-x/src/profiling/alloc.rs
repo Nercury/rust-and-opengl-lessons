@@ -13,7 +13,8 @@ pub fn dealloc_count() -> usize {
 #[cfg(feature = "alloc_debug")]
 mod optional_impl {
     static ALLOC_COUNT: ::std::sync::atomic::AtomicUsize = ::std::sync::atomic::AtomicUsize::new(0);
-    static DEALLOC_COUNT: ::std::sync::atomic::AtomicUsize = ::std::sync::atomic::AtomicUsize::new(0);
+    static DEALLOC_COUNT: ::std::sync::atomic::AtomicUsize =
+        ::std::sync::atomic::AtomicUsize::new(0);
 
     pub fn reset() {
         ALLOC_COUNT.store(0, ::std::sync::atomic::Ordering::SeqCst);
@@ -24,7 +25,7 @@ mod optional_impl {
         ALLOC_COUNT.load(::std::sync::atomic::Ordering::SeqCst)
     }
 
-    pub (super) fn alloc_inc() {
+    pub(super) fn alloc_inc() {
         ALLOC_COUNT.fetch_add(1, ::std::sync::atomic::Ordering::SeqCst);
     }
 
@@ -32,32 +33,29 @@ mod optional_impl {
         DEALLOC_COUNT.load(::std::sync::atomic::Ordering::SeqCst)
     }
 
-    pub (super) fn dealloc_inc() {
+    pub(super) fn dealloc_inc() {
         DEALLOC_COUNT.fetch_add(1, ::std::sync::atomic::Ordering::SeqCst);
     }
 }
 
 #[cfg(not(feature = "alloc_debug"))]
 mod optional_impl {
-    pub fn reset() {
-    }
+    pub fn reset() {}
 
     pub fn alloc_count() -> usize {
         0
     }
 
-    fn alloc_inc() {
-    }
+    pub(super) fn alloc_inc() {}
 
     pub fn dealloc_count() -> usize {
         0
     }
 
-    fn dealloc_inc() {
-    }
+    pub(super) fn dealloc_inc() {}
 }
 
-use std::alloc::{GlobalAlloc, System, Layout};
+use std::alloc::{GlobalAlloc, Layout, System};
 
 pub struct ProfilingAlloc;
 

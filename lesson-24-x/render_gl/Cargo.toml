@@ -4,3 +4,6 @@ version = "0.1.0"
 authors = []
 
 [dependencies]
+gl = { path = "../../lib/gl" }
+half = "1.1.1"
+vec-2-10-10-10 = "0.1.2"
