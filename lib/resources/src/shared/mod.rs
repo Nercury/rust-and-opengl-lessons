@@ -64,7 +64,7 @@ pub struct UserKey {
 }
 
 #[derive(Eq, PartialEq)]
-pub enum SyncPoint {
+pub enum InternalSyncPoint {
     Backend {
         backend_hash: u64,
         sync_point: BackendSyncPoint,
@@ -98,14 +98,14 @@ impl SharedResources {
         }
     }
 
-    pub fn new_changes(&mut self) -> Option<SyncPoint> {
+    pub fn new_changes(&mut self) -> Option<InternalSyncPoint> {
         if let Some(instant) = self.everything_changed {
-            return Some(SyncPoint::Everything { time: instant });
+            return Some(InternalSyncPoint::Everything { time: instant });
         }
         for (key, backend) in self.backends.iter_mut() {
             if let Some(sync_point) = backend.new_changes() {
                 return Some(
-                    SyncPoint::Backend {
+                    InternalSyncPoint::Backend {
                         backend_hash: backend_hash(&key.id),
                         sync_point,
                     }
@@ -115,12 +115,12 @@ impl SharedResources {
         None
     }
 
-    pub fn notify_changes_synced(&mut self, sync_point: SyncPoint) {
+    pub fn notify_changes_synced(&mut self, sync_point: InternalSyncPoint) {
         match sync_point {
-            SyncPoint::Everything { time } => if self.everything_changed == Some(time) {
+            InternalSyncPoint::Everything { time } => if self.everything_changed == Some(time) {
                 self.everything_changed = None;
             },
-            SyncPoint::Backend { backend_hash: bh, sync_point: sp } => {
+            InternalSyncPoint::Backend { backend_hash: bh, sync_point: sp } => {
                 for (key, backend) in self.backends.iter_mut() {
                     if backend_hash(&key.id) == bh {
                         backend.notify_changes_synced(sp);

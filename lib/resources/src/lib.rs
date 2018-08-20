@@ -9,8 +9,8 @@ pub use self::path::{ResourcePath, ResourcePathBuf};
 
 mod shared;
 
-use self::shared::{SharedResources, UserKey};
-pub use self::shared::{Error, SyncPoint};
+use self::shared::{SharedResources, UserKey, InternalSyncPoint};
+pub use self::shared::{Error};
 
 pub mod backend;
 
@@ -19,6 +19,8 @@ use self::backend::{NotifyDidRead, NotifyDidWrite};
 use std::time::Instant;
 use std::sync::Arc;
 use std::sync::RwLock;
+
+pub struct SyncPoint(InternalSyncPoint);
 
 #[derive(Clone)]
 pub struct Resources {
@@ -62,12 +64,13 @@ impl Resources {
         self.shared.write()
             .expect("failed to lock for write")
             .new_changes()
+            .map(|p| SyncPoint(p))
     }
 
     pub fn notify_changes_synced(&self, sync_point: SyncPoint) {
         self.shared.write()
             .expect("failed to lock for write")
-            .notify_changes_synced(sync_point)
+            .notify_changes_synced(sync_point.0)
     }
 }
 
