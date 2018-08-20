@@ -16,6 +16,7 @@ pub mod backend;
 
 use self::backend::{NotifyDidRead, NotifyDidWrite};
 
+use std::time::Instant;
 use std::sync::Arc;
 use std::sync::RwLock;
 
@@ -31,15 +32,21 @@ impl Resources {
         }
     }
 
-    pub fn loaded_from<L: backend::Backend + 'static>(self, loader_id: &str, order: isize, loader: L) -> Resources {
-        // TODO: Adding or removing loader should invalidate all related resources
-
-        {
-            let mut resources = self.shared.write()
-                .expect("failed to lock for write");
-            resources.insert_loader(loader_id, order, loader);
-        }
+    pub fn loaded_from<L: backend::Backend + 'static>(self, loader_id: &str, order: isize, backend: L) -> Resources {
+        self.insert_loader(loader_id, order, backend);
         self
+    }
+
+    pub fn insert_loader<L: backend::Backend + 'static>(&self, loader_id: &str, order: isize, backend: L) {
+        let mut resources = self.shared.write()
+            .expect("failed to lock for write");
+        resources.insert_loader(loader_id, order, backend);
+    }
+
+    pub fn remove_loader(&self, loader_id: &str) {
+        let mut resources = self.shared.write()
+            .expect("failed to lock for write");
+        resources.remove_loader(loader_id);
     }
 
     pub fn resource<P: AsRef<ResourcePath>>(&self, path: P) -> Resource {
@@ -70,10 +77,10 @@ struct NotifyDidReadForResources {
 }
 
 impl NotifyDidRead for NotifyDidReadForResources {
-    fn notify_did_read(&self) {
+    fn notify_did_read(&self, modification_time: Option<Instant>) {
         self.shared.write()
             .expect("failed to lock for write")
-            .notify_did_read(self.key)
+            .notify_did_read(self.key, modification_time)
     }
 }
 
@@ -83,10 +90,10 @@ struct NotifyDidWriteForResources {
 }
 
 impl NotifyDidWrite for NotifyDidWriteForResources {
-    fn notify_did_write(&self) {
+    fn notify_did_write(&self, modification_time: Instant) {
         self.shared.write()
             .expect("failed to lock for write")
-            .notify_did_write(self.key)
+            .notify_did_write(self.key, modification_time)
     }
 }
 
@@ -104,10 +111,11 @@ impl Resource {
             .expect("failed to lock for read");
 
         resources
-            .get_resource_path_backend_containing_resource(self.key.resource_id)
-            .and_then(|(path, backend)|
+            .get_resource_path_backend_containing_resource(self.key)
+            .and_then(|(path, modification_time, backend)|
                 backend.reader(
                     path,
+                    modification_time,
                     Box::new(NotifyDidReadForResources {
                         shared: shared_ref.clone(),
                         key: *key_ref,
@@ -124,10 +132,11 @@ impl Resource {
             .expect("failed to lock for read");
 
         resources
-            .get_resource_path_backend(backend_id, self.key.resource_id)
-            .and_then(|(path, backend)|
+            .get_resource_path_backend(backend_id, self.key)
+            .and_then(|(path, modification_time, backend)|
                 backend.reader(
                     path,
+                    modification_time,
                     Box::new(NotifyDidReadForResources {
                         shared: shared_ref.clone(),
                         key: *key_ref,
@@ -144,8 +153,8 @@ impl Resource {
             .expect("failed to lock for read");
 
         resources
-            .get_resource_path_backend(backend_id, self.key.resource_id)
-            .and_then(|(path, backend)|
+            .get_resource_path_backend(backend_id, self.key)
+            .and_then(|(path, _, backend)|
                 if backend.can_write() {
                     backend.writer(
                         path,
@@ -164,7 +173,7 @@ impl Resource {
         let resources = self.shared.read()
             .expect("failed to lock for read");
         resources.get_path_user_metadata(self.key)
-            .map(|m| m.should_reload)
+            .map(|m| m.should_reload.is_some())
             .unwrap_or(false)
     }
 }
@@ -325,5 +334,58 @@ mod test {
         assert!(resource_proxy_b.is_modified(), "resources remain marked as modified until read");
         assert!(!resource_proxy_a.is_modified(), "last written resource looses modified state");
         assert!(res.new_changes().is_some());
+    }
+
+    #[test]
+    fn removing_the_loader_should_invalidate_resource() {
+        let res = Resources::new()
+            .loaded_from(
+                "a", 0,
+                backend::InMemory::new()
+                    .with("name", b"hello"),
+            );
+
+        let resource_proxy_a = res.resource("name");
+
+        res.remove_loader("a");
+
+        assert!(res.new_changes().is_some());
+        let point = res.new_changes().unwrap();
+
+        assert!(resource_proxy_a.is_modified(), "removed loader should trigger modified flag on resource");
+        res.notify_changes_synced(point);
+
+        assert!(res.new_changes().is_none());
+    }
+
+    #[test]
+    fn adding_the_loader_should_override_resource_and_invalidate_it() {
+        let res = Resources::new()
+            .loaded_from(
+                "a", 0,
+                backend::InMemory::new()
+                    .with("name", b"hello"),
+            );
+
+        let resource_proxy_a = res.resource("name");
+
+        res.insert_loader("b", 1,
+                          backend::InMemory::new()
+                              .with("name", b"world"));
+
+        assert!(res.new_changes().is_some());
+        let point = res.new_changes().unwrap();
+
+        assert!(resource_proxy_a.is_modified(), "adding loader should trigger modified flag on resource");
+
+        assert_eq!(
+            &resource_proxy_a.any_reader().expect(r#"path "name" should exist"#)
+                .read_vec().unwrap(),
+            b"world"
+        );
+        assert!(!resource_proxy_a.is_modified(), "reading resouce should mark it read");
+        res.notify_changes_synced(point);
+
+        assert!(res.new_changes().is_none());
     }
 }

@@ -1,4 +1,5 @@
 use std::io;
+use std::time::Instant;
 use std::collections::HashMap;
 use std::collections::BTreeMap;
 use std::hash::BuildHasherDefault;
@@ -6,6 +7,10 @@ use twox_hash::XxHash;
 use path::{ResourcePath, ResourcePathBuf};
 use slab::Slab;
 use backend::{Backend, BackendSyncPoint};
+
+mod resource_metadata;
+
+use self::resource_metadata::{ResourceMetadata, ResourceUserMetadata};
 
 #[derive(Debug, Fail)]
 pub enum Error {
@@ -58,65 +63,22 @@ pub struct UserKey {
     user_id: usize,
 }
 
-pub struct ResourceUserMetadata {
-    pub should_reload: bool,
-}
-
-pub struct ResourceMetadata {
-    path: ResourcePathBuf,
-    users: Slab<ResourceUserMetadata>,
-}
-
-impl ResourceMetadata {
-    pub fn new(path: &ResourcePath) -> ResourceMetadata {
-        ResourceMetadata {
-            path: ResourcePathBuf::from(path),
-            users: Slab::with_capacity(2),
-        }
-    }
-
-    pub fn new_user(&mut self) -> usize {
-        self.users.insert(ResourceUserMetadata {
-            should_reload: false,
-        })
-    }
-
-    pub fn remove_user(&mut self, id: usize) {
-        self.users.remove(id);
-        if self.users.len() > 8 && self.users.capacity() / self.users.len() > 2 {
-            self.users.shrink_to_fit()
-        }
-    }
-
-    pub fn get_user_metadata(&self, id: usize) -> Option<&ResourceUserMetadata> {
-        self.users.get(id)
-    }
-
-    pub fn get_user_metadata_mut(&mut self, id: usize) -> Option<&mut ResourceUserMetadata> {
-        self.users.get_mut(id)
-    }
-
-    pub fn has_users(&mut self) -> bool {
-        self.users.len() > 0
-    }
-
-    pub fn should_reload_except(&mut self, id: usize) {
-        for (user_id, user) in self.users.iter_mut() {
-            user.should_reload = user_id != id;
-        }
-    }
-}
-
 #[derive(Eq, PartialEq)]
-pub struct SyncPoint {
-    backend_hash: u64,
-    sync_point: BackendSyncPoint,
+pub enum SyncPoint {
+    Backend {
+        backend_hash: u64,
+        sync_point: BackendSyncPoint,
+    },
+    Everything {
+        time: Instant,
+    },
 }
 
 pub struct SharedResources {
     resource_metadata: Slab<ResourceMetadata>,
     path_resource_ids: HashMap<ResourcePathBuf, usize, BuildHasherDefault<XxHash>>,
     backends: BTreeMap<LoaderKey, Box<Backend>>,
+    everything_changed: Option<Instant>,
 }
 
 fn backend_hash(id: &str) -> u64 {
@@ -132,14 +94,18 @@ impl SharedResources {
             resource_metadata: Slab::with_capacity(1024), // 1024 files is enough for everyone
             path_resource_ids: HashMap::default(),
             backends: BTreeMap::new(),
+            everything_changed: None,
         }
     }
 
     pub fn new_changes(&mut self) -> Option<SyncPoint> {
+        if let Some(instant) = self.everything_changed {
+            return Some(SyncPoint::Everything { time: instant });
+        }
         for (key, backend) in self.backends.iter_mut() {
             if let Some(sync_point) = backend.new_changes() {
                 return Some(
-                    SyncPoint {
+                    SyncPoint::Backend {
                         backend_hash: backend_hash(&key.id),
                         sync_point,
                     }
@@ -150,9 +116,16 @@ impl SharedResources {
     }
 
     pub fn notify_changes_synced(&mut self, sync_point: SyncPoint) {
-        for (key, backend) in self.backends.iter_mut() {
-            if backend_hash(&key.id) == sync_point.backend_hash {
-                backend.notify_changes_synced(sync_point.sync_point);
+        match sync_point {
+            SyncPoint::Everything { time } => if self.everything_changed == Some(time) {
+                self.everything_changed = None;
+            },
+            SyncPoint::Backend { backend_hash: bh, sync_point: sp } => {
+                for (key, backend) in self.backends.iter_mut() {
+                    if backend_hash(&key.id) == bh {
+                        backend.notify_changes_synced(sp);
+                    }
+                }
             }
         }
     }
@@ -177,7 +150,7 @@ impl SharedResources {
     pub fn append_resource_user(&mut self, resource_id: usize) -> UserKey {
         UserKey {
             resource_id,
-            user_id: self.get_resource_metadata_mut(resource_id)
+            user_id: self.resource_metadata.get_mut(resource_id)
                 .expect("expected resource_id to exist when appending new user")
                 .new_user(),
         }
@@ -185,7 +158,7 @@ impl SharedResources {
 
     pub fn remove_resource_user(&mut self, key: UserKey) {
         let has_users = {
-            if let Some(metadata) = self.get_resource_metadata_mut(key.resource_id) {
+            if let Some(metadata) = self.resource_metadata.get_mut(key.resource_id) {
                 metadata.remove_user(key.user_id);
                 Some(metadata.has_users())
             } else {
@@ -199,14 +172,6 @@ impl SharedResources {
         }
     }
 
-    fn get_resource_metadata(&self, id: usize) -> Option<&ResourceMetadata> {
-        self.resource_metadata.get(id)
-    }
-
-    fn get_resource_metadata_mut(&mut self, id: usize) -> Option<&mut ResourceMetadata> {
-        self.resource_metadata.get_mut(id)
-    }
-
     pub fn get_path_user_metadata(&self, key: UserKey) -> Option<&ResourceUserMetadata> {
         self.resource_metadata.get(key.resource_id)
             .and_then(|path_metadata| path_metadata.get_user_metadata(key.user_id))
@@ -217,50 +182,86 @@ impl SharedResources {
             .and_then(|path_metadata| path_metadata.get_user_metadata_mut(key.user_id))
     }
 
-    pub fn insert_loader<L: Backend + 'static>(&mut self, loader_id: &str, order: isize, loader: L) {
+    pub fn insert_loader<L: Backend + 'static>(&mut self, loader_id: &str, order: isize, backend: L) {
+        let reload_instant = Instant::now();
+        for (path, resource_id) in self.path_resource_ids.iter() {
+            if backend.exists(&path) {
+                if let Some(metadata) = self.resource_metadata.get_mut(*resource_id) {
+                    metadata.everyone_should_reload(reload_instant);
+                }
+            }
+        }
         self.backends.insert(
             LoaderKey { id: loader_id.into(), order },
-            Box::new(loader) as Box<Backend>,
+            Box::new(backend) as Box<Backend>,
         );
+        if self.path_resource_ids.len() > 0 {
+            self.everything_changed = Some(reload_instant);
+        }
     }
 
-    pub fn get_resource_path_backend(&self, backend_id: &str, resource_id: usize) -> Option<(&ResourcePath, &Box<Backend>)> {
-        let path = match self.get_resource_metadata(resource_id) {
-            Some(ref m) => m.path.as_ref(),
-            None => return None,
-        };
+    pub fn remove_loader(&mut self, loader_id: &str) {
+        let reload_instant = Instant::now();
+        let remove_keys: Vec<_> = self.backends.keys().filter(|k| k.id == loader_id).map(|k| k.clone()).collect();
+        for removed_key in remove_keys {
+            if let Some(removed_backend) = self.backends.remove(&removed_key) {
+                for (path, resource_id) in self.path_resource_ids.iter() {
+                    if removed_backend.exists(&path) {
+                        if let Some(metadata) = self.resource_metadata.get_mut(*resource_id) {
+                            metadata.everyone_should_reload(reload_instant);
+                        }
+                    }
+                }
+            }
+        }
+        if self.path_resource_ids.len() > 0 {
+            self.everything_changed = Some(reload_instant);
+        }
+    }
 
-        if let Some((_, backend)) = self.backends.iter().filter(|(k, _)| &k.id == backend_id).next() {
-            return Some((path, backend));
+    pub fn get_resource_path_backend(&self, backend_id: &str, key: UserKey) -> Option<(&ResourcePath, Option<Instant>, &Box<Backend>)> {
+        let path_with_modification_time = self.resource_metadata.get(key.resource_id)
+            .and_then(|m|
+                m.users.get(key.user_id)
+                    .map(|u| (m.path.as_ref(), u.should_reload))
+            );
+
+        if let (Some((path, modification_time)), Some((_, backend))) = (path_with_modification_time, self.backends.iter().filter(|(k, _)| &k.id == backend_id).next()) {
+            return Some((path, modification_time, backend));
         }
 
         None
     }
 
-    pub fn get_resource_path_backend_containing_resource(&self, resource_id: usize) -> Option<(&ResourcePath, &Box<Backend>)> {
-        let path = match self.get_resource_metadata(resource_id) {
-            Some(ref m) => m.path.as_ref(),
-            None => return None,
-        };
+    pub fn get_resource_path_backend_containing_resource(&self, key: UserKey) -> Option<(&ResourcePath, Option<Instant>, &Box<Backend>)> {
+        let path_with_modification_time = self.resource_metadata.get(key.resource_id)
+            .and_then(|m|
+                m.users.get(key.user_id)
+                    .map(|u| (m.path.as_ref(), u.should_reload))
+            );
 
-        for backend in self.backends.values().rev() {
-            if backend.exists(path) {
-                return Some((path, backend));
+        if let Some((path, modification_time)) = path_with_modification_time {
+            for backend in self.backends.values().rev() {
+                if backend.exists(path) {
+                    return Some((path, modification_time, backend));
+                }
             }
         }
 
         None
     }
 
-    pub fn notify_did_read(&mut self, key: UserKey) {
+    pub fn notify_did_read(&mut self, key: UserKey, modified_time: Option<Instant>) {
         if let Some(metadata) = self.get_path_user_metadata_mut(key) {
-            metadata.should_reload = false;
+            if metadata.should_reload == modified_time {
+                metadata.should_reload = None;
+            }
         }
     }
 
-    pub fn notify_did_write(&mut self, key: UserKey) {
-        if let Some(metadata) = self.get_resource_metadata_mut(key.resource_id) {
-            metadata.should_reload_except(key.user_id)
+    pub fn notify_did_write(&mut self, key: UserKey, modified_time: Instant) {
+        if let Some(metadata) = self.resource_metadata.get_mut(key.resource_id) {
+            metadata.everyone_should_reload_except(key.user_id, modified_time)
         }
     }
 }
