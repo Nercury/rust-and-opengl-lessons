@@ -176,7 +176,7 @@ impl Resource {
         let resources = self.shared.read()
             .expect("failed to lock for read");
         resources.get_path_user_metadata(self.key)
-            .map(|m| m.should_reload.is_some())
+            .map(|m| m.outdated_at.is_some())
             .unwrap_or(false)
     }
 }

@@ -78,7 +78,7 @@ pub struct SharedResources {
     resource_metadata: Slab<ResourceMetadata>,
     path_resource_ids: HashMap<ResourcePathBuf, usize, BuildHasherDefault<XxHash>>,
     backends: BTreeMap<LoaderKey, Box<Backend>>,
-    everything_changed: Option<Instant>,
+    outdated_at: Option<Instant>,
 }
 
 fn backend_hash(id: &str) -> u64 {
@@ -94,12 +94,12 @@ impl SharedResources {
             resource_metadata: Slab::with_capacity(1024), // 1024 files is enough for everyone
             path_resource_ids: HashMap::default(),
             backends: BTreeMap::new(),
-            everything_changed: None,
+            outdated_at: None,
         }
     }
 
     pub fn new_changes(&mut self) -> Option<InternalSyncPoint> {
-        if let Some(instant) = self.everything_changed {
+        if let Some(instant) = self.outdated_at {
             return Some(InternalSyncPoint::Everything { time: instant });
         }
         for (key, backend) in self.backends.iter_mut() {
@@ -117,8 +117,8 @@ impl SharedResources {
 
     pub fn notify_changes_synced(&mut self, sync_point: InternalSyncPoint) {
         match sync_point {
-            InternalSyncPoint::Everything { time } => if self.everything_changed == Some(time) {
-                self.everything_changed = None;
+            InternalSyncPoint::Everything { time } => if self.outdated_at == Some(time) {
+                self.outdated_at = None;
             },
             InternalSyncPoint::Backend { backend_hash: bh, sync_point: sp } => {
                 for (key, backend) in self.backends.iter_mut() {
@@ -183,11 +183,11 @@ impl SharedResources {
     }
 
     pub fn insert_loader<L: Backend + 'static>(&mut self, loader_id: &str, order: isize, backend: L) {
-        let reload_instant = Instant::now();
+        let outdated_at = Instant::now();
         for (path, resource_id) in self.path_resource_ids.iter() {
             if backend.exists(&path) {
                 if let Some(metadata) = self.resource_metadata.get_mut(*resource_id) {
-                    metadata.everyone_should_reload(reload_instant);
+                    metadata.everyone_should_reload(outdated_at);
                 }
             }
         }
@@ -196,26 +196,26 @@ impl SharedResources {
             Box::new(backend) as Box<Backend>,
         );
         if self.path_resource_ids.len() > 0 {
-            self.everything_changed = Some(reload_instant);
+            self.outdated_at = Some(outdated_at);
         }
     }
 
     pub fn remove_loader(&mut self, loader_id: &str) {
-        let reload_instant = Instant::now();
+        let outdated_at = Instant::now();
         let remove_keys: Vec<_> = self.backends.keys().filter(|k| k.id == loader_id).map(|k| k.clone()).collect();
         for removed_key in remove_keys {
             if let Some(removed_backend) = self.backends.remove(&removed_key) {
                 for (path, resource_id) in self.path_resource_ids.iter() {
                     if removed_backend.exists(&path) {
                         if let Some(metadata) = self.resource_metadata.get_mut(*resource_id) {
-                            metadata.everyone_should_reload(reload_instant);
+                            metadata.everyone_should_reload(outdated_at);
                         }
                     }
                 }
             }
         }
         if self.path_resource_ids.len() > 0 {
-            self.everything_changed = Some(reload_instant);
+            self.outdated_at = Some(outdated_at);
         }
     }
 
@@ -223,7 +223,7 @@ impl SharedResources {
         let path_with_modification_time = self.resource_metadata.get(key.resource_id)
             .and_then(|m|
                 m.users.get(key.user_id)
-                    .map(|u| (m.path.as_ref(), u.should_reload))
+                    .map(|u| (m.path.as_ref(), u.outdated_at))
             );
 
         if let (Some((path, modification_time)), Some((_, backend))) = (path_with_modification_time, self.backends.iter().filter(|(k, _)| &k.id == backend_id).next()) {
@@ -237,7 +237,7 @@ impl SharedResources {
         let path_with_modification_time = self.resource_metadata.get(key.resource_id)
             .and_then(|m|
                 m.users.get(key.user_id)
-                    .map(|u| (m.path.as_ref(), u.should_reload))
+                    .map(|u| (m.path.as_ref(), u.outdated_at))
             );
 
         if let Some((path, modification_time)) = path_with_modification_time {
@@ -253,8 +253,8 @@ impl SharedResources {
 
     pub fn notify_did_read(&mut self, key: UserKey, modified_time: Option<Instant>) {
         if let Some(metadata) = self.get_path_user_metadata_mut(key) {
-            if metadata.should_reload == modified_time {
-                metadata.should_reload = None;
+            if metadata.outdated_at == modified_time {
+                metadata.outdated_at = None;
             }
         }
     }

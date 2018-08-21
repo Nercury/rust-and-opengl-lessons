@@ -6,7 +6,7 @@ use std::time::Instant;
 ///
 /// If it is none, there are no updates, otherwise it contains a timestamp of the latest update.
 pub struct ResourceUserMetadata {
-    pub should_reload: Option<Instant>,
+    pub outdated_at: Option<Instant>,
 }
 
 /// Shared information about the resource.
@@ -29,7 +29,7 @@ impl ResourceMetadata {
 
     pub fn new_user(&mut self) -> usize {
         self.users.insert(ResourceUserMetadata {
-            should_reload: None,
+            outdated_at: None,
         })
     }
 
@@ -52,15 +52,15 @@ impl ResourceMetadata {
         self.users.len() > 0
     }
 
-    pub fn everyone_should_reload_except(&mut self, id: usize, instant: Instant) {
+    pub fn everyone_should_reload_except(&mut self, id: usize, outdated_at: Instant) {
         for (user_id, user) in self.users.iter_mut() {
-            user.should_reload = if user_id != id { Some(instant) } else { None };
+            user.outdated_at = if user_id != id { Some(outdated_at) } else { None };
         }
     }
 
-    pub fn everyone_should_reload(&mut self, instant: Instant) {
+    pub fn everyone_should_reload(&mut self, outdated_at: Instant) {
         for (_, user) in self.users.iter_mut() {
-            user.should_reload = Some(instant);
+            user.outdated_at = Some(outdated_at);
         }
     }
 }
