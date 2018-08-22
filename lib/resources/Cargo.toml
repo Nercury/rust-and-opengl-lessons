@@ -3,7 +3,17 @@ name = "resources"
 version = "0.1.0"
 authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
 
+[features]
+default = []
+in_memory = []
+lzma = ["rust-lzma"]
+
 [dependencies]
 failure = "0.1"
 slab = "0.4"
 twox-hash = "1.1"
+
+rust-lzma = { version = "0.2", optional = true }
+
+[dev-dependencies]
+rust-lzma = "0.2"

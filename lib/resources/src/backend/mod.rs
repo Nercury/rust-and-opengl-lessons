@@ -3,8 +3,15 @@ use Error;
 use std::io;
 use std::time::Instant;
 
+#[cfg(any(test, feature = "in_memory"))]
 mod in_memory;
+#[cfg(any(test, feature = "in_memory"))]
 pub use self::in_memory::InMemory;
+
+#[cfg(any(test, feature = "lzma"))]
+mod lzma;
+#[cfg(any(test, feature = "lzma"))]
+pub use self::lzma::Lzma;
 
 mod filesystem;
 pub use self::filesystem::FileSystem;
