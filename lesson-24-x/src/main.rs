@@ -15,7 +15,18 @@ fn main() {
 }
 
 fn run() -> Result<(), failure::Error> {
-    let resources = resources::Resources::new();
+//    let resources = resources::Resources::new()
+//        .loaded_from(
+//            "core", 0,
+//            resources::backend::FileSystem::from_rel_path(env!("CARGO_MANIFEST_DIR"), "core")
+//                .with_write()
+//                .with_watch(),
+//        );
+//
+//    let config_resource = resources.resource("Config.toml");
+//    let config = config_resource.any_reader().and_then(|r| r.read_vec().ok());
+
+//    println!("Config: {:#?}", config);
 
     Ok(())
 }

@@ -6,6 +6,9 @@ use std::time::Instant;
 mod in_memory;
 pub use self::in_memory::InMemory;
 
+mod filesystem;
+pub use self::filesystem::FileSystem;
+
 #[derive(Eq, PartialEq, Copy, Clone)]
 pub struct BackendSyncPoint {
     instant: Instant,
