@@ -1,23 +1,22 @@
-extern crate lzma;
+extern crate miniz_oxide as miniz;
 
+use failure;
 use backend::{Writer, Reader, Backend, NotifyDidRead, NotifyDidWrite, BackendSyncPoint};
-use self::lzma::{LzmaReader};
-use self::lzma::error::{LzmaError};
-use std::io::{Write, Read};
+use std::io::{self, Write, Read};
 use {ResourcePath, ResourcePathBuf, Error};
 use std::time::Instant;
 
 #[derive(Debug)]
 pub struct Lzma<T> where T: Backend {
     inner: T,
-    preset: u32,
+    level: u8,
 }
 
 impl<T> Lzma<T> where T: Backend {
-    pub fn new(inner: T, preset: u32) -> Lzma<T> {
+    pub fn new(inner: T, level: u8) -> Lzma<T> {
         Lzma {
             inner,
-            preset
+            level,
         }
     }
 }
@@ -37,7 +36,7 @@ impl<T> Backend for Lzma<T> where T: Backend {
     }
 
     fn writer(&self, path: &ResourcePath, completion_listener: Box<NotifyDidWrite>) -> Option<Box<Writer>> {
-        let preset = self.preset;
+        let preset = self.level;
         self.inner.writer(path, completion_listener)
             .map(|inner| Box::new(LzmaBackendWriter { inner, preset }) as Box<Writer>)
     }
@@ -57,31 +56,39 @@ struct LzmaBackendReader {
 
 impl Reader for LzmaBackendReader {
     fn read_into(self: Box<Self>, output: &mut Write) -> Result<(), Error> {
-        unimplemented!("read_into")
-    }
-}
-
-impl Drop for LzmaBackendReader {
-    fn drop(&mut self) {
+        let mut input_data = Vec::new();
+        self.inner.read_into(&mut input_data)?;
+        let output_data = self::miniz::inflate::decompress_to_vec_zlib(&mut input_data).map_err(write_error)?;
+        output.write_all(&output_data[..])?;
+        Ok(())
     }
 }
 
 struct LzmaBackendWriter {
     inner: Box<Writer>,
-    preset: u32,
+    preset: u8,
+}
+
+#[derive(Fail, Debug)]
+pub enum MinizError {
+    #[fail(display = "Miniz error {:?}", _0)]
+    ErrorCode(self::miniz::inflate::TINFLStatus),
 }
 
 impl Writer for LzmaBackendWriter {
     fn write_from(self: Box<Self>, buffer: &mut Read) -> Result<(), Error> {
-        let mut compressor = LzmaReader::new_compressor(buffer, self.preset).map_err(write_error)?;
-        Ok(self.inner.write_from(&mut compressor)?)
+        let mut input_data = Vec::new();
+        buffer.read_to_end(&mut input_data)?;
+        let output_data = self::miniz::deflate::compress_to_vec_zlib(&mut input_data, self.preset);
+        let mut cursor = io::Cursor::new(output_data);
+        Ok(self.inner.write_from(&mut cursor)?)
     }
 }
 
-fn write_error(lzma_error: LzmaError) -> Error {
+fn write_error(miniz_error: self::miniz::inflate::TINFLStatus) -> Error {
     Error::BackendFailedToWrite {
         path: ResourcePathBuf::from(String::from("")),
-        inner: Box::new(lzma_error).into()
+        inner: failure::Error::from(MinizError::ErrorCode(miniz_error))
     }
 }
 
@@ -90,7 +97,7 @@ fn write_error(lzma_error: LzmaError) -> Error {
 #[cfg(test)]
 mod test {
     use std::time::Instant;
-    use backend::{Backend, NotifyDidWrite, Lzma, InMemory};
+    use backend::{Backend, NotifyDidWrite, NotifyDidRead, Lzma, InMemory};
     use std::sync::{Arc, Mutex};
 
     #[test]
@@ -107,12 +114,15 @@ mod test {
             writer.write(b"hello world").unwrap();
         }
 
-//        {
-//            let reader = be
-//                .reader("x".into(), TestListener::new_boxed() as Box<NotifyDidWrite>)
-//                .unwrap();
-//            writer.write(b"hello world").unwrap();
-//        }
+        let listener = TestListener::new_boxed(modification_time.clone()) as Box<NotifyDidRead>;
+        let write_time = *modification_time.lock().unwrap();
+
+        let result = {
+            let reader = be
+                .reader("x".into(), write_time, listener)
+                .unwrap();
+            reader.read_vec().unwrap()
+        };
     }
 
     struct TestListener {
@@ -132,6 +142,12 @@ mod test {
     impl NotifyDidWrite for TestListener {
         fn notify_did_write(&self, modification_time: Instant) {
             *self.modification_time.lock().unwrap() = Some(modification_time);
+        }
+    }
+
+    impl NotifyDidRead for TestListener {
+        fn notify_did_read(&self, modification_time: Option<Instant>) {
+            *self.modification_time.lock().unwrap() = modification_time;
         }
     }
 }

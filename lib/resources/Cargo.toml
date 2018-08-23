@@ -6,7 +6,7 @@ authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
 [features]
 default = []
 backend_in_memory = []
-backend_lzma = ["rust-lzma"]
+backend_miniz = ["miniz_oxide"]
 backend_filesystem = []
 
 [dependencies]
@@ -14,7 +14,7 @@ failure = "0.1"
 slab = "0.4"
 twox-hash = "1.1"
 
-rust-lzma = { version = "0.2", optional = true }
+miniz_oxide = { version = "0.1", optional = true }
 
 [dev-dependencies]
-rust-lzma = "0.2"
+miniz_oxide = "0.1"

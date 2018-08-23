@@ -8,10 +8,10 @@ mod in_memory;
 #[cfg(any(test, feature = "backend_in_memory"))]
 pub use self::in_memory::InMemory;
 
-#[cfg(any(test, feature = "backend_lzma"))]
-mod lzma;
-#[cfg(any(test, feature = "backend_lzma"))]
-pub use self::lzma::Lzma;
+#[cfg(any(test, feature = "backend_miniz"))]
+mod miniz;
+#[cfg(any(test, feature = "backend_miniz"))]
+pub use self::miniz::Lzma;
 
 #[cfg(any(test, feature = "backend_filesystem"))]
 mod filesystem;
