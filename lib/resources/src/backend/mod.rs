@@ -3,20 +3,22 @@ use Error;
 use std::io;
 use std::time::Instant;
 
-#[cfg(any(test, feature = "in_memory"))]
+#[cfg(any(test, feature = "backend_in_memory"))]
 mod in_memory;
-#[cfg(any(test, feature = "in_memory"))]
+#[cfg(any(test, feature = "backend_in_memory"))]
 pub use self::in_memory::InMemory;
 
-#[cfg(any(test, feature = "lzma"))]
+#[cfg(any(test, feature = "backend_lzma"))]
 mod lzma;
-#[cfg(any(test, feature = "lzma"))]
+#[cfg(any(test, feature = "backend_lzma"))]
 pub use self::lzma::Lzma;
 
+#[cfg(any(test, feature = "backend_filesystem"))]
 mod filesystem;
+#[cfg(any(test, feature = "backend_filesystem"))]
 pub use self::filesystem::FileSystem;
 
-#[derive(Eq, PartialEq, Copy, Clone)]
+#[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub struct BackendSyncPoint {
     instant: Instant,
 }
@@ -46,7 +48,7 @@ pub trait Backend: Send + Sync {
     fn new_changes(&self) -> Option<BackendSyncPoint>;
 }
 
-pub trait Reader: Drop + Send + Sync {
+pub trait Reader: Send + Sync {
     fn read_into(self: Box<Self>, output: &mut io::Write) -> Result<(), Error>;
     fn read_vec(self: Box<Self>) -> Result<Vec<u8>, Error> {
         let mut output = Vec::new();
@@ -55,7 +57,7 @@ pub trait Reader: Drop + Send + Sync {
     }
 }
 
-pub trait Writer: Drop + Send + Sync {
+pub trait Writer: Send + Sync {
     fn write_from(self: Box<Self>, buffer: &mut io::Read) -> Result<(), Error>;
     fn write(self: Box<Self>, mut value: &[u8]) -> Result<(), Error> {
         self.write_from(&mut value)?;

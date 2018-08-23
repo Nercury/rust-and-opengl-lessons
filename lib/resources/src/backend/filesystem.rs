@@ -2,10 +2,7 @@ use std::sync::{Arc, RwLock};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 use backend::{Writer, Reader, Backend, NotifyDidRead, NotifyDidWrite, BackendSyncPoint};
-use {ResourcePath, ResourcePathBuf};
-use std::collections::HashMap;
-use std::hash::BuildHasherDefault;
-use twox_hash::XxHash;
+use {ResourcePath};
 
 struct Shared {
     root_path: PathBuf,

@@ -10,11 +10,12 @@ pub use self::path::{ResourcePath, ResourcePathBuf};
 mod shared;
 
 use self::shared::{SharedResources, UserKey, InternalSyncPoint};
-pub use self::shared::{Error};
 
 pub mod backend;
-
 use self::backend::{NotifyDidRead, NotifyDidWrite};
+
+mod error;
+pub use self::error::Error;
 
 use std::time::Instant;
 use std::sync::Arc;

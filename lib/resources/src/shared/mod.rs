@@ -1,4 +1,3 @@
-use std::io;
 use std::time::Instant;
 use std::collections::HashMap;
 use std::collections::BTreeMap;
@@ -11,30 +10,6 @@ use backend::{Backend, BackendSyncPoint};
 mod resource_metadata;
 
 use self::resource_metadata::{ResourceMetadata, ResourceUserMetadata};
-
-#[derive(Debug, Fail)]
-pub enum Error {
-    #[fail(display = "I/O error")]
-    Io(#[cause] io::Error),
-    #[fail(display = "Item {} has gone away", path)]
-    ItemAtPathHasGoneAway { path: ResourcePathBuf },
-}
-
-impl From<io::Error> for Error {
-    fn from(other: io::Error) -> Self {
-        Error::Io(other)
-    }
-}
-
-impl ::std::cmp::PartialEq for Error {
-    fn eq(&self, other: &Error) -> bool {
-        match (self, other) {
-            (Error::Io(_), Error::Io(_)) => true,
-            (Error::ItemAtPathHasGoneAway { ref path }, Error::ItemAtPathHasGoneAway { path: ref path2 }) if path == path2 => true,
-            _ => false,
-        }
-    }
-}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct LoaderKey {

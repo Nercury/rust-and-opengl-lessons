@@ -7,6 +7,7 @@ use std::hash::BuildHasherDefault;
 use twox_hash::XxHash;
 use {ResourcePathBuf, ResourcePath, Error};
 
+#[derive(Debug)]
 struct Shared {
     map: HashMap<ResourcePathBuf, Vec<u8>, BuildHasherDefault<XxHash>>,
     unsynced_change_time: Option<BackendSyncPoint>,
@@ -25,6 +26,7 @@ impl Shared {
     }
 }
 
+#[derive(Debug)]
 pub struct InMemory {
     shared: Arc<RwLock<Shared>>,
 }

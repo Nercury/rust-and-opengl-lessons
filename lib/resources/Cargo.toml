@@ -5,8 +5,9 @@ authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
 
 [features]
 default = []
-in_memory = []
-lzma = ["rust-lzma"]
+backend_in_memory = []
+backend_lzma = ["rust-lzma"]
+backend_filesystem = []
 
 [dependencies]
 failure = "0.1"
