@@ -4,36 +4,10 @@ use std::io;
 use backend::{Backend, BackendSyncPoint};
 use {ResourcePath, Error};
 
-struct Shared {
+pub struct FileSystem {
     root_path: PathBuf,
     can_write: bool,
     watch: bool,
-}
-
-impl Shared {
-    pub fn new(root_path: PathBuf) -> Shared {
-        Shared {
-            root_path,
-            can_write: false,
-            watch: false,
-        }
-    }
-
-    pub fn set_write(&mut self, flag: bool) {
-        self.can_write = flag;
-    }
-
-    pub fn set_watch(&mut self, flag: bool) {
-        self.watch = flag;
-    }
-
-    pub fn resource_exists(&self, path: &ResourcePath) -> bool {
-        resource_name_to_path(&self.root_path, path).exists()
-    }
-}
-
-pub struct FileSystem {
-    shared: Arc<RwLock<Shared>>,
 }
 
 impl FileSystem {
@@ -43,32 +17,30 @@ impl FileSystem {
 
     pub fn from_path<P: AsRef<Path>>(root_path: P) -> FileSystem {
         FileSystem {
-            shared: Arc::new(RwLock::new(Shared::new(root_path.as_ref().into()))),
+            root_path: root_path.as_ref().into(),
+            can_write: false,
+            watch: false,
         }
     }
 
-    pub fn with_write(self) -> Self {
-        self.shared.write().expect("failed to lock FileSystem for write")
-            .set_write(true);
+    pub fn with_write(mut self) -> Self {
+        self.can_write = true;
         self
     }
 
-    pub fn with_watch(self) -> Self {
-        self.shared.write().expect("failed to lock FileSystem for write")
-            .set_watch(true);
+    pub fn with_watch(mut self) -> Self {
+        self.watch = true;
         self
     }
 }
 
 impl Backend for FileSystem {
     fn can_write(&self) -> bool {
-        self.shared.read().expect("failed to lock FileSystem for read")
-            .can_write
+        self.can_write
     }
 
     fn exists(&self, path: &ResourcePath) -> bool {
-        self.shared.read().expect("failed to lock FileSystem for read")
-            .resource_exists(path)
+        resource_name_to_path(&self.root_path, path).exists()
     }
 
     fn notify_changes_synced(&mut self, point: BackendSyncPoint) {

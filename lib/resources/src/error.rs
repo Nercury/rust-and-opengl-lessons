@@ -25,6 +25,7 @@ impl ::std::cmp::PartialEq for Error {
         match (self, other) {
             (Error::Io(_), Error::Io(_)) => true,
             (Error::NotFound, Error::NotFound) => true,
+            (Error::NotWritable, Error::NotWritable) => true,
             (a, b) if a == b => true,
             _ => false,
         }
