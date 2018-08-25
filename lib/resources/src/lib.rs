@@ -12,7 +12,6 @@ mod shared;
 use self::shared::{SharedResources, UserKey, InternalSyncPoint};
 
 pub mod backend;
-use self::backend::{NotifyDidRead, NotifyDidWrite};
 
 mod error;
 pub use self::error::Error;
@@ -75,102 +74,83 @@ impl Resources {
     }
 }
 
-struct NotifyDidReadForResources {
-    shared: Arc<RwLock<SharedResources>>,
-    key: UserKey,
-}
-
-impl NotifyDidRead for NotifyDidReadForResources {
-    fn notify_did_read(&self, modification_time: Option<Instant>) {
-        self.shared.write()
-            .expect("failed to lock for write")
-            .notify_did_read(self.key, modification_time)
-    }
-}
-
-struct NotifyDidWriteForResources {
-    shared: Arc<RwLock<SharedResources>>,
-    key: UserKey,
-}
-
-impl NotifyDidWrite for NotifyDidWriteForResources {
-    fn notify_did_write(&self, modification_time: Instant) {
-        self.shared.write()
-            .expect("failed to lock for write")
-            .notify_did_write(self.key, modification_time)
-    }
-}
-
 pub struct Resource {
     shared: Arc<RwLock<SharedResources>>,
     key: UserKey,
 }
 
 impl Resource {
-    pub fn any_reader(&self) -> Option<Box<backend::Reader>> {
+    /// Check if this resource exists.
+    ///
+    /// This unreliable command can tell if at least one backend can return the resource at this moment.
+    /// Not that the next moment the resource can be gone.
+    pub fn exists(&self) -> bool {
         let shared_ref = &self.shared;
-        let key_ref = &self.key;
-
         let resources = shared_ref.read()
             .expect("failed to lock for read");
 
         resources
             .get_resource_path_backend_containing_resource(self.key)
-            .and_then(|(path, modification_time, backend)|
-                backend.reader(
-                    path,
-                    modification_time,
-                    Box::new(NotifyDidReadForResources {
-                        shared: shared_ref.clone(),
-                        key: *key_ref,
-                    }) as Box<NotifyDidRead>,
-                )
-            )
+            .map(|(path, _, b)| b.exists(path))
+            .unwrap_or(false)
     }
 
-    pub fn exact_reader(&self, backend_id: &str) -> Option<Box<backend::Reader>> {
+    /// Read value from the backend that has highest order number and contains the resource.
+    pub fn get(&self) -> Result<Vec<u8>, Error> {
         let shared_ref = &self.shared;
-        let key_ref = &self.key;
+        let mut resources = shared_ref.write()
+            .expect("failed to lock for write");
 
-        let resources = shared_ref.read()
-            .expect("failed to lock for read");
+        let mut did_read = None;
 
-        resources
-            .get_resource_path_backend(backend_id, self.key)
-            .and_then(|(path, modification_time, backend)|
-                backend.reader(
-                    path,
-                    modification_time,
-                    Box::new(NotifyDidReadForResources {
-                        shared: shared_ref.clone(),
-                        key: *key_ref,
-                    }) as Box<NotifyDidRead>,
-                )
-            )
-    }
-
-    pub fn exact_writer(&self, backend_id: &str) -> Option<Box<backend::Writer>> {
-        let shared_ref = &self.shared;
-        let key_ref = &self.key;
-
-        let resources = shared_ref.read()
-            .expect("failed to lock for read");
-
-        resources
-            .get_resource_path_backend(backend_id, self.key)
-            .and_then(|(path, _, backend)|
-                if backend.can_write() {
-                    backend.writer(
-                        path,
-                        Box::new(NotifyDidWriteForResources {
-                            shared: shared_ref.clone(),
-                            key: *key_ref,
-                        }) as Box<NotifyDidWrite>,
-                    )
-                } else {
-                    None
+        {
+            for (path, modification_time, backend) in resources.resource_backends(self.key) {
+                match backend.read_vec(path) {
+                    Ok(result) => {
+                        did_read = Some((modification_time, result));
+                        break;
+                    },
+                    Err(Error::NotFound) => continue,
+                    Err(e) => return Err(e),
                 }
-            )
+            }
+        }
+
+        if let Some((modification_time, result)) = did_read {
+            resources.notify_did_read(self.key, modification_time);
+            return Ok(result);
+        }
+
+        Err(Error::NotFound)
+    }
+
+    /// Write value to the backend that has highest order number and can write.
+    pub fn write(&self, data: &[u8]) -> Result<(), Error> {
+        let shared_ref = &self.shared;
+        let mut resources = shared_ref.write()
+            .expect("failed to lock for write");
+
+        let mut did_write = false;
+
+        {
+            for (path, _, backend) in resources.resource_backends(self.key) {
+                match backend.write(path, data) {
+                    Ok(()) => {
+                        did_write = true;
+                        break;
+                    },
+                    Err(Error::NotWritable) => continue,
+                    Err(e) => return Err(e),
+                }
+            }
+        }
+
+        if did_write {
+            resources.notify_did_write(self.key, Instant::now());
+            return Ok(());
+        }
+
+        Err(Error::NotWritable)
     }
 
     pub fn is_modified(&self) -> bool {
@@ -212,8 +192,7 @@ mod test {
     #[test]
     fn with_no_loaders_should_have_no_reader() {
         let res = Resources::new();
-        let reader = res.resource("a").any_reader();
-        assert!(reader.is_none());
+        assert!(!res.resource("a").exists());
     }
 
     #[test]
@@ -228,9 +207,7 @@ mod test {
         assert_eq!(
             &res
                 .resource("name")
-                .any_reader()
-                .expect(r#"path "name" should exist"#)
-                .read_vec()
+                .get()
                 .unwrap(),
             b"hello"
         );
@@ -275,8 +252,7 @@ mod test {
         let resource_proxy_clone_b = resource_proxy_b.clone();
 
         assert!(
-            resource_proxy_b.exact_writer("a").expect(r#"path "name" should exist"#)
-                .write(b"world").is_ok()
+            resource_proxy_b.write(b"world").is_ok()
         );
 
         assert!(res.new_changes().is_some());
@@ -299,8 +275,7 @@ mod test {
         let resource_proxy_a = res.resource("name");
         let resource_proxy_b = res.resource("name");
 
-        resource_proxy_b.exact_writer("a").expect(r#"path "name" should exist"#)
-            .write(b"world").unwrap();
+        resource_proxy_b.write(b"world").unwrap();
 
         assert!(res.new_changes().is_some());
         let point = res.new_changes().unwrap();
@@ -324,14 +299,12 @@ mod test {
         let resource_proxy_a = res.resource("name");
         let resource_proxy_b = res.resource("name");
 
-        resource_proxy_b.exact_writer("a").expect(r#"path "name" should exist"#)
-            .write(b"world").unwrap();
+        resource_proxy_b.write(b"world").unwrap();
 
         assert!(res.new_changes().is_some());
         let point = res.new_changes().unwrap();
 
-        resource_proxy_a.exact_writer("a").expect(r#"path "name" should exist"#)
-            .write(b"world2").unwrap();
+        resource_proxy_a.write(b"world2").unwrap();
 
         res.notify_changes_synced(point);
 
@@ -383,8 +356,7 @@ mod test {
         assert!(resource_proxy_a.is_modified(), "adding loader should trigger modified flag on resource");
 
         assert_eq!(
-            &resource_proxy_a.any_reader().expect(r#"path "name" should exist"#)
-                .read_vec().unwrap(),
+            &resource_proxy_a.get().unwrap(),
             b"world"
         );
         assert!(!resource_proxy_a.is_modified(), "reading resouce should mark it read");

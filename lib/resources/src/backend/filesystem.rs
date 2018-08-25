@@ -1,8 +1,8 @@
 use std::sync::{Arc, RwLock};
 use std::path::{Path, PathBuf};
-use std::time::Instant;
-use backend::{Writer, Reader, Backend, NotifyDidRead, NotifyDidWrite, BackendSyncPoint};
-use {ResourcePath};
+use std::io;
+use backend::{Backend, BackendSyncPoint};
+use {ResourcePath, Error};
 
 struct Shared {
     root_path: PathBuf,
@@ -12,7 +12,6 @@ struct Shared {
 
 impl Shared {
     pub fn new(root_path: PathBuf) -> Shared {
-        println!("root_path {:?}", root_path);
         Shared {
             root_path,
             can_write: false,
@@ -67,24 +66,24 @@ impl Backend for FileSystem {
             .can_write
     }
 
-    fn reader(&self, path: &ResourcePath, modification_time: Option<Instant>, completion_listener: Box<NotifyDidRead>) -> Option<Box<Reader>> {
-        unimplemented!()
-    }
-
     fn exists(&self, path: &ResourcePath) -> bool {
         self.shared.read().expect("failed to lock FileSystem for read")
             .resource_exists(path)
     }
 
-    fn writer(&self, path: &ResourcePath, completion_listener: Box<NotifyDidWrite>) -> Option<Box<Writer>> {
+    fn notify_changes_synced(&mut self, point: BackendSyncPoint) {
         unimplemented!()
     }
 
-    fn notify_changes_synced(&self, point: BackendSyncPoint) {
+    fn new_changes(&mut self) -> Option<BackendSyncPoint> {
         unimplemented!()
     }
 
-    fn new_changes(&self) -> Option<BackendSyncPoint> {
+    fn read_into(&mut self, path: &ResourcePath, output: &mut io::Write) -> Result<(), Error> {
+        unimplemented!()
+    }
+
+    fn write_from(&mut self, path: &ResourcePath, buffer: &mut io::Read) -> Result<(), Error> {
         unimplemented!()
     }
 }

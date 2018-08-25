@@ -31,36 +31,23 @@ impl BackendSyncPoint {
     }
 }
 
-pub trait NotifyDidRead: Send + Sync {
-    fn notify_did_read(&self, modification_time: Option<Instant>);
-}
-
-pub trait NotifyDidWrite: Send + Sync {
-    fn notify_did_write(&self, modification_time: Instant);
-}
-
 pub trait Backend: Send + Sync {
     fn can_write(&self) -> bool;
-    fn reader(&self, path: &ResourcePath, modification_time: Option<Instant>, completion_listener: Box<NotifyDidRead>) -> Option<Box<Reader>>;
     fn exists(&self, path: &ResourcePath) -> bool;
-    fn writer(&self, path: &ResourcePath, completion_listener: Box<NotifyDidWrite>) -> Option<Box<Writer>>;
-    fn notify_changes_synced(&self, point: BackendSyncPoint);
-    fn new_changes(&self) -> Option<BackendSyncPoint>;
-}
 
-pub trait Reader: Send + Sync {
-    fn read_into(self: Box<Self>, output: &mut io::Write) -> Result<(), Error>;
-    fn read_vec(self: Box<Self>) -> Result<Vec<u8>, Error> {
+    fn notify_changes_synced(&mut self, point: BackendSyncPoint);
+    fn new_changes(&mut self) -> Option<BackendSyncPoint>;
+
+    fn read_into(&mut self, path: &ResourcePath, output: &mut io::Write) -> Result<(), Error>;
+    fn read_vec(&mut self, path: &ResourcePath) -> Result<Vec<u8>, Error> {
         let mut output = Vec::new();
-        self.read_into(&mut output)?;
+        self.read_into(path, &mut output)?;
         Ok(output)
     }
-}
 
-pub trait Writer: Send + Sync {
-    fn write_from(self: Box<Self>, buffer: &mut io::Read) -> Result<(), Error>;
-    fn write(self: Box<Self>, mut value: &[u8]) -> Result<(), Error> {
-        self.write_from(&mut value)?;
+    fn write_from(&mut self, path: &ResourcePath, buffer: &mut io::Read) -> Result<(), Error>;
+    fn write(&mut self, path: &ResourcePath, mut value: &[u8]) -> Result<(), Error> {
+        self.write_from(path, &mut value)?;
         Ok(())
     }
 }

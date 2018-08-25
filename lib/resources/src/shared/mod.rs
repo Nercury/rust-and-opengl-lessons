@@ -194,6 +194,21 @@ impl SharedResources {
         }
     }
 
+    pub fn resource_backends(&mut self, key: UserKey) -> impl Iterator<Item=(&ResourcePath, Option<Instant>, &mut Box<Backend>)> {
+        let path_with_modification_time = self.resource_metadata.get(key.resource_id)
+            .and_then(|m|
+                m.users.get(key.user_id)
+                    .map(|u| (m.path.as_ref(), u.outdated_at))
+            );
+
+        self.backends.iter_mut().rev()
+            .filter_map(move |(_, b)|
+                path_with_modification_time.map(move |(path, instant)|
+                    (path, instant, b)
+                )
+            )
+    }
+
     pub fn get_resource_path_backend(&self, backend_id: &str, key: UserKey) -> Option<(&ResourcePath, Option<Instant>, &Box<Backend>)> {
         let path_with_modification_time = self.resource_metadata.get(key.resource_id)
             .and_then(|m|
