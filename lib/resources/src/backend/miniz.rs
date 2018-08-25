@@ -6,21 +6,21 @@ use std::io::{self};
 use {ResourcePath, ResourcePathBuf, Error};
 
 #[derive(Debug)]
-pub struct Lzma<T> where T: Backend {
+pub struct Miniz<T> where T: Backend {
     inner: T,
     level: u8,
 }
 
-impl<T> Lzma<T> where T: Backend {
-    pub fn new(inner: T, level: u8) -> Lzma<T> {
-        Lzma {
+impl<T> Miniz<T> where T: Backend {
+    pub fn new(inner: T, level: u8) -> Miniz<T> {
+        Miniz {
             inner,
             level,
         }
     }
 }
 
-impl<T> Backend for Lzma<T> where T: Backend {
+impl<T> Backend for Miniz<T> where T: Backend {
     fn can_write(&self) -> bool {
         self.inner.can_write()
     }
@@ -69,11 +69,11 @@ fn write_error(miniz_error: self::miniz::inflate::TINFLStatus) -> Error {
 
 #[cfg(test)]
 mod test {
-    use backend::{Backend, Lzma, InMemory};
+    use backend::{Backend, Miniz, InMemory};
 
     #[test]
     fn test_can_write_and_read() {
-        let mut be = Lzma::new(InMemory::new(), 9);
+        let mut be = Miniz::new(InMemory::new(), 9);
 
         be.write("x".into(), b"hello world").unwrap();
         let result = be.read_vec("x".into()).unwrap();

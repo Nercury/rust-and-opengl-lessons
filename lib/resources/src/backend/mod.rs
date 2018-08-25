@@ -11,7 +11,7 @@ pub use self::in_memory::InMemory;
 #[cfg(any(test, feature = "backend_miniz"))]
 mod miniz;
 #[cfg(any(test, feature = "backend_miniz"))]
-pub use self::miniz::Lzma;
+pub use self::miniz::Miniz;
 
 #[cfg(any(test, feature = "backend_filesystem"))]
 mod filesystem;

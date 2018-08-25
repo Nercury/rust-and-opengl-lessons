@@ -44,11 +44,10 @@ impl Backend for FileSystem {
     }
 
     fn notify_changes_synced(&mut self, point: BackendSyncPoint) {
-        unimplemented!()
     }
 
     fn new_changes(&mut self) -> Option<BackendSyncPoint> {
-        unimplemented!()
+        None
     }
 
     fn read_into(&mut self, path: &ResourcePath, output: &mut io::Write) -> Result<(), Error> {
