@@ -1,0 +1,4 @@
+[package]
+name = "ui"
+version = "0.1.0"
+authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
