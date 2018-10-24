@@ -11,6 +11,9 @@ lesson_24_x_render = { path = "render" }
 lesson_24_x_render_gl = { path = "render_gl" }
 lesson_24_x_render_gl_derive = { path = "render_gl_derive" }
 failure = "0.1.3"
+nalgebra = "0.16"
+ncollide3d = "0.17"
+floating-duration = "0.1.2"
 
 [dependencies.sdl2]
 version = "0.31.0"

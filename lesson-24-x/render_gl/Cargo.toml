@@ -7,3 +7,5 @@ authors = []
 gl = { path = "../../lib/gl" }
 half = "1.1.1"
 vec-2-10-10-10 = "0.1.2"
+nalgebra = "0.16"
+ncollide3d = "0.17"
