@@ -10,7 +10,7 @@ backend_miniz = ["miniz_oxide"]
 backend_filesystem = []
 
 [dependencies]
-failure = "0.1"
+failure = "0.1.3"
 slab = "0.4"
 twox-hash = "1.1"
 

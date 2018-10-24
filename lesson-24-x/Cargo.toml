@@ -10,7 +10,11 @@ ui = { path = "../lib/ui" }
 lesson_24_x_render = { path = "render" }
 lesson_24_x_render_gl = { path = "render_gl" }
 lesson_24_x_render_gl_derive = { path = "render_gl_derive" }
-failure = "0.1"
+failure = "0.1.3"
+
+[dependencies.sdl2]
+version = "0.31.0"
+features = ["bundled", "static-link"]
 
 [features]
 gl_debug = ["gl/debug"]
