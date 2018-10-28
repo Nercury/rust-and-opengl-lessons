@@ -80,6 +80,16 @@ pub struct Resource {
 }
 
 impl Resource {
+    pub fn name(&self) -> String {
+        let shared_ref = &self.shared;
+        let resources = shared_ref.read()
+            .expect("failed to lock for read");
+
+        resources.get_resource_path(self.key)
+            .map(|p| p.to_string())
+            .expect("expected resource to have access to the name")
+    }
+
     /// Check if this resource exists.
     ///
     /// This unreliable command can tell if at least one backend can return the resource at this moment.

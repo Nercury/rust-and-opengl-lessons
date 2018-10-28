@@ -13,10 +13,12 @@ extern crate floating_duration;
 pub mod profiling;
 pub mod debug;
 pub mod system;
+pub mod interface;
 
 use failure::err_msg;
 use std::time::{Instant, Duration};
 use floating_duration::TimeAsFloat;
+use interface::Interface;
 
 fn main() {
     if let Err(e) = run() {
@@ -32,19 +34,6 @@ fn run() -> Result<(), failure::Error> {
                 .with_write()
                 .with_watch(),
         );
-
-    let config_resource = resources.resource("Config.toml");
-    let config = config_resource.get().unwrap();
-
-    let schema = ui::schema::Root::new(ui::Size::new(800.0.into(), 500.0.into()))
-        .with_container(
-            ui::schema::Container::PaneLeft(
-                ui::schema::PaneLeft::new(40.0.into())
-                    .with_bg_color(ui::Color::new(0.5, 0.1, 0.1))
-            )
-        );
-
-    let mut mutator = ui::mutator::Mutator::from_schema(&schema);
 
     let sdl = sdl2::init().map_err(err_msg)?;
     let video_subsystem = sdl.video().map_err(err_msg)?;
@@ -91,6 +80,17 @@ fn run() -> Result<(), failure::Error> {
     viewport.set_used(&gl);
     color_buffer.set_clear_color(&gl, na::Vector3::new(0.3, 0.3, 0.5));
 
+    let mut debug_lines = render_gl::DebugLines::new(&gl, &resources)?;
+    let rect = debug_lines.rect_marker(
+        na::Isometry3::from_parts(na::Translation3::from_vector(
+            [0.5, 0.5, 0.0].into()
+        ), na::UnitQuaternion::identity()),
+        na::Vector2::new(100.0, 50.0),
+        na::Vector4::new(1.0, 0.5, 0.2, 1.0)
+    );
+
+    let mut iface = Interface::new();
+
     // main loop
 
     let mut time = Instant::now();
@@ -130,14 +130,22 @@ fn run() -> Result<(), failure::Error> {
 
         color_buffer.clear(&gl);
 
+        let left = 0;
+        let top = window_size.highdpi_height;
+        let right = window_size.highdpi_width;
+        let bottom = 0;
+
+        let ui_matrix = na::Matrix4::new_orthographic(left as f32, right as f32, bottom as f32, top as f32, -10.0, 10.0);
+
+        debug_lines.render(&gl, &color_buffer, &ui_matrix);
+        iface.render(&gl, &color_buffer, &ui_matrix);
+
         while time.elapsed() < Duration::from_millis(12) {
             ::std::thread::yield_now()
         }
 
         window.gl_swap_window();
     }
-
-    println!("mutator: {:#?}", mutator);
 
     Ok(())
 }

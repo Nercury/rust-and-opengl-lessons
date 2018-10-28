@@ -209,6 +209,7 @@ impl SharedResources {
             )
     }
 
+    #[allow(dead_code)]
     pub fn get_resource_path_backend(&self, backend_id: &str, key: UserKey) -> Option<(&ResourcePath, Option<Instant>, &Box<Backend>)> {
         let path_with_modification_time = self.resource_metadata.get(key.resource_id)
             .and_then(|m|
@@ -221,6 +222,11 @@ impl SharedResources {
         }
 
         None
+    }
+
+    pub fn get_resource_path(&self, key: UserKey) -> Option<&ResourcePath> {
+        self.resource_metadata.get(key.resource_id)
+            .map(|m| m.path.as_ref())
     }
 
     pub fn get_resource_path_backend_containing_resource(&self, key: UserKey) -> Option<(&ResourcePath, Option<Instant>, &Box<Backend>)> {
