@@ -89,7 +89,8 @@ fn run() -> Result<(), failure::Error> {
         na::Vector4::new(1.0, 0.5, 0.2, 1.0)
     );
 
-    let mut iface = Interface::new();
+//    let mut iface = Interface::new(ui::ElementSize::Fixed { w: window_size.highdpi_width, h: window_size.highdpi_height });
+    let mut iface = Interface::new(ui::ElementSize::Auto);
 
     // main loop
 
@@ -102,6 +103,20 @@ fn run() -> Result<(), failure::Error> {
             if system::input::window::handle_default_window_events(&event, &gl, &window, &mut window_size, &mut viewport) == system::input::window::HandleResult::Quit {
                 break 'main;
             }
+
+            match event {
+                sdl2::event::Event::Window {
+                    win_event: sdl2::event::WindowEvent::Resized(w, h),
+                    ..
+                } => {
+                    let (hdpi_w, hdpi_h) = window.drawable_size();
+                    viewport.update_size(hdpi_w as i32, hdpi_h as i32);
+                    viewport.set_used(&gl);
+//                    iface.resize(ui::ElementSize::Fixed { w: hdpi_w as i32, h: hdpi_h as i32 });
+                    iface.resize(ui::ElementSize::Auto);
+                },
+                _ => (),
+            };
 
 //            match event {
 //                sdl2::event::Event::KeyDown { scancode: Some(sdl2::keyboard::Scancode::C), .. } => {

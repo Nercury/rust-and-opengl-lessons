@@ -5,24 +5,31 @@ use na;
 use render_gl::ColorBuffer;
 
 pub struct Interface {
-    c: Fill,
+    fill: Fill,
+    events: Events,
     button: Leaf<controls::Button>,
 }
 
 impl Interface {
-    pub fn new() -> Interface {
-        let mut c = Fill::root();
+    pub fn new(size: ElementSize) -> Interface {
+        let tree = Tree::new();
 
-        let button = c.add(controls::Button::new());
+        let events = tree.events();
+        let fill = tree.create_root_fill();
+
+        let button = fill.add(controls::Button::new());
+
+        fill.resize(size);
 
         Interface {
-            c,
+            fill,
+            events,
             button,
         }
     }
 
     pub fn resize(&mut self, size: ElementSize) {
-        self.c.resize(size);
+        self.fill.resize(size);
     }
 
     pub fn mouse_move(&mut self, x: i32, y: i32) {

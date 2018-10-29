@@ -1,6 +1,6 @@
 mod tree;
 
-pub use tree::{Fill, Leaf};
+pub use tree::{Events, Tree, Fill, Leaf};
 
 pub mod controls {
     use super::*;
@@ -35,17 +35,22 @@ pub mod controls {
     }
 }
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum ElementSize {
     Auto,
     Fixed { w: i32, h: i32 }
 }
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct ResolvedSize {
     w: i32, h: i32,
 }
 
+#[derive(Debug, Copy, Clone)]
 pub enum Effect {
-    Resize { id: Ix, w: i32, h: i32 },
+    Add { id: Ix, size: Option<(i32, i32)> },
+    Remove { id: Ix },
+    Resize { id: Ix, size: Option<(i32, i32)> },
 }
 
 pub trait Element {
