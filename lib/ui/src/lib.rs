@@ -1,6 +1,6 @@
 mod tree;
 
-pub use tree::{Events, Tree, Fill, Leaf};
+pub use tree::{Events, Tree, Leaf};
 
 pub mod controls {
     use super::*;
@@ -20,17 +20,29 @@ pub mod controls {
     }
 
     impl Element for Button {
-        fn resize(&mut self, size: ElementSize) {
-//            match size {
-//                ElementSize::Auto => Some(Effect::Resize {
-//                    w: self.min_width,
-//                    h: self.min_height
-//                }),
-//                ElementSize::Fixed { w, h } => Some(Effect::Render {
-//                    w: if w > self.min_width { w } else { self.min_width },
-//                    h: if h > self.min_height { h } else { self.min_height }
-//                })
-//            }.into_iter().collect()
+        fn resize_decision(&mut self, size: ElementSize) -> ResizeDecision {
+            unimplemented!("button")
+        }
+    }
+
+    pub struct Fill {
+        fixed_size: Option<(i32, i32)>,
+    }
+
+    impl Fill {
+        pub fn new() -> Fill {
+            Fill {
+                fixed_size: None,
+            }
+        }
+    }
+
+    impl Element for Fill {
+        fn resize_decision(&mut self, size: ElementSize) -> ResizeDecision {
+            match size {
+                ElementSize::Auto => ResizeDecision::AutoFromChildrenVertical,
+                _ => unimplemented!("handle other resize_decision cases")
+            }
         }
     }
 }
@@ -53,13 +65,17 @@ pub enum Effect {
     Resize { id: Ix, size: Option<(i32, i32)> },
 }
 
+pub enum ResizeDecision {
+    AutoFromChildrenVertical,
+}
+
 pub trait Element {
 
-    fn resize(&mut self, size: ElementSize);
+    fn resize_decision(&mut self, size: ElementSize) -> ResizeDecision;
 
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Ix(u32);
 
 impl Ix {

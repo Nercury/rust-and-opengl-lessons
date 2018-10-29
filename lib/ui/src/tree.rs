@@ -39,6 +39,11 @@ mod shared {
                 q.push_back(e);
             }
         }
+
+        pub fn get_queue_mut(&mut self, id: Ix) -> Option<&mut VecDeque<Effect>> {
+            self.queues
+                .get_mut(&id)
+        }
     }
 
     pub struct Container {
@@ -72,15 +77,13 @@ mod shared {
             }
         }
 
-        pub fn new_root_fill(&mut self) -> Ix {
+        pub fn new_root(&mut self, element: Box<Element>) -> Ix {
             let root_id = self.next_id;
 
             self.next_id.inc();
 
             self.nodes.clear();
-            self.nodes.insert(root_id, Node::Fill(
-                NodeFill::new()
-            ));
+            self.nodes.insert(root_id, Node::new(element));
 
             self._root_id = Some(root_id);
 
@@ -93,12 +96,10 @@ mod shared {
             self._root_id
         }
 
-        pub fn get_node_fill_mut(&mut self, id: Ix) -> Option<&mut NodeFill> {
+        pub fn get_node_fill_mut(&mut self, id: Ix) -> Option<&mut (Element + 'static)> {
             self.nodes
                 .get_mut(&id)
-                .and_then(|node| match node {
-                    Node::Fill(fill) => Some(fill),
-                })
+                .map(|node| &mut *node.element)
         }
 
         pub fn resize(&mut self, id: Ix, size: ElementSize) -> Option<ResolvedSize> {
@@ -117,11 +118,21 @@ mod shared {
         pub fn delete_queue(&mut self, id: Ix) {
             self.queues.delete_queue(id);
         }
+
+        pub fn get_queue_mut(&mut self, id: Ix) -> Option<&mut VecDeque<Effect>> {
+            self.queues.get_queue_mut(id)
+        }
     }
 
     fn calculate_and_apply_size(id: Ix, resize_decision: ResizeDecision, nodes: &mut BTreeMap<Ix, Node>, queues: &mut Queues) -> Option<ResolvedSize> {
         match resize_decision {
-            ResizeDecision::AutoFromChildrenVertical { stolen_children } => {
+            ResizeDecision::AutoFromChildrenVertical => {
+                let stolen_children = if let Some(node) = nodes.get_mut(&id) {
+                    node.swap_children(Vec::with_capacity(0))
+                } else {
+                    unreachable!("calculate_and_apply_size: node {:?} not found", id);
+                };
+
                 let mut size = None;
 
                 let resize_decisions = stolen_children.iter()
@@ -138,17 +149,12 @@ mod shared {
                                 }
                             }
                         },
-                        (child_id, None) => unreachable!("resolve_size: child {:?} does not exist for parent {:?}", child_id, id),
+                        (child_id, None) => unreachable!("calculate_and_apply_size: child {:?} does not exist for parent {:?}", child_id, id),
                     }
                 }
 
                 if let Some(node) = nodes.get_mut(&id) {
                     node.swap_children(stolen_children);
-
-                    if let Some(size) = size {
-                        node.apply_resize(&size);
-                    }
-
                     queues.send(Effect::Resize { id, size: size.map(|v| (v.w, v.h)) })
                 }
 
@@ -157,60 +163,25 @@ mod shared {
         }
     }
 
-    pub enum ResizeDecision {
-        AutoFromChildrenVertical { stolen_children: Vec<Ix> },
-    }
-
-    pub enum Node {
-        Fill(NodeFill),
+    pub struct Node {
+        children: Vec<Ix>,
+        element: Box<Element>,
     }
 
     impl Node {
-        pub fn resize_decision(&mut self, size: ElementSize) -> ResizeDecision {
-            match self {
-                Node::Fill(fill) => fill.resize_decision(size),
-            }
-        }
-
-        pub fn apply_resize(&mut self, size: &ResolvedSize) {
-            match self {
-                Node::Fill(fill) => fill.apply_resize(size),
-            }
-        }
-
-        pub fn swap_children(&mut self, new: Vec<Ix>) -> Vec<Ix> {
-            match self {
-                Node::Fill(fill) => fill.swap_children(new),
-            }
-        }
-    }
-
-    pub struct NodeFill {
-        fixed_size: Option<(i32, i32)>,
-        children: Vec<Ix>,
-    }
-
-    impl NodeFill {
-        pub fn new() -> NodeFill {
-            NodeFill {
-                fixed_size: None,
+        pub fn new(element: Box<Element>) -> Node {
+            Node {
                 children: Vec::new(),
+                element,
             }
+        }
+
+        pub fn resize_decision(&mut self, size: ElementSize) -> ResizeDecision {
+            self.element.resize_decision(size)
         }
 
         pub fn swap_children(&mut self, new: Vec<Ix>) -> Vec<Ix> {
             ::std::mem::replace(&mut self.children, new)
-        }
-
-        pub fn resize_decision(&mut self, size: ElementSize) -> ResizeDecision {
-            match size {
-                ElementSize::Auto => ResizeDecision::AutoFromChildrenVertical { stolen_children: self.swap_children(vec![]) },
-                _ => unimplemented!("handle other resize_decision cases")
-            }
-        }
-
-        pub fn apply_resize(&mut self, size: &ResolvedSize) {
-
         }
     }
 }
@@ -228,9 +199,10 @@ impl Tree {
         }
     }
 
-    pub fn create_root_fill(&self) -> Fill {
-        Fill {
-            id: self.shared.borrow_mut().new_root_fill(),
+    pub fn create_root<T: Element + 'static>(&self, element: T) -> Leaf<T> {
+        Leaf {
+            _marker: PhantomData,
+            id: self.shared.borrow_mut().new_root(Box::new(element) as Box<Element>),
             shared: self.shared.clone(),
         }
     }
@@ -252,6 +224,13 @@ impl Events {
             shared: shared.clone(),
         }
     }
+
+    pub fn drain_into(&self, output: &mut Vec<Effect>) {
+        let mut shared = self.shared.borrow_mut();
+        if let Some(queue) = shared.get_queue_mut(self.queue_id) {
+            output.extend(queue.drain(..))
+        }
+    }
 }
 
 impl Drop for Events {
@@ -260,35 +239,20 @@ impl Drop for Events {
     }
 }
 
-pub struct Fill {
+pub struct Leaf<T> {
+    _marker: PhantomData<T>,
     id: Ix,
     shared: Rc<RefCell<shared::Container>>,
 }
 
-impl Fill {
+impl<T> Leaf<T> {
     pub fn resize(&self, size: ElementSize) -> Option<ResolvedSize> {
         self.shared.borrow_mut().resize(self.id, size)
     }
-
-    pub fn add<T: Element>(&self, _element: T) -> Leaf<T> {
-        Leaf::new()
-    }
 }
 
-impl Drop for Fill {
+impl<T> Drop for Leaf<T> {
     fn drop(&mut self) {
         self.shared.borrow_mut().delete_node(self.id);
-    }
-}
-
-pub struct Leaf<T> {
-    _marker: PhantomData<T>,
-}
-
-impl<T> Leaf<T> {
-    pub fn new() -> Leaf<T> {
-        Leaf {
-            _marker: PhantomData,
-        }
     }
 }

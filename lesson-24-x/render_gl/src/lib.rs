@@ -17,5 +17,5 @@ pub mod color_buffer;
 
 pub use self::viewport::Viewport;
 pub use self::color_buffer::ColorBuffer;
-pub use self::debug_lines::{DebugLines, RayMarkers, AabbMarker};
+pub use self::debug_lines::{DebugLines, RayMarkers, AabbMarker, RectMarker};
 pub use self::shader::{Shader, Program, Error};

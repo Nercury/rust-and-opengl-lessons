@@ -137,6 +137,8 @@ fn run() -> Result<(), failure::Error> {
         let delta = time.elapsed().as_fractional_secs() as f32;
         time = Instant::now();
 
+        iface.update(delta, &debug_lines);
+
         unsafe {
             gl.Enable(gl::CULL_FACE);
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
