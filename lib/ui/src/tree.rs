@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 use ::*;
 use std::rc::Rc;
 use std::cell::RefCell;
+pub use self::shared::Children;
 
 mod shared {
     use ::*;
@@ -46,12 +47,17 @@ mod shared {
         }
     }
 
+    pub struct Children<'a> {
+        nodes: &'a mut BTreeMap<Ix, NodeSkeleton>,
+        ids: &'a mut Vec<Ix>,
+    }
+
     pub struct Container {
         queues: Queues,
 
         next_id: Ix,
         _root_id: Option<Ix>,
-        nodes: BTreeMap<Ix, Node>,
+        nodes: BTreeMap<Ix, NodeSkeleton>,
     }
 
     impl Container {
@@ -67,9 +73,9 @@ mod shared {
 
         pub fn delete_node(&mut self, id: Ix) {
             if let Some(mut removed) = self.nodes.remove(&id) {
-                let children = removed.swap_children(vec![]);
+                let body = removed.steal_body();
 
-                for child in children {
+                for child in body.children {
                     self.delete_node(child);
                 }
 
@@ -83,7 +89,7 @@ mod shared {
             self.next_id.inc();
 
             self.nodes.clear();
-            self.nodes.insert(root_id, Node::new(element));
+            self.nodes.insert(root_id, NodeSkeleton::new(element));
 
             self._root_id = Some(root_id);
 
@@ -96,19 +102,17 @@ mod shared {
             self._root_id
         }
 
-        pub fn get_node_fill_mut(&mut self, id: Ix) -> Option<&mut (Element + 'static)> {
+        pub fn get_node_mut(&mut self, id: Ix) -> Option<&mut Element> {
             self.nodes
                 .get_mut(&id)
-                .map(|node| &mut *node.element)
+                .map(|node| node.element_mut())
         }
 
         pub fn resize(&mut self, id: Ix, size: ElementSize) -> Option<ResolvedSize> {
-            let decision = match self.nodes.get_mut(&id) {
-                None => unreachable!("resolve_size: node {:?} missing", id),
-                Some(node) => node.resize_decision(size),
-            };
-
-            calculate_and_apply_size(id, decision, &mut self.nodes, &mut self.queues)
+            let mut body = self.nodes.get_mut(&id)?.steal_body();
+            let resolved_size = body.resize(&mut self.nodes, size);
+            self.nodes.get_mut(&id)?.restore_body(body);
+            resolved_size
         }
 
         pub fn create_queue(&mut self) -> Ix {
@@ -124,64 +128,50 @@ mod shared {
         }
     }
 
-    fn calculate_and_apply_size(id: Ix, resize_decision: ResizeDecision, nodes: &mut BTreeMap<Ix, Node>, queues: &mut Queues) -> Option<ResolvedSize> {
-        match resize_decision {
-            ResizeDecision::AutoFromChildrenVertical => {
-                let stolen_children = if let Some(node) = nodes.get_mut(&id) {
-                    node.swap_children(Vec::with_capacity(0))
-                } else {
-                    unreachable!("calculate_and_apply_size: node {:?} not found", id);
-                };
-
-                let mut size = None;
-
-                let resize_decisions = stolen_children.iter()
-                    .map(|id| (*id, nodes.get_mut(id).map(|node| node.resize_decision(ElementSize::Auto))))
-                    .collect::<Vec<_>>();
-
-                for item in resize_decisions {
-                    match item {
-                        (child_id, Some(resize_decision)) => {
-                            if let Some(resolved_child_size) = calculate_and_apply_size(child_id, resize_decision, nodes, queues) {
-                                size = match size {
-                                    None => Some(resolved_child_size),
-                                    Some(size) => Some(ResolvedSize { w: size.w, h: size.h + resolved_child_size.h }),
-                                }
-                            }
-                        },
-                        (child_id, None) => unreachable!("calculate_and_apply_size: child {:?} does not exist for parent {:?}", child_id, id),
-                    }
-                }
-
-                if let Some(node) = nodes.get_mut(&id) {
-                    node.swap_children(stolen_children);
-                    queues.send(Effect::Resize { id, size: size.map(|v| (v.w, v.h)) })
-                }
-
-                size
-            }
-        }
-    }
-
-    pub struct Node {
+    pub struct NodeBody {
         children: Vec<Ix>,
-        element: Box<Element>,
+        el: Box<Element>,
     }
 
-    impl Node {
-        pub fn new(element: Box<Element>) -> Node {
-            Node {
-                children: Vec::new(),
-                element,
+    impl NodeBody {
+        pub fn children_ids(&self) -> impl Iterator<Item = &Ix> {
+            self.children.iter()
+        }
+
+        pub fn resize(&mut self, nodes: &mut BTreeMap<Ix, NodeSkeleton>, size: ElementSize) -> Option<ResolvedSize> {
+            let mut children = ::std::mem::replace(&mut self.children, Vec::with_capacity(0));
+            let resolved_size = self.el.resize(size, Children { nodes, ids: &mut children });
+            ::std::mem::replace(&mut self.children, children);
+            resolved_size
+        }
+    }
+
+    pub struct NodeSkeleton {
+        body: Option<NodeBody>,
+    }
+
+    impl NodeSkeleton {
+        pub fn new(element: Box<Element>) -> NodeSkeleton {
+            NodeSkeleton {
+                body: Some(NodeBody {
+                    children: Vec::new(),
+                    el: element,
+                })
             }
         }
 
-        pub fn resize_decision(&mut self, size: ElementSize) -> ResizeDecision {
-            self.element.resize_decision(size)
+        pub fn element_mut(&mut self) -> &mut Element {
+            self.body.as_mut().map(|b| &mut *b.el).expect("element_mut: encountered stolen value")
         }
 
-        pub fn swap_children(&mut self, new: Vec<Ix>) -> Vec<Ix> {
-            ::std::mem::replace(&mut self.children, new)
+        pub fn steal_body(&mut self) -> NodeBody {
+            self.body.take().expect("steal_body: encountered stolen value")
+        }
+
+        pub fn restore_body(&mut self, body: NodeBody) {
+            if let Some(_) = ::std::mem::replace(&mut self.body, Some(body)) {
+                unreachable!("restore_body: encountered existing value")
+            }
         }
     }
 }

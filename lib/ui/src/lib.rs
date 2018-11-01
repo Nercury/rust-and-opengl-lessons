@@ -1,6 +1,6 @@
 mod tree;
 
-pub use tree::{Events, Tree, Leaf};
+pub use tree::{Events, Tree, Leaf, Children};
 
 pub mod controls {
     use super::*;
@@ -20,7 +20,7 @@ pub mod controls {
     }
 
     impl Element for Button {
-        fn resize_decision(&mut self, size: ElementSize) -> ResizeDecision {
+        fn resize(&mut self, _size: ElementSize, _children: Children) -> Option<ResolvedSize> {
             unimplemented!("button")
         }
     }
@@ -38,11 +38,8 @@ pub mod controls {
     }
 
     impl Element for Fill {
-        fn resize_decision(&mut self, size: ElementSize) -> ResizeDecision {
-            match size {
-                ElementSize::Auto => ResizeDecision::AutoFromChildrenVertical,
-                _ => unimplemented!("handle other resize_decision cases")
-            }
+        fn resize(&mut self, _size: ElementSize, _children: Children) -> Option<ResolvedSize> {
+            unimplemented!("fill")
         }
     }
 }
@@ -71,7 +68,7 @@ pub enum ResizeDecision {
 
 pub trait Element {
 
-    fn resize_decision(&mut self, size: ElementSize) -> ResizeDecision;
+    fn resize(&mut self, size: ElementSize, children: Children) -> Option<ResolvedSize>;
 
 }
 
