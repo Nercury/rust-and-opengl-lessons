@@ -52,7 +52,7 @@ fn run() -> Result<(), failure::Error> {
     };
 
     let window = video_subsystem
-        .window("Game", window_size.width as u32, window_size.height as u32)
+        .window("Demo", window_size.width as u32, window_size.height as u32)
         .opengl()
         .resizable()
         .allow_highdpi()
@@ -81,16 +81,9 @@ fn run() -> Result<(), failure::Error> {
     color_buffer.set_clear_color(&gl, na::Vector3::new(0.3, 0.3, 0.5));
 
     let mut debug_lines = render_gl::DebugLines::new(&gl, &resources)?;
-    let rect = debug_lines.rect_marker(
-        na::Isometry3::from_parts(na::Translation3::from_vector(
-            [0.5, 0.5, 0.0].into()
-        ), na::UnitQuaternion::identity()),
-        na::Vector2::new(100.0, 50.0),
-        na::Vector4::new(1.0, 0.5, 0.2, 1.0)
-    );
 
 //    let mut iface = Interface::new(ui::ElementSize::Fixed { w: window_size.highdpi_width, h: window_size.highdpi_height });
-    let mut iface = Interface::new(ui::ElementSize::Auto);
+    let mut iface = Interface::new(ui::ElementSize::Fixed { w: viewport.w, h: viewport.h });
 
     // main loop
 
@@ -106,14 +99,14 @@ fn run() -> Result<(), failure::Error> {
 
             match event {
                 sdl2::event::Event::Window {
-                    win_event: sdl2::event::WindowEvent::Resized(w, h),
+                    win_event: sdl2::event::WindowEvent::Resized(_w, _h),
                     ..
                 } => {
                     let (hdpi_w, hdpi_h) = window.drawable_size();
                     viewport.update_size(hdpi_w as i32, hdpi_h as i32);
                     viewport.set_used(&gl);
-//                    iface.resize(ui::ElementSize::Fixed { w: hdpi_w as i32, h: hdpi_h as i32 });
-                    iface.resize(ui::ElementSize::Auto);
+                    iface.resize(ui::ElementSize::Fixed { w: hdpi_w as i32, h: hdpi_h as i32 });
+//                    iface.resize(ui::ElementSize::Auto);
                 },
                 _ => (),
             };
@@ -152,7 +145,8 @@ fn run() -> Result<(), failure::Error> {
         let right = window_size.highdpi_width;
         let bottom = 0;
 
-        let ui_matrix = na::Matrix4::new_orthographic(left as f32, right as f32, bottom as f32, top as f32, -10.0, 10.0);
+        let ui_matrix = na::Matrix4::new_nonuniform_scaling(&[1.0, -1.0, 1.0].into())
+            * na::Matrix4::new_orthographic(left as f32, right as f32, bottom as f32, top as f32, -10.0, 10.0);
 
         debug_lines.render(&gl, &color_buffer, &ui_matrix);
         iface.render(&gl, &color_buffer, &ui_matrix);

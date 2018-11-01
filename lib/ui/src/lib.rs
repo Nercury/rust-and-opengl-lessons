@@ -1,9 +1,22 @@
+extern crate nalgebra as na;
+
 mod tree;
 
-pub use tree::{Events, Tree, Leaf, Children};
+pub use tree::{Events, Tree, Leaf, Base};
 
 pub mod controls {
     use super::*;
+
+    pub struct Text;
+
+    impl Element for Text {
+        fn resize(&mut self, mut _base: Base, size: ElementSize) -> Option<ResolvedSize> {
+            match size {
+                ElementSize::Auto => Some(ResolvedSize { w: 100, h: 60 }),
+                ElementSize::Fixed { w, h } => Some(ResolvedSize { w, h }),
+            }
+        }
+    }
 
     pub struct Button {
         min_width: i32,
@@ -20,8 +33,13 @@ pub mod controls {
     }
 
     impl Element for Button {
-        fn resize(&mut self, _size: ElementSize, _children: Children) -> Option<ResolvedSize> {
-            unimplemented!("button")
+        fn inflate(&mut self, mut base: Base) {
+            base.add(Text);
+            base.add(Text);
+        }
+
+        fn resize(&mut self, mut base: Base, size: ElementSize) -> Option<ResolvedSize> {
+            base.layout_vertical(size, 5)
         }
     }
 
@@ -38,8 +56,14 @@ pub mod controls {
     }
 
     impl Element for Fill {
-        fn resize(&mut self, _size: ElementSize, _children: Children) -> Option<ResolvedSize> {
-            unimplemented!("fill")
+        fn inflate(&mut self, mut base: Base) {
+            base.add(Button::new());
+            base.add(Button::new());
+        }
+
+        fn resize(&mut self, mut base: Base, size: ElementSize) -> Option<ResolvedSize> {
+            println!("fill resize: size = {:?}", size);
+            base.layout_vertical(size, 5)
         }
     }
 }
@@ -57,7 +81,7 @@ pub struct ResolvedSize {
 
 #[derive(Debug, Copy, Clone)]
 pub enum Effect {
-    Add { id: Ix, size: Option<(i32, i32)> },
+    Add { id: Ix, parent_id: Option<Ix> },
     Remove { id: Ix },
     Resize { id: Ix, size: Option<(i32, i32)> },
 }
@@ -68,7 +92,8 @@ pub enum ResizeDecision {
 
 pub trait Element {
 
-    fn resize(&mut self, size: ElementSize, children: Children) -> Option<ResolvedSize>;
+    fn inflate(&mut self, base: Base) {}
+    fn resize(&mut self, base: Base, size: ElementSize) -> Option<ResolvedSize>;
 
 }
 

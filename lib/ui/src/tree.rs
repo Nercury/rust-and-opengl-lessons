@@ -2,9 +2,10 @@ use std::marker::PhantomData;
 use ::*;
 use std::rc::Rc;
 use std::cell::RefCell;
-pub use self::shared::Children;
+pub use self::shared::Base;
 
 mod shared {
+    use na;
     use ::*;
     use std::collections::BTreeMap;
     use std::collections::VecDeque;
@@ -47,9 +48,139 @@ mod shared {
         }
     }
 
-    pub struct Children<'a> {
-        nodes: &'a mut BTreeMap<Ix, NodeSkeleton>,
-        ids: &'a mut Vec<Ix>,
+    struct LayoutingOptions {
+        force_equal_child_size: bool,
+    }
+
+    impl Default for LayoutingOptions {
+        fn default() -> Self {
+            LayoutingOptions {
+                force_equal_child_size: false,
+            }
+        }
+    }
+
+    pub struct Base<'a> {
+        id: Ix,
+        container: &'a mut Container,
+        children: &'a mut Children,
+    }
+
+    impl<'a> Base<'a> {
+        pub fn add<E: Element + 'static>(&mut self, element: E) -> Ix {
+            let id = self.container.add_node(self.id, Box::new(element) as Box<Element>);
+            self.children.items.push(Child { id, transform: None });
+            id
+        }
+
+        pub fn layout_empty(&mut self) -> Option<ResolvedSize> {
+            self.children_mut(|_, mut child| {
+                child.hide();
+            });
+
+            None
+        }
+
+        pub fn layout_vertical(&mut self, size: ElementSize, margin: i32) -> Option<ResolvedSize> {
+            let options = LayoutingOptions::default();
+            let children_len = self.children_len();
+
+            println!("children len = {}", children_len);
+
+            if children_len == 0 {
+                return self.layout_empty();
+            }
+
+            match size {
+                ElementSize::Auto => { None }
+                ElementSize::Fixed { w, h } => {
+                    let w = w - margin * 2;
+                    let h = h - margin * 2 - margin * (children_len as i32 - 1);
+
+                    if w <= 0 || h <= 0 { return self.layout_empty(); }
+
+                    let child_h = h / children_len as i32;
+                    if child_h == 0 { return self.layout_empty(); }
+
+                    let mut next_child_offset_y = 0;
+                    let mut remaining_h = h;
+
+                    let transform = na::Affine3::<f32>::identity();
+
+                    self.children_mut(|i, mut child| {
+                        let set_w = w;
+                        let set_h = if options.force_equal_child_size {
+                            child_h
+                        } else {
+                            if i < children_len {
+                                remaining_h -= child_h;
+                                child_h
+                            } else {
+                                remaining_h
+                            }
+                        };
+
+                        let offset_y = next_child_offset_y;
+                        let offset_x = 0;
+
+                        println!("child set w = {}, h = {}, x = {}, y = {}", set_w, set_h, offset_x, offset_y);
+
+                        let asked_size = ElementSize::Fixed { w: set_w, h: set_h };
+                        let actual_size = child.element_resize(asked_size);
+
+
+                        next_child_offset_y += set_h;
+                    });
+
+                    None
+                }
+            }
+        }
+
+        pub fn children_len(&self) -> usize {
+            self.children.items.len()
+        }
+
+        pub fn children_mut<F>(&mut self, mut fun: F) where F: for<'r> FnMut(usize, ChildIterItemMut<'r>) {
+
+            // this method uses internal iterator because I failed to make it external
+
+            for (i, child) in self.children.items.iter_mut().enumerate() {
+                fun(i, ChildIterItemMut { child, container: self.container });
+            }
+        }
+    }
+
+    pub struct ChildIterItemMut<'a> {
+        child: &'a mut Child,
+        container: &'a mut Container,
+    }
+
+    impl<'a> ChildIterItemMut<'a> {
+        pub fn element_resize(&mut self, size: ElementSize) -> Option<ResolvedSize> {
+            self.container.resize(self.child.id, size)
+        }
+
+        pub fn hide(&mut self) {
+            self.container.hide(self.child.id);
+        }
+    }
+
+    pub struct Child {
+        id: Ix,
+        transform: Option<na::Affine3<f32>>,
+    }
+
+    pub struct Children {
+        items: Vec<Child>,
+    }
+
+    impl Children {
+        pub fn empty() -> Children {
+            Children {
+                items: Vec::with_capacity(0),
+            }
+        }
     }
 
     pub struct Container {
@@ -75,27 +206,42 @@ mod shared {
             if let Some(mut removed) = self.nodes.remove(&id) {
                 let body = removed.steal_body();
 
-                for child in body.children {
-                    self.delete_node(child);
+                for child in body.children.items {
+                    self.delete_node(child.id);
                 }
 
                 self.queues.send(Effect::Remove { id })
             }
         }
 
-        pub fn new_root(&mut self, element: Box<Element>) -> Ix {
-            let root_id = self.next_id;
-
-            self.next_id.inc();
+        pub fn new_root(&mut self, mut element: Box<Element>) -> Ix {
+            let root_id = self.next_id.inc();
 
             self.nodes.clear();
-            self.nodes.insert(root_id, NodeSkeleton::new(element));
+
+            let mut children = Children::empty();
+            element.inflate(Base { id: root_id, container: self, children: &mut children });
+
+            self.nodes.insert(root_id, NodeSkeleton::new(children, element));
 
             self._root_id = Some(root_id);
 
-            self.queues.send(Effect::Add { id: root_id, size: None });
+            self.queues.send(Effect::Add { id: root_id, parent_id: None });
 
             root_id
+        }
+
+        pub fn add_node(&mut self, parent_id: Ix, mut element: Box<Element>) -> Ix {
+            let id = self.next_id.inc();
+
+            let mut children = Children::empty();
+            element.inflate(Base { id, container: self, children: &mut children });
+
+            self.nodes.insert(id, NodeSkeleton::new(children, element));
+
+            self.queues.send(Effect::Add { id, parent_id: Some(parent_id) });
+
+            id
         }
 
         pub fn root_id(&self) -> Option<Ix> {
@@ -109,10 +255,44 @@ mod shared {
         }
 
         pub fn resize(&mut self, id: Ix, size: ElementSize) -> Option<ResolvedSize> {
+            println!("resize id = {:?}, size = {:?}", id, size);
+
             let mut body = self.nodes.get_mut(&id)?.steal_body();
-            let resolved_size = body.resize(&mut self.nodes, size);
-            self.nodes.get_mut(&id)?.restore_body(body);
+            let resolved_size = body.resize(id, self, size);
+
+            let skeleton = self.nodes.get_mut(&id)?;
+            skeleton.restore_body(body);
+            if resolved_size != skeleton.last_queue_size {
+                self.queues.send(Effect::Resize { id, size: resolved_size.map(|s| (s.w, s.h)) });
+                skeleton.last_queue_size = resolved_size;
+            }
+
             resolved_size
+        }
+
+        pub fn hide(&mut self, id: Ix) {
+            println!("hide id = {:?}", id);
+
+            let stolen_body = {
+                let skeleton = self.nodes.get_mut(&id).expect("hide: self.nodes.get_mut(&id)");
+                let resolved_size = None;
+
+                if resolved_size != skeleton.last_queue_size {
+                    self.queues.send(Effect::Resize { id, size: resolved_size.map(|s| (s.w, s.h)) });
+                    skeleton.last_queue_size = resolved_size;
+
+                    Some(skeleton.steal_body())
+                } else { None }
+            };
+
+            if let Some(body) = stolen_body {
+                for child in body.children.items.iter() {
+                    self.hide(child.id);
+                }
+
+                let skeleton = self.nodes.get_mut(&id).expect("hide: self.nodes.get_mut(&id)");
+                skeleton.restore_body(body);
+            }
         }
 
         pub fn create_queue(&mut self) -> Ix {
@@ -129,39 +309,33 @@ mod shared {
     }
 
     pub struct NodeBody {
-        children: Vec<Ix>,
+        children: Children,
         el: Box<Element>,
     }
 
     impl NodeBody {
-        pub fn children_ids(&self) -> impl Iterator<Item = &Ix> {
-            self.children.iter()
-        }
-
-        pub fn resize(&mut self, nodes: &mut BTreeMap<Ix, NodeSkeleton>, size: ElementSize) -> Option<ResolvedSize> {
-            let mut children = ::std::mem::replace(&mut self.children, Vec::with_capacity(0));
-            let resolved_size = self.el.resize(size, Children { nodes, ids: &mut children });
+        pub fn resize(&mut self, id: Ix, container: &mut Container, size: ElementSize) -> Option<ResolvedSize> {
+            let mut children = ::std::mem::replace(&mut self.children, Children::empty());
+            let resolved_size = self.el.resize(Base { id, container, children: &mut children }, size);
             ::std::mem::replace(&mut self.children, children);
             resolved_size
         }
     }
 
     pub struct NodeSkeleton {
+        last_queue_size: Option<ResolvedSize>,
         body: Option<NodeBody>,
     }
 
     impl NodeSkeleton {
-        pub fn new(element: Box<Element>) -> NodeSkeleton {
+        pub fn new(children: Children, element: Box<Element>) -> NodeSkeleton {
             NodeSkeleton {
+                last_queue_size: None,
                 body: Some(NodeBody {
-                    children: Vec::new(),
+                    children,
                     el: element,
-                })
+                }),
             }
-        }
-
-        pub fn element_mut(&mut self) -> &mut Element {
-            self.body.as_mut().map(|b| &mut *b.el).expect("element_mut: encountered stolen value")
         }
 
         pub fn steal_body(&mut self) -> NodeBody {
@@ -172,6 +346,10 @@ mod shared {
             if let Some(_) = ::std::mem::replace(&mut self.body, Some(body)) {
                 unreachable!("restore_body: encountered existing value")
             }
+        }
+
+        pub fn element_mut(&mut self) -> &mut Element {
+            self.body.as_mut().map(|b| &mut *b.el).expect("element_mut: encountered stolen value")
         }
     }
 }

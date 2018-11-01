@@ -255,40 +255,11 @@ impl DebugLines {
     }
 
     pub fn rect_marker(&self, isometry: na::Isometry3<f32>, size: na::Vector2<f32>, color: na::Vector4<f32>) -> RectMarker {
-        let mut lines = Vec::new();
-
-        // pos ----- A
-        // |         |
-        // B --------C
-
-        let pos = na::Point3::new(0.0, 0.0, 0.0);
-        let c = pos + na::Vector3::new(size.x, size.y, 0.0);
-        let a = na::Point3::new(c.x, 0.0, 0.0);
-        let b = na::Point3::new(0.0, c.y, 0.0);
-
-        lines.push(LinePoint { pos: render_p3(pos), color: render_color_vec4(color) });
-        lines.push(LinePoint { pos: render_p3(a), color: render_color_vec4(color) });
-
-        lines.push(LinePoint { pos: render_p3(a), color: render_color_vec4(color) });
-        lines.push(LinePoint { pos: render_p3(c), color: render_color_vec4(color) });
-
-        lines.push(LinePoint { pos: render_p3(c), color: render_color_vec4(color) });
-        lines.push(LinePoint { pos: render_p3(b), color: render_color_vec4(color) });
-
-        lines.push(LinePoint { pos: render_p3(pos), color: render_color_vec4(color) });
-        lines.push(LinePoint { pos: render_p3(b), color: render_color_vec4(color) });
-
-        let new_id = self.containers.borrow_mut()
-            .new_container(isometry, lines);
-
-        RectMarker {
-            containers: self.containers.clone(),
-            id: new_id,
-        }
+        RectMarker::new(self.containers.clone(), isometry, size, color)
     }
 
     pub fn grid_marker(&self, isometry: na::Isometry3<f32>, spacing: f32, count: i32, color: na::Vector4<f32>) -> GridMarker {
-        let mut lines = Vec::new();
+        let mut lines = Vec::with_capacity((count * 2 + 4) as usize);
 
         let mut half_count = count / 2;
         if half_count == 0 {
@@ -365,10 +336,55 @@ pub struct RectMarker {
 }
 
 impl RectMarker {
+    fn new(containers: Rc<RefCell<SharedDebugLines>>, isometry: na::Isometry3<f32>, size: na::Vector2<f32>, color: na::Vector4<f32>) -> RectMarker {
+        let id = containers.borrow_mut()
+            .new_container(isometry, Vec::with_capacity(8));
+
+        let marker = RectMarker {
+            id,
+            containers,
+        };
+
+        marker.update_lines(size, color);
+        marker
+    }
+
+    fn update_lines(&self, size: na::Vector2<f32>, color: na::Vector4<f32>) {
+        if let Some(data) = self.containers.borrow_mut().get_container_mut(self.id) {
+            let lines = &mut data.data;
+            lines.clear();
+
+            // pos ----- A
+            // |         |
+            // B --------C
+
+            let pos = na::Point3::new(0.0, 0.0, 0.0);
+            let c = pos + na::Vector3::new(size.x, size.y, 0.0);
+            let a = na::Point3::new(c.x, 0.0, 0.0);
+            let b = na::Point3::new(0.0, c.y, 0.0);
+
+            lines.push(LinePoint { pos: render_p3(pos), color: render_color_vec4(color) });
+            lines.push(LinePoint { pos: render_p3(a), color: render_color_vec4(color) });
+
+            lines.push(LinePoint { pos: render_p3(a), color: render_color_vec4(color) });
+            lines.push(LinePoint { pos: render_p3(c), color: render_color_vec4(color) });
+
+            lines.push(LinePoint { pos: render_p3(c), color: render_color_vec4(color) });
+            lines.push(LinePoint { pos: render_p3(b), color: render_color_vec4(color) });
+
+            lines.push(LinePoint { pos: render_p3(pos), color: render_color_vec4(color) });
+            lines.push(LinePoint { pos: render_p3(b), color: render_color_vec4(color) });
+        }
+    }
+
     pub fn update_isometry(&self, isometry: na::Isometry3<f32>) {
         if let Some(data) = self.containers.borrow_mut().get_container_mut(self.id) {
             data.isometry = isometry;
         }
+    }
+
+    pub fn update_size_and_color(&self, size: na::Vector2<f32>, color: na::Vector4<f32>) {
+        self.update_lines(size, color);
     }
 }
 
