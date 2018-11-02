@@ -67,6 +67,11 @@ mod shared {
     }
 
     impl<'a> Base<'a> {
+        pub fn enable_update(&mut self, state: bool) {
+            let skeleton = self.container.nodes.get_mut(&self.id).expect("enable_update: self.container.nodes.get_mut(&self.id)");
+            skeleton.updated_enabled = state;
+        }
+
         pub fn add<E: Element + 'static>(&mut self, element: E) -> Ix {
             let id = self.container.add_node(self.id, Box::new(element) as Box<Element>);
             self.children.items.push(Child::new(id));
@@ -103,8 +108,6 @@ mod shared {
                     let mut next_child_offset_y = margin;
                     let mut remaining_h = h_without_margin;
 
-                    let transform = na::Affine3::<f32>::identity();
-
                     self.children_mut(|i, mut child| {
                         let set_w = w_without_margin;
                         let set_h = if options.force_equal_child_size {
@@ -121,10 +124,8 @@ mod shared {
                         let offset_y = next_child_offset_y;
                         let offset_x = margin;
 
-                        println!("child set w_without_margin = {}, h_without_margin = {}, x = {}, y = {}", set_w, set_h, offset_x, offset_y);
-
                         let asked_size = ElementSize::Fixed { w: set_w, h: set_h };
-                        let actual_size = child.element_resize(asked_size);
+                        let _actual_size = child.element_resize(asked_size); // layout ignores actual size even if it is clipping
 
                         child.set_translation(offset_x, offset_y);
 
@@ -234,6 +235,42 @@ mod shared {
             }
         }
 
+        fn mutate<
+            IA,
+            I,
+            O,
+            OA,
+            InputFunT,
+            MutFunT,
+            OutputFunT
+        >(
+            &mut self,
+            id: Ix,
+            input_arg: IA,
+            mut input_fun: InputFunT, // input_arg comes in, I comes out (access to NodeSkeleton and Queues)
+            mut mut_fun: MutFunT, // I comes in, O comes out (access to Container and Body)
+            mut output_fun: OutputFunT, // O comes in, OA is returned (access to NodeSkeleton and Queues)
+        ) -> OA
+            where
+                InputFunT: FnMut(&mut NodeSkeleton, &mut Queues, IA) -> I,
+                MutFunT: FnMut(&mut NodeBody, &mut Container, I) -> O,
+                OutputFunT: FnMut(&mut NodeSkeleton, &mut Queues, O) -> OA
+        {
+            let (mut body, input) = {
+                let skeleton = self.nodes.get_mut(&id).expect("mutate 1: self.nodes.get_mut(&id)");
+                let input = input_fun(skeleton, &mut self.queues, input_arg);
+                let body = skeleton.steal_body();
+                (body, input)
+            };
+
+            let output = mut_fun(&mut body, self, input);
+
+            let skeleton = self.nodes.get_mut(&id).expect("mutate 2: self.nodes.get_mut(&id)");
+            skeleton.restore_body(body);
+
+            output_fun(skeleton, &mut self.queues, output)
+        }
+
         pub fn delete_node(&mut self, id: Ix) {
             if let Some(mut removed) = self.nodes.remove(&id) {
                 let body = removed.steal_body();
@@ -246,7 +283,7 @@ mod shared {
             }
         }
 
-        pub fn new_root(&mut self, mut element: Box<Element>) -> Ix {
+        pub fn new_root(&mut self, element: Box<Element>) -> Ix {
             let root_id = self.next_id.inc();
 
             self.queues.send(Effect::Add { id: root_id, parent_id: None });
@@ -268,7 +305,7 @@ mod shared {
             root_id
         }
 
-        pub fn add_node(&mut self, parent_id: Ix, mut element: Box<Element>) -> Ix {
+        pub fn add_node(&mut self, parent_id: Ix, element: Box<Element>) -> Ix {
             let id = self.next_id.inc();
 
             self.queues.send(Effect::Add { id, parent_id: Some(parent_id) });
@@ -298,78 +335,87 @@ mod shared {
         }
 
         pub fn resize(&mut self, id: Ix, size: ElementSize) -> Option<ResolvedSize> {
-            let mut body = self.nodes.get_mut(&id).expect("resize 1: self.nodes.get_mut(&id)").steal_body();
-            let resolved_size = body.resize(id, self, size);
-
-            let skeleton = self.nodes.get_mut(&id).expect("resize 2: self.nodes.get_mut(&id)");
-            skeleton.restore_body(body);
-            if resolved_size != skeleton.last_queue_size {
-                self.queues.send(Effect::Resize { id, size: resolved_size.map(|s| (s.w, s.h)) });
-                skeleton.last_queue_size = resolved_size;
-            }
-
-            resolved_size
+            self.mutate(
+                id,
+                size,
+                |_skeleton, _q, size| size,
+                |body, container, size| {
+                    body.resize(id, container, size)
+                },
+                |skeleton, q, resolved_size| {
+                    if resolved_size != skeleton.last_queue_size {
+                        q.send(Effect::Resize { id, size: resolved_size.map(|s| (s.w, s.h)) });
+                        skeleton.last_queue_size = resolved_size;
+                    }
+                    resolved_size
+                },
+            )
         }
 
         pub fn transform(&mut self, id: Ix, relative_transform: &na::Projective3<f32>) {
-            let (absolute_transform, relative_transform, mut body) = {
-                let skeleton = self.nodes.get_mut(&id).expect("transform 1: self.nodes.get_mut(&id)");
-                skeleton.relative_transform = relative_transform.clone();
-                let absolute_transform = skeleton.absolute_transform();
-                (absolute_transform, skeleton.relative_transform.clone(), skeleton.steal_body())
-            };
-            {
-                let children = &body.children.items[..];
-                for child in children {
-                    self.parent_transform(child.id, &absolute_transform);
+            self.mutate(
+                id,
+                relative_transform,
+                |skeleton, _q, relative_transform| {
+                    skeleton.relative_transform = relative_transform.clone();
+                    skeleton.absolute_transform()
+                },
+                |body, container, absolute_transform| {
+                    for child in &body.children.items {
+                        container.parent_transform(child.id, &absolute_transform);
+                    }
+                    absolute_transform
+                },
+                |_skeleton, q, absolute_transform| {
+                    q.send(Effect::Transform { id, absolute_transform });
                 }
-            }
-            self.queues.send(Effect::Transform { id, absolute_transform });
-
-            let skeleton = self.nodes.get_mut(&id).expect("transform 2: self.nodes.get_mut(&id)");
-            skeleton.restore_body(body);
+            )
         }
 
         pub fn parent_transform(&mut self, id: Ix, parent_transform: &na::Projective3<f32>) {
-            let (absolute_transform, relative_transform, mut body) = {
-                let skeleton = self.nodes.get_mut(&id).expect("transform 1: self.nodes.get_mut(&id)");
-                skeleton.parent_transform = parent_transform.clone();
-                let absolute_transform = skeleton.absolute_transform();
-                (absolute_transform, skeleton.relative_transform.clone(), skeleton.steal_body())
-            };
-            {
-                let children = &body.children.items[..];
-                for child in children {
-                    self.parent_transform(child.id, &absolute_transform);
+            self.mutate(
+                id,
+                parent_transform,
+                |skeleton, _q, parent_transform| {
+                    skeleton.parent_transform = parent_transform.clone();
+                    skeleton.absolute_transform()
+                },
+                |body, container, absolute_transform| {
+                    for child in &body.children.items {
+                        container.parent_transform(child.id, &absolute_transform);
+                    }
+                    absolute_transform
+                },
+                |_skeleton, q, absolute_transform| {
+                    q.send(Effect::Transform { id, absolute_transform });
                 }
-            }
-            self.queues.send(Effect::Transform { id, absolute_transform });
-
-            let skeleton = self.nodes.get_mut(&id).expect("transform 2: self.nodes.get_mut(&id)");
-            skeleton.restore_body(body);
+            )
         }
 
         pub fn hide(&mut self, id: Ix) {
-            let stolen_body = {
-                let skeleton = self.nodes.get_mut(&id).expect("hide: self.nodes.get_mut(&id)");
-                let resolved_size = None;
+            self.mutate(
+                id,
+                (),
+                |skeleton, q, _| {
+                    let resolved_size = None;
 
-                if resolved_size != skeleton.last_queue_size {
-                    self.queues.send(Effect::Resize { id, size: resolved_size.map(|s| (s.w, s.h)) });
-                    skeleton.last_queue_size = resolved_size;
+                    if resolved_size != skeleton.last_queue_size {
+                        q.send(Effect::Resize { id, size: resolved_size.map(|s| (s.w, s.h)) });
+                        skeleton.last_queue_size = resolved_size;
 
-                    Some(skeleton.steal_body())
-                } else { None }
-            };
-
-            if let Some(body) = stolen_body {
-                for child in body.children.items.iter() {
-                    self.hide(child.id);
+                        true
+                    } else {
+                        false
+                    }
+                },
+                |body, container, hide_children| {
+                    for child in body.children.items.iter() {
+                        container.hide(child.id);
+                    }
+                },
+                |_skeleton, _q, param| {
                 }
-
-                let skeleton = self.nodes.get_mut(&id).expect("hide: self.nodes.get_mut(&id)");
-                skeleton.restore_body(body);
-            }
+            )
         }
 
         pub fn create_queue(&mut self) -> Ix {
@@ -404,6 +450,7 @@ mod shared {
         parent_transform: na::Projective3<f32>,
         relative_transform: na::Projective3<f32>,
         body: Option<NodeBody>,
+        updated_enabled: bool,
     }
 
     impl NodeSkeleton {
@@ -416,6 +463,7 @@ mod shared {
                     children,
                     el: element,
                 }),
+                updated_enabled: false,
             }
         }
 

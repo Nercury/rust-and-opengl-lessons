@@ -10,6 +10,10 @@ pub mod controls {
     pub struct Text;
 
     impl Element for Text {
+        fn inflate(&mut self, mut base: Base) {
+            base.enable_update(true);
+        }
+
         fn resize(&mut self, mut _base: Base, size: ElementSize) -> Option<ResolvedSize> {
             match size {
                 ElementSize::Auto => Some(ResolvedSize { w: 100, h: 60 }),
@@ -18,19 +22,7 @@ pub mod controls {
         }
     }
 
-    pub struct Button {
-        min_width: i32,
-        min_height: i32,
-    }
-
-    impl Button {
-        pub fn new() -> Button {
-            Button {
-                min_width: 50,
-                min_height: 30,
-            }
-        }
-    }
+    pub struct Button;
 
     impl Element for Button {
         fn inflate(&mut self, mut base: Base) {
@@ -57,12 +49,11 @@ pub mod controls {
 
     impl Element for Fill {
         fn inflate(&mut self, mut base: Base) {
-            base.add(Button::new());
-            base.add(Button::new());
+            base.add(Text);
+            base.add(Button);
         }
 
         fn resize(&mut self, mut base: Base, size: ElementSize) -> Option<ResolvedSize> {
-            println!("fill resize: size = {:?}", size);
             base.layout_vertical(size, 5)
         }
     }
@@ -87,14 +78,10 @@ pub enum Effect {
     Transform { id: Ix, absolute_transform: na::Projective3<f32> },
 }
 
-pub enum ResizeDecision {
-    AutoFromChildrenVertical,
-}
-
 pub trait Element {
 
-    fn inflate(&mut self, base: Base) {}
-    fn resize(&mut self, base: Base, size: ElementSize) -> Option<ResolvedSize>;
+    fn inflate(&mut self, _base: Base) {}
+    fn resize(&mut self, _base: Base, _size: ElementSize) -> Option<ResolvedSize>;
 
 }
 

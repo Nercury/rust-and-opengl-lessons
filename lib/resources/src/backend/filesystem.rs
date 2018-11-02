@@ -2,7 +2,6 @@ use std::path::{Path, PathBuf};
 use std::{io, fs};
 use backend::{Backend, BackendSyncPoint};
 use {ResourcePath, Error};
-use std::io::Read;
 
 pub struct FileSystem {
     root_path: PathBuf,

@@ -6,6 +6,8 @@ use render_gl::ColorBuffer;
 use render_gl::{DebugLines, RectMarker};
 use std::collections::HashMap;
 use std::collections::BTreeSet;
+use failure;
+use resources;
 
 struct ControlInfo {
     _id: Ix,
@@ -64,10 +66,12 @@ pub struct Interface {
     controls: HashMap<Ix, ControlInfo>,
     event_read_buffer: Vec<Effect>,
     flush_updates_set: BTreeSet<Ix>,
+
+    debug_lines: DebugLines,
 }
 
 impl Interface {
-    pub fn new(size: ElementSize) -> Interface {
+    pub fn new(gl: &gl::Gl, resources: &resources::Resources, size: ElementSize) -> Result<Interface, failure::Error> {
         let tree = Tree::new();
 
         let events = tree.events();
@@ -75,20 +79,21 @@ impl Interface {
 
         fill.resize(size);
 
-        Interface {
+        Ok(Interface {
             fill,
             events,
             controls: HashMap::new(),
             event_read_buffer: Vec::new(),
             flush_updates_set: BTreeSet::new(),
-        }
+            debug_lines: DebugLines::new(gl, resources)?,
+        })
     }
 
     pub fn resize(&mut self, size: ElementSize) {
         self.fill.resize(size);
     }
 
-    fn process_events(&mut self, debug_lines: &DebugLines) {
+    fn process_events(&mut self) {
         self.events.drain_into(&mut self.event_read_buffer);
         self.flush_updates_set.clear();
 
@@ -113,12 +118,13 @@ impl Interface {
         }
 
         for id in &self.flush_updates_set {
+            let debug_lines = &self.debug_lines;
             self.controls.get_mut(id).map(|c| c.flush_updates(debug_lines));
         }
     }
 
-    pub fn update(&mut self, _delta: f32, debuglines: &DebugLines) {
-        self.process_events(debuglines)
+    pub fn update(&mut self, _delta: f32) {
+        self.process_events()
     }
 
     pub fn mouse_move(&mut self, _x: i32, _y: i32) {}
@@ -127,5 +133,7 @@ impl Interface {
 
     pub fn mouse_up(&mut self, _x: i32, _y: i32) {}
 
-    pub fn render(&mut self, _gl: &gl::Gl, _target: &ColorBuffer, _vp_matrix: &na::Matrix4<f32>) {}
+    pub fn render(&mut self, gl: &gl::Gl, target: &ColorBuffer, vp_matrix: &na::Matrix4<f32>) {
+        self.debug_lines.render(gl, target, vp_matrix);
+    }
 }

@@ -78,10 +78,7 @@ fn run() -> Result<(), failure::Error> {
     viewport.set_used(&gl);
     color_buffer.set_clear_color(&gl, na::Vector3::new(0.3, 0.3, 0.5));
 
-    let mut debug_lines = render_gl::DebugLines::new(&gl, &resources)?;
-
-//    let mut iface = Interface::new(ui::ElementSize::Fixed { w: window_size.highdpi_width, h: window_size.highdpi_height });
-    let mut iface = Interface::new(ui::ElementSize::Fixed { w: viewport.w, h: viewport.h });
+    let mut iface = Interface::new(&gl, &resources, ui::ElementSize::Fixed { w: viewport.w, h: viewport.h })?;
 
     // main loop
 
@@ -104,31 +101,15 @@ fn run() -> Result<(), failure::Error> {
                     viewport.update_size(hdpi_w as i32, hdpi_h as i32);
                     viewport.set_used(&gl);
                     iface.resize(ui::ElementSize::Fixed { w: hdpi_w as i32, h: hdpi_h as i32 });
-//                    iface.resize(ui::ElementSize::Auto);
                 },
                 _ => (),
             };
-
-//            match event {
-//                sdl2::event::Event::KeyDown { scancode: Some(sdl2::keyboard::Scancode::C), .. } => {
-//                    side_cam = !side_cam;
-//                },
-//                sdl2::event::Event::KeyDown { scancode: Some(sdl2::keyboard::Scancode::I), .. } => {
-//                    debug_lines.toggle();
-//                },
-//                sdl2::event::Event::KeyDown { scancode: Some(sdl2::keyboard::Scancode::P), .. } => {
-//                    frame_profiler.toggle();
-//                    allocation_profiler.toggle();
-//                    gl_call_profiler.toggle();
-//                },
-//                _ => (),
-//            }
         }
 
         let delta = time.elapsed().as_fractional_secs() as f32;
         time = Instant::now();
 
-        iface.update(delta, &debug_lines);
+        iface.update(delta);
 
         unsafe {
             gl.Enable(gl::CULL_FACE);
@@ -146,7 +127,6 @@ fn run() -> Result<(), failure::Error> {
         let ui_matrix = na::Matrix4::new_nonuniform_scaling(&[1.0, -1.0, 1.0].into())
             * na::Matrix4::new_orthographic(left as f32, right as f32, bottom as f32, top as f32, -10.0, 10.0);
 
-        debug_lines.render(&gl, &color_buffer, &ui_matrix);
         iface.render(&gl, &color_buffer, &ui_matrix);
 
         while time.elapsed() < Duration::from_millis(12) {
