@@ -84,6 +84,7 @@ pub enum Effect {
     Add { id: Ix, parent_id: Option<Ix> },
     Remove { id: Ix },
     Resize { id: Ix, size: Option<(i32, i32)> },
+    Transform { id: Ix, absolute_transform: na::Projective3<f32> },
 }
 
 pub enum ResizeDecision {

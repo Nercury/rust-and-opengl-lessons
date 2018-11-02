@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use super::buffers::LinePoint;
 
 pub struct Container {
-    pub isometry: na::Isometry3<f32>,
+    pub transform: na::Projective3<f32>,
     pub data: Vec<LinePoint>,
 }
 
@@ -28,10 +28,10 @@ impl SharedDebugLines {
         id
     }
 
-    pub fn new_container(&mut self, isometry: na::Isometry3<f32>, data: Vec<LinePoint>) -> i32 {
+    pub fn new_container(&mut self, transform: na::Projective3<f32>, data: Vec<LinePoint>) -> i32 {
         let next_id = self.get_next_id();
         self.containers.insert(next_id, Container {
-            isometry,
+            transform,
             data,
         });
         self.invalidated = true;

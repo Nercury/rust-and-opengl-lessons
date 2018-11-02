@@ -77,7 +77,7 @@ impl DebugLines {
                 let mut offset = 0;
                 for container in shared_debug_lines.containers.values() {
                     buffers.multi_draw_items.push(MultiDrawItem {
-                        model_matrix: container.isometry.to_homogeneous(),
+                        model_matrix: na::convert(container.transform),
                         starting_index: offset,
                         index_count: container.data.len() as i32,
                     });
@@ -132,7 +132,7 @@ impl DebugLines {
 
         let new_id = self.containers.borrow_mut()
             .new_container(
-                na::Isometry3::from_parts(na::Translation3::from_vector(pos.coords), na::UnitQuaternion::identity()),
+                na::convert(na::Isometry3::from_parts(na::Translation3::from_vector(pos.coords), na::UnitQuaternion::identity())),
                 vec![
                     LinePoint { pos: render_p3(pos + na::Vector3::x() * half), color: (0.0, 1.0, 0.0, 1.0).into() },
                     LinePoint { pos: render_p3(pos + na::Vector3::x() * -half), color: (0.0, 1.0, 0.0, 1.0).into() },
@@ -153,7 +153,7 @@ impl DebugLines {
         let half = size / 2.0;
 
         let new_id = self.containers.borrow_mut()
-            .new_container(na::Isometry3::from_parts(na::Translation3::from_vector(pos.coords), na::UnitQuaternion::identity()),
+            .new_container(na::convert(na::Isometry3::from_parts(na::Translation3::from_vector(pos.coords), na::UnitQuaternion::identity())),
                            vec![
                                LinePoint { pos: render_p3(pos + na::Vector3::x() * half), color: render_color_vec4(color) },
                                LinePoint { pos: render_p3(pos + na::Vector3::x() * -half), color: render_color_vec4(color) },
@@ -169,7 +169,7 @@ impl DebugLines {
         }
     }
 
-    pub fn ray_markers(&self, isometry: na::Isometry3<f32>, pos_direction_colors: impl Iterator<Item=(na::Point3<f32>, na::Vector3<f32>, na::Vector4<f32>)>) -> RayMarkers {
+    pub fn ray_markers(&self, transform: na::Projective3<f32>, pos_direction_colors: impl Iterator<Item=(na::Point3<f32>, na::Vector3<f32>, na::Vector4<f32>)>) -> RayMarkers {
         struct PositionsIter {
             pos: na::Point3<f32>,
             dir: na::Vector3<f32>,
@@ -197,7 +197,7 @@ impl DebugLines {
 
         let new_id = self.containers.borrow_mut()
             .new_container(
-                isometry,
+                transform,
                 pos_direction_colors
                     .flat_map(|(pos, dir, color)|
                                   PositionsIter {
@@ -215,12 +215,12 @@ impl DebugLines {
         }
     }
 
-    pub fn aabb_marker(&self, isometry: na::Isometry3<f32>, aabb: ncollide3d::bounding_volume::aabb::AABB<f32>, color: na::Vector4<f32>) -> AabbMarker {
+    pub fn aabb_marker(&self, transform: na::Projective3<f32>, aabb: ncollide3d::bounding_volume::aabb::AABB<f32>, color: na::Vector4<f32>) -> AabbMarker {
         let a = aabb.mins();
         let b = aabb.maxs();
 
         let new_id = self.containers.borrow_mut()
-            .new_container(isometry,
+            .new_container(transform,
                            vec![
                                LinePoint { pos: render_p3([a.x, a.y, a.z].into()), color: render_color_vec4(color) },
                                LinePoint { pos: render_p3([b.x, a.y, a.z].into()), color: render_color_vec4(color) },
@@ -254,11 +254,11 @@ impl DebugLines {
         }
     }
 
-    pub fn rect_marker(&self, isometry: na::Isometry3<f32>, size: na::Vector2<f32>, color: na::Vector4<f32>) -> RectMarker {
-        RectMarker::new(self.containers.clone(), isometry, size, color)
+    pub fn rect_marker(&self, transform: na::Projective3<f32>, size: na::Vector2<f32>, color: na::Vector4<f32>) -> RectMarker {
+        RectMarker::new(self.containers.clone(), transform, size, color)
     }
 
-    pub fn grid_marker(&self, isometry: na::Isometry3<f32>, spacing: f32, count: i32, color: na::Vector4<f32>) -> GridMarker {
+    pub fn grid_marker(&self, transform: na::Projective3<f32>, spacing: f32, count: i32, color: na::Vector4<f32>) -> GridMarker {
         let mut lines = Vec::with_capacity((count * 2 + 4) as usize);
 
         let mut half_count = count / 2;
@@ -283,7 +283,7 @@ impl DebugLines {
         }
 
         let new_id = self.containers.borrow_mut()
-            .new_container(isometry, lines);
+            .new_container(transform, lines);
 
         GridMarker {
             containers: self.containers.clone(),
@@ -298,9 +298,9 @@ pub struct AabbMarker {
 }
 
 impl AabbMarker {
-    pub fn update_isometry(&self, isometry: na::Isometry3<f32>) {
+    pub fn update_transform(&self, transform: na::Projective3<f32>) {
         if let Some(data) = self.containers.borrow_mut().get_container_mut(self.id) {
-            data.isometry = isometry;
+            data.transform = transform;
         }
     }
 }
@@ -317,9 +317,9 @@ pub struct GridMarker {
 }
 
 impl GridMarker {
-    pub fn update_isometry(&self, isometry: na::Isometry3<f32>) {
+    pub fn update_transform(&self, transform: na::Projective3<f32>) {
         if let Some(data) = self.containers.borrow_mut().get_container_mut(self.id) {
-            data.isometry = isometry;
+            data.transform = transform;
         }
     }
 }
@@ -336,9 +336,9 @@ pub struct RectMarker {
 }
 
 impl RectMarker {
-    fn new(containers: Rc<RefCell<SharedDebugLines>>, isometry: na::Isometry3<f32>, size: na::Vector2<f32>, color: na::Vector4<f32>) -> RectMarker {
+    fn new(containers: Rc<RefCell<SharedDebugLines>>, transform: na::Projective3<f32>, size: na::Vector2<f32>, color: na::Vector4<f32>) -> RectMarker {
         let id = containers.borrow_mut()
-            .new_container(isometry, Vec::with_capacity(8));
+            .new_container(transform, Vec::with_capacity(8));
 
         let marker = RectMarker {
             id,
@@ -377,9 +377,9 @@ impl RectMarker {
         }
     }
 
-    pub fn update_isometry(&self, isometry: na::Isometry3<f32>) {
+    pub fn update_transform(&self, transform: na::Projective3<f32>) {
         if let Some(data) = self.containers.borrow_mut().get_container_mut(self.id) {
-            data.isometry = isometry;
+            data.transform = transform;
         }
     }
 
@@ -409,9 +409,9 @@ impl RayMarkers {
         }
     }
 
-    pub fn update_isometry(&self, isometry: na::Isometry3<f32>) {
+    pub fn update_transform(&self, transform: na::Projective3<f32>) {
         if let Some(data) = self.containers.borrow_mut().get_container_mut(self.id) {
-            data.isometry = isometry;
+            data.transform = transform;
         }
     }
 }
@@ -430,7 +430,7 @@ pub struct PointMarker {
 impl PointMarker {
     pub fn update_position(&self, pos: na::Point3<f32>) {
         if let Some(data) = self.containers.borrow_mut().get_container_mut(self.id) {
-            data.isometry = na::Isometry3::from_parts(na::Translation3::from_vector(pos.coords), na::UnitQuaternion::identity());
+            data.transform = na::convert(na::Isometry3::from_parts(na::Translation3::from_vector(pos.coords), na::UnitQuaternion::identity()));
         }
     }
 }

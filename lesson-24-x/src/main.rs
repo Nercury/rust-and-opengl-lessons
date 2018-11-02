@@ -6,8 +6,6 @@ extern crate failure;
 extern crate lesson_24_x_render as render;
 extern crate resources;
 extern crate lesson_24_x_render_gl as render_gl;
-#[macro_use]
-extern crate lesson_24_x_render_gl_derive as render_gl_derive;
 extern crate floating_duration;
 
 pub mod profiling;
