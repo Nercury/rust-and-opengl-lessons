@@ -78,7 +78,8 @@ fn run() -> Result<(), failure::Error> {
     viewport.set_used(&gl);
     color_buffer.set_clear_color(&gl, na::Vector3::new(0.3, 0.3, 0.5));
 
-    let mut iface = Interface::new(&gl, &resources, ui::ElementSize::Fixed { w: viewport.w, h: viewport.h })?;
+    let mut iface_auto_size = false;
+    let mut iface = Interface::new(&gl, &resources, ui::BoxSize::Fixed { w: viewport.w, h: viewport.h })?;
 
     // main loop
 
@@ -92,15 +93,32 @@ fn run() -> Result<(), failure::Error> {
                 break 'main;
             }
 
+            use sdl2::event::Event;
+            use sdl2::keyboard::Scancode;
+
             match event {
-                sdl2::event::Event::Window {
+                Event::Window {
                     win_event: sdl2::event::WindowEvent::Resized(_w, _h),
                     ..
                 } => {
                     let (hdpi_w, hdpi_h) = window.drawable_size();
                     viewport.update_size(hdpi_w as i32, hdpi_h as i32);
                     viewport.set_used(&gl);
-                    iface.resize(ui::ElementSize::Fixed { w: hdpi_w as i32, h: hdpi_h as i32 });
+                    if iface_auto_size {
+                        iface.resize(ui::BoxSize::Auto );
+                    } else {
+                        iface.resize(ui::BoxSize::Fixed { w: viewport.w, h: viewport.h });
+                    }
+                },
+                Event::KeyDown {
+                    scancode: Some(Scancode::L), ..
+                } => {
+                    iface_auto_size = !iface_auto_size;
+                    if iface_auto_size {
+                        iface.resize(ui::BoxSize::Auto );
+                    } else {
+                        iface.resize(ui::BoxSize::Fixed { w: viewport.w, h: viewport.h });
+                    }
                 },
                 _ => (),
             };

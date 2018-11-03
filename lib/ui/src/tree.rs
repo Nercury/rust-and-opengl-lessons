@@ -7,7 +7,7 @@ pub use self::shared::Base;
 mod shared {
     use na;
     use ::*;
-    use std::collections::BTreeMap;
+    use std::collections::{BTreeMap, BTreeSet};
     use std::collections::VecDeque;
 
     struct Queues {
@@ -55,7 +55,7 @@ mod shared {
     impl Default for LayoutingOptions {
         fn default() -> Self {
             LayoutingOptions {
-                force_equal_child_size: false,
+                force_equal_child_size: true,
             }
         }
     }
@@ -68,8 +68,17 @@ mod shared {
 
     impl<'a> Base<'a> {
         pub fn enable_update(&mut self, state: bool) {
-            let skeleton = self.container.nodes.get_mut(&self.id).expect("enable_update: self.container.nodes.get_mut(&self.id)");
-            skeleton.updated_enabled = state;
+            if state {
+                self.container.update_set
+                    .as_mut()
+                    .expect("enable_update (true): self.container.update_set")
+                    .insert(self.id);
+            } else {
+                self.container.update_set
+                    .as_mut()
+                    .expect("enable_update (false): self.container.update_set")
+                    .remove(&self.id);
+            }
         }
 
         pub fn add<E: Element + 'static>(&mut self, element: E) -> Ix {
@@ -86,7 +95,7 @@ mod shared {
             None
         }
 
-        pub fn layout_vertical(&mut self, size: ElementSize, margin: i32) -> Option<ResolvedSize> {
+        pub fn layout_vertical(&mut self, size: BoxSize, margin: i32) -> Option<ResolvedSize> {
             let options = LayoutingOptions::default();
             let children_len = self.children_len();
 
@@ -95,8 +104,32 @@ mod shared {
             }
 
             match size {
-                ElementSize::Auto => { None }
-                ElementSize::Fixed { w, h } => {
+                BoxSize::Hidden => {
+                    self.layout_empty()
+                },
+                BoxSize::Auto => {
+                    let mut top = margin;
+                    let left = margin;
+
+                    let mut width = None;
+
+                    self.children_mut(|_i, mut child| {
+                        let actual_size = child.element_resize(BoxSize::Auto);
+                        if let Some(size) = actual_size {
+                            width = match width {
+                                None => Some(size.w),
+                                Some(w) => if size.w > w { Some(size.w) } else { Some(w) },
+                            };
+
+                            child.set_translation(left, top);
+
+                            top += size.h + margin;
+                        }
+                    });
+
+                    width.map(|w| ResolvedSize { w: w + margin * 2, h: top })
+                },
+                BoxSize::Fixed { w, h } => {
                     let w_without_margin = w - margin * 2;
                     let h_without_margin = h - margin * 2 - margin * (children_len as i32 - 1);
 
@@ -124,7 +157,7 @@ mod shared {
                         let offset_y = next_child_offset_y;
                         let offset_x = margin;
 
-                        let asked_size = ElementSize::Fixed { w: set_w, h: set_h };
+                        let asked_size = BoxSize::Fixed { w: set_w, h: set_h };
                         let _actual_size = child.element_resize(asked_size); // layout ignores actual size even if it is clipping
 
                         child.set_translation(offset_x, offset_y);
@@ -157,7 +190,7 @@ mod shared {
     }
 
     impl<'a> ChildIterItemMut<'a> {
-        pub fn element_resize(&mut self, size: ElementSize) -> Option<ResolvedSize> {
+        pub fn element_resize(&mut self, size: BoxSize) -> Option<ResolvedSize> {
             self.container.resize(self.child.id, size)
         }
 
@@ -222,6 +255,8 @@ mod shared {
         next_id: Ix,
         _root_id: Option<Ix>,
         nodes: BTreeMap<Ix, NodeSkeleton>,
+
+        update_set: Option<BTreeSet<Ix>>,
     }
 
     impl Container {
@@ -232,6 +267,8 @@ mod shared {
                 next_id: Ix(0),
                 _root_id: None,
                 nodes: BTreeMap::new(),
+
+                update_set: Some(BTreeSet::new()),
             }
         }
 
@@ -334,18 +371,27 @@ mod shared {
                 .map(|node| node.element_mut())
         }
 
-        pub fn resize(&mut self, id: Ix, size: ElementSize) -> Option<ResolvedSize> {
+        pub fn resize(&mut self, id: Ix, box_size: BoxSize) -> Option<ResolvedSize> {
             self.mutate(
                 id,
-                size,
-                |_skeleton, _q, size| size,
-                |body, container, size| {
-                    body.resize(id, container, size)
+                box_size,
+                |skeleton, _q, size| (skeleton.last_resolved_size, size),
+                |body, container, (last_resolved_size, box_size)| {
+                    match (last_resolved_size, box_size) {
+                        (Some(LastResolvedSize::ElementSizeHidden), box_size @ BoxSize::Hidden) => (box_size, None, true),
+                        (Some(LastResolvedSize::ElementSizeAuto(resolved_size)), box_size @ BoxSize::Auto) => (box_size, resolved_size, true),
+                        (Some(LastResolvedSize::ElementSizeFixed { w, h, size }), BoxSize::Fixed { w: new_w, h: new_h }) if w == new_w && h == new_h => (BoxSize::Fixed { w, h }, size, true),
+                        (_, box_size) => (box_size, body.resize(id, container, box_size), false),
+                    }
                 },
-                |skeleton, q, resolved_size| {
-                    if resolved_size != skeleton.last_queue_size {
+                |skeleton, q, (box_size, resolved_size, skip_update)| {
+                    if !skip_update {
                         q.send(Effect::Resize { id, size: resolved_size.map(|s| (s.w, s.h)) });
-                        skeleton.last_queue_size = resolved_size;
+                        skeleton.last_resolved_size = Some(match box_size {
+                            BoxSize::Hidden => LastResolvedSize::ElementSizeHidden,
+                            BoxSize::Auto => LastResolvedSize::ElementSizeAuto(resolved_size),
+                            BoxSize::Fixed { w, h } => LastResolvedSize::ElementSizeFixed { w, h, size: resolved_size },
+                        });
                     }
                     resolved_size
                 },
@@ -393,29 +439,7 @@ mod shared {
         }
 
         pub fn hide(&mut self, id: Ix) {
-            self.mutate(
-                id,
-                (),
-                |skeleton, q, _| {
-                    let resolved_size = None;
-
-                    if resolved_size != skeleton.last_queue_size {
-                        q.send(Effect::Resize { id, size: resolved_size.map(|s| (s.w, s.h)) });
-                        skeleton.last_queue_size = resolved_size;
-
-                        true
-                    } else {
-                        false
-                    }
-                },
-                |body, container, hide_children| {
-                    for child in body.children.items.iter() {
-                        container.hide(child.id);
-                    }
-                },
-                |_skeleton, _q, param| {
-                }
-            )
+            self.resize(id, BoxSize::Hidden);
         }
 
         pub fn create_queue(&mut self) -> Ix {
@@ -429,6 +453,25 @@ mod shared {
         pub fn get_queue_mut(&mut self, id: Ix) -> Option<&mut VecDeque<Effect>> {
             self.queues.get_queue_mut(id)
         }
+
+        pub fn update(&mut self, delta: f32) {
+            let update_list = ::std::mem::replace(&mut self.update_set, None).expect("update: iteration reentry error");
+
+            for id in &update_list {
+                self.mutate(
+                    *id,
+                    delta,
+                    |_skeleton, _q, delta| delta,
+                    |body, container, delta| {
+                        body.el.update(Base { id: *id, container, children: &mut body.children }, delta);
+                    },
+                    |_skeleton, _q, _| {
+                    }
+                )
+            }
+
+            ::std::mem::replace(&mut self.update_set, Some(update_list));
+        }
     }
 
     pub struct NodeBody {
@@ -437,7 +480,7 @@ mod shared {
     }
 
     impl NodeBody {
-        pub fn resize(&mut self, id: Ix, container: &mut Container, size: ElementSize) -> Option<ResolvedSize> {
+        pub fn resize(&mut self, id: Ix, container: &mut Container, size: BoxSize) -> Option<ResolvedSize> {
             let mut children = ::std::mem::replace(&mut self.children, Children::empty());
             let resolved_size = self.el.resize(Base { id, container, children: &mut children }, size);
             ::std::mem::replace(&mut self.children, children);
@@ -445,25 +488,30 @@ mod shared {
         }
     }
 
+    #[derive(Copy, Clone)]
+    enum LastResolvedSize {
+        ElementSizeHidden,
+        ElementSizeAuto(Option<ResolvedSize>),
+        ElementSizeFixed { w: i32, h: i32, size: Option<ResolvedSize> },
+    }
+
     pub struct NodeSkeleton {
-        last_queue_size: Option<ResolvedSize>,
+        last_resolved_size: Option<LastResolvedSize>,
         parent_transform: na::Projective3<f32>,
         relative_transform: na::Projective3<f32>,
         body: Option<NodeBody>,
-        updated_enabled: bool,
     }
 
     impl NodeSkeleton {
         pub fn new(children: Children, parent_transform: &na::Projective3<f32>, element: Box<Element>) -> NodeSkeleton {
             NodeSkeleton {
-                last_queue_size: None,
+                last_resolved_size: None,
                 parent_transform: parent_transform.clone(),
                 relative_transform: na::Projective3::identity(),
                 body: Some(NodeBody {
                     children,
                     el: element,
                 }),
-                updated_enabled: false,
             }
         }
 
@@ -508,6 +556,10 @@ impl Tree {
         }
     }
 
+    pub fn update(&self, delta: f32) {
+        self.shared.borrow_mut().update(delta)
+    }
+
     pub fn events(&self) -> Events {
         Events::new(&self.shared)
     }
@@ -547,7 +599,7 @@ pub struct Leaf<T> {
 }
 
 impl<T> Leaf<T> {
-    pub fn resize(&self, size: ElementSize) -> Option<ResolvedSize> {
+    pub fn resize(&self, size: BoxSize) -> Option<ResolvedSize> {
         self.shared.borrow_mut().resize(self.id, size)
     }
 }

@@ -61,6 +61,7 @@ impl ControlInfo {
 }
 
 pub struct Interface {
+    tree: Tree,
     fill: Leaf<controls::Fill>,
     events: Events,
     controls: HashMap<Ix, ControlInfo>,
@@ -71,7 +72,7 @@ pub struct Interface {
 }
 
 impl Interface {
-    pub fn new(gl: &gl::Gl, resources: &resources::Resources, size: ElementSize) -> Result<Interface, failure::Error> {
+    pub fn new(gl: &gl::Gl, resources: &resources::Resources, size: BoxSize) -> Result<Interface, failure::Error> {
         let tree = Tree::new();
 
         let events = tree.events();
@@ -80,6 +81,7 @@ impl Interface {
         fill.resize(size);
 
         Ok(Interface {
+            tree,
             fill,
             events,
             controls: HashMap::new(),
@@ -89,7 +91,7 @@ impl Interface {
         })
     }
 
-    pub fn resize(&mut self, size: ElementSize) {
+    pub fn resize(&mut self, size: BoxSize) {
         self.fill.resize(size);
     }
 
@@ -123,7 +125,8 @@ impl Interface {
         }
     }
 
-    pub fn update(&mut self, _delta: f32) {
+    pub fn update(&mut self, delta: f32) {
+        self.tree.update(delta);
         self.process_events()
     }
 
