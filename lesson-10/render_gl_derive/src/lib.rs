@@ -56,11 +56,20 @@ fn generate_struct_field_vertex_attrib_pointer_call(field: &syn::Field) -> quote
         ));
 
     let location_value: usize = match location_attr.value {
-        syn::MetaItem::NameValue(_, syn::Lit::Str(ref s, _)) => s.parse()
-            .unwrap_or_else(
-                |_| panic!("Field {} location attribute value must contain an integer", field_name)
-            ),
-        _ => panic!("Field {} location attribute value must be a string literal", field_name)
+        // Integer literal
+        syn::MetaItem::NameValue(_, syn::Lit::Int(i, _)) => i as usize,
+        // String repr of integer literal
+        syn::MetaItem::NameValue(_, syn::Lit::Str(ref s, _)) => s.parse().unwrap_or_else(|_| {
+            panic!(
+                "Field {} location attribute value must contain an integer",
+                field_name
+            )
+        }),
+        // Something else
+        _ => panic!(
+            "Field {} location attribute value must be a string literal",
+            field_name
+        ),
     };
 
     let field_ty = &field.ty;
