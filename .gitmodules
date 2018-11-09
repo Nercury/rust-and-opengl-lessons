@@ -1,0 +1,3 @@
+[submodule "font-kit"]
+	path = patches/font-kit
+	url = git@github.com:pcwalton/font-kit.git

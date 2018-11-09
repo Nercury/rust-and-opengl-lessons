@@ -36,6 +36,8 @@ fn main() {
 }
 
 fn run() -> Result<(), failure::Error> {
+    render_gl::text::load_font();
+
     let resources = resources::Resources::new().loaded_from(
         "core",
         0,

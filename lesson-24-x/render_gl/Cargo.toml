@@ -12,3 +12,8 @@ vec-2-10-10-10 = "0.1.2"
 nalgebra = "0.16"
 ncollide3d = "0.17"
 failure = "0.1.3"
+font-kit = { version = "0.1.0", path = "../../patches/font-kit" }
+euclid = "0.18.2"
+image = "0.20.1"
+lyon_tessellation = "0.11.0"
+lyon_path = "0.11.0"
