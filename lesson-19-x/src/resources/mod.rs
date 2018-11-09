@@ -1,8 +1,8 @@
-use std::path::{Path, PathBuf};
+use image;
+use std::ffi;
 use std::fs;
 use std::io::Read;
-use std::ffi;
-use image;
+use std::path::{Path, PathBuf};
 
 mod error;
 pub mod obj;
@@ -21,14 +21,12 @@ pub struct Resources {
 
 impl Resources {
     pub fn from_relative_exe_path(rel_path: &str) -> Result<Resources, Error> {
-        let exe_file_name = ::std::env::current_exe()
-            .map_err(|_| Error::FailedToGetExePath)?;
+        let exe_file_name = ::std::env::current_exe().map_err(|_| Error::FailedToGetExePath)?;
 
-        let exe_path = exe_file_name.parent()
-            .ok_or(Error::FailedToGetExePath)?;
+        let exe_path = exe_file_name.parent().ok_or(Error::FailedToGetExePath)?;
 
         Ok(Resources {
-            root_path: resource_name_to_path(&exe_path, rel_path)
+            root_path: resource_name_to_path(&exe_path, rel_path),
         })
     }
 
@@ -37,14 +35,10 @@ impl Resources {
     }
 
     pub fn load_cstring(&self, resource_name: &str) -> Result<ffi::CString, Error> {
-        let mut file = fs::File::open(
-            resource_name_to_path(&self.root_path,resource_name)
-        )?;
+        let mut file = fs::File::open(resource_name_to_path(&self.root_path, resource_name))?;
 
         // allocate buffer of the same size as file
-        let mut buffer: Vec<u8> = Vec::with_capacity(
-            file.metadata()?.len() as usize + 1
-        );
+        let mut buffer: Vec<u8> = Vec::with_capacity(file.metadata()?.len() as usize + 1);
         file.read_to_end(&mut buffer)?;
 
         // check for nul byte
@@ -56,22 +50,32 @@ impl Resources {
     }
 
     pub fn load_rgb_image(&self, image_file_name: &str) -> Result<image::RgbImage, Error> {
-        let img = image::open(
-            resource_name_to_path(&self.root_path,image_file_name)
-        ).map_err(|e| Error::FailedToLoadImage { name: image_file_name.into(), inner: e })?;
+        let img =
+            image::open(resource_name_to_path(&self.root_path, image_file_name)).map_err(|e| {
+                Error::FailedToLoadImage {
+                    name: image_file_name.into(),
+                    inner: e,
+                }
+            })?;
 
         Ok(img.to_rgb())
     }
 
     pub fn load_rgba_image(&self, image_file_name: &str) -> Result<image::RgbaImage, Error> {
-        let img = image::open(
-            resource_name_to_path(&self.root_path,image_file_name)
-        ).map_err(|e| Error::FailedToLoadImage { name: image_file_name.into(), inner: e })?;
+        let img =
+            image::open(resource_name_to_path(&self.root_path, image_file_name)).map_err(|e| {
+                Error::FailedToLoadImage {
+                    name: image_file_name.into(),
+                    inner: e,
+                }
+            })?;
 
         if let image::ColorType::RGBA(_) = img.color() {
             Ok(img.to_rgba())
         } else {
-            Err(Error::ImageIsNotRgba { name: image_file_name.into() })
+            Err(Error::ImageIsNotRgba {
+                name: image_file_name.into(),
+            })
         }
     }
 
@@ -81,8 +85,10 @@ impl Resources {
                 models: m.models,
                 materials: m.materials,
                 imported_from_resource_path: resource_path_parent(obj_file_name),
+            }).map_err(|e| Error::FailedToLoadObj {
+                name: obj_file_name.into(),
+                inner: e,
             })
-            .map_err(|e| Error::FailedToLoadObj { name: obj_file_name.into(), inner: e })
     }
 }
 

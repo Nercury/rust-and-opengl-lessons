@@ -1,14 +1,14 @@
-use render_gl::Program;
-use render_gl::ColorBuffer;
+use failure;
+use gl;
+use nalgebra as na;
 use render_gl::buffer;
 use render_gl::data;
+use render_gl::ColorBuffer;
+use render_gl::Program;
 use resources::Resources;
-use gl;
-use failure;
-use nalgebra as na;
 
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 mod line_point;
 mod shared_debug_lines;
@@ -34,9 +34,7 @@ impl PolylineBuilder {
 
     pub fn close_and_finish(self) -> Polyline {
         let first_item = self.items[0].clone();
-        self
-            .with_point(first_item.point, first_item.color)
-            .finish()
+        self.with_point(first_item.point, first_item.color).finish()
     }
 
     pub fn finish(self) -> Polyline {
@@ -128,16 +126,22 @@ impl DebugLines {
             };
 
             if should_recreate_buffer {
-                self.lines_vbo.dynamic_draw_data_null::<LinePoint>(all_data_len);
+                self.lines_vbo
+                    .dynamic_draw_data_null::<LinePoint>(all_data_len);
                 self.lines_vbo_capacity = Some(all_data_len);
             }
 
             if let Some(_) = self.lines_vbo_capacity {
-                if let Some(mut buffer) = unsafe { self.lines_vbo.map_buffer_range_write_invalidate::<LinePoint>(0, all_data_len) } {
+                if let Some(mut buffer) = unsafe {
+                    self.lines_vbo
+                        .map_buffer_range_write_invalidate::<LinePoint>(0, all_data_len)
+                } {
                     for (index, item) in shared_debug_lines
                         .containers
                         .values()
-                        .flat_map(|v| v.iter()).enumerate() {
+                        .flat_map(|v| v.iter())
+                        .enumerate()
+                    {
                         *unsafe { buffer.get_unchecked_mut(index) } = *item;
                     }
                 }
@@ -155,7 +159,8 @@ impl DebugLines {
 
         if self.lines_vbo_count > 0 {
             self.program.set_used();
-            self.program.set_uniform_matrix4fv(self.program_view_projection_location, &vp_matrix);
+            self.program
+                .set_uniform_matrix4fv(self.program_view_projection_location, &vp_matrix);
 
             self.lines_vao.bind();
 
@@ -164,9 +169,9 @@ impl DebugLines {
                 target.enable_blend(gl);
 
                 gl.DrawArrays(
-                    gl::LINES, // mode
-                    0, // starting index in the enabled arrays
-                    self.lines_vbo_count // number of indices to be rendered
+                    gl::LINES,            // mode
+                    0,                    // starting index in the enabled arrays
+                    self.lines_vbo_count, // number of indices to be rendered
                 );
 
                 target.disable_blend(gl);
@@ -174,9 +179,16 @@ impl DebugLines {
         }
     }
 
-    pub fn start_polyline(&self, start_point: na::Vector3<f32>, start_color: na::Vector4<f32>) -> PolylineBuilder {
+    pub fn start_polyline(
+        &self,
+        start_point: na::Vector3<f32>,
+        start_color: na::Vector4<f32>,
+    ) -> PolylineBuilder {
         PolylineBuilder {
-            items: vec![PolylineBuilderItem { point: start_point, color: start_color }],
+            items: vec![PolylineBuilderItem {
+                point: start_point,
+                color: start_color,
+            }],
             containers: self.containers.clone(),
         }
     }
@@ -184,17 +196,32 @@ impl DebugLines {
     pub fn marker(&self, pos: na::Point3<f32>, size: f32) -> PointMarker {
         let half = size / 2.0;
 
-        let new_id = self.containers.borrow_mut()
-            .new_container(vec![
-                LinePoint { pos: render_p3(pos + na::Vector3::x() * half), color: (0.0, 1.0, 0.0, 1.0).into() },
-                LinePoint { pos: render_p3(pos + na::Vector3::x() * -half), color: (0.0, 1.0, 0.0, 1.0).into() },
-
-                LinePoint { pos: render_p3(pos + na::Vector3::y() * half), color: (1.0, 0.0, 0.0, 1.0).into() },
-                LinePoint { pos: render_p3(pos + na::Vector3::y() * -half), color: (1.0, 0.0, 0.0, 1.0).into() },
-
-                LinePoint { pos: render_p3(pos + na::Vector3::z() * half), color: (0.0, 0.0, 1.0, 1.0).into() },
-                LinePoint { pos: render_p3(pos + na::Vector3::z() * -half), color: (0.0, 0.0, 1.0, 1.0).into() },
-            ]);
+        let new_id = self.containers.borrow_mut().new_container(vec![
+            LinePoint {
+                pos: render_p3(pos + na::Vector3::x() * half),
+                color: (0.0, 1.0, 0.0, 1.0).into(),
+            },
+            LinePoint {
+                pos: render_p3(pos + na::Vector3::x() * -half),
+                color: (0.0, 1.0, 0.0, 1.0).into(),
+            },
+            LinePoint {
+                pos: render_p3(pos + na::Vector3::y() * half),
+                color: (1.0, 0.0, 0.0, 1.0).into(),
+            },
+            LinePoint {
+                pos: render_p3(pos + na::Vector3::y() * -half),
+                color: (1.0, 0.0, 0.0, 1.0).into(),
+            },
+            LinePoint {
+                pos: render_p3(pos + na::Vector3::z() * half),
+                color: (0.0, 0.0, 1.0, 1.0).into(),
+            },
+            LinePoint {
+                pos: render_p3(pos + na::Vector3::z() * -half),
+                color: (0.0, 0.0, 1.0, 1.0).into(),
+            },
+        ]);
 
         PointMarker {
             containers: self.containers.clone(),
@@ -203,20 +230,40 @@ impl DebugLines {
         }
     }
 
-    pub fn colored_marker(&self, pos: na::Point3<f32>, color: na::Vector4<f32>, size: f32) -> PointMarker {
+    pub fn colored_marker(
+        &self,
+        pos: na::Point3<f32>,
+        color: na::Vector4<f32>,
+        size: f32,
+    ) -> PointMarker {
         let half = size / 2.0;
 
-        let new_id = self.containers.borrow_mut()
-            .new_container(vec![
-                LinePoint { pos: render_p3(pos + na::Vector3::x() * half), color: render_color_vec4(color) },
-                LinePoint { pos: render_p3(pos + na::Vector3::x() * -half), color: render_color_vec4(color) },
-
-                LinePoint { pos: render_p3(pos + na::Vector3::y() * half), color: render_color_vec4(color) },
-                LinePoint { pos: render_p3(pos + na::Vector3::y() * -half), color: render_color_vec4(color) },
-
-                LinePoint { pos: render_p3(pos + na::Vector3::z() * half), color: render_color_vec4(color) },
-                LinePoint { pos: render_p3(pos + na::Vector3::z() * -half), color: render_color_vec4(color) },
-            ]);
+        let new_id = self.containers.borrow_mut().new_container(vec![
+            LinePoint {
+                pos: render_p3(pos + na::Vector3::x() * half),
+                color: render_color_vec4(color),
+            },
+            LinePoint {
+                pos: render_p3(pos + na::Vector3::x() * -half),
+                color: render_color_vec4(color),
+            },
+            LinePoint {
+                pos: render_p3(pos + na::Vector3::y() * half),
+                color: render_color_vec4(color),
+            },
+            LinePoint {
+                pos: render_p3(pos + na::Vector3::y() * -half),
+                color: render_color_vec4(color),
+            },
+            LinePoint {
+                pos: render_p3(pos + na::Vector3::z() * half),
+                color: render_color_vec4(color),
+            },
+            LinePoint {
+                pos: render_p3(pos + na::Vector3::z() * -half),
+                color: render_color_vec4(color),
+            },
+        ]);
 
         PointMarker {
             containers: self.containers.clone(),
@@ -225,15 +272,25 @@ impl DebugLines {
         }
     }
 
-    pub fn ray_marker(&self, pos: na::Point3<f32>, direction: na::Vector3<f32>, color: na::Vector4<f32>) -> RayMarker {
+    pub fn ray_marker(
+        &self,
+        pos: na::Point3<f32>,
+        direction: na::Vector3<f32>,
+        color: na::Vector4<f32>,
+    ) -> RayMarker {
         let end = pos + direction;
         let end_color = na::Vector4::new(color.x, color.y, color.z, 0.0);
 
-        let new_id = self.containers.borrow_mut()
-            .new_container(vec![
-                LinePoint { pos: render_p3(pos), color: render_color_vec4(color) },
-                LinePoint { pos: render_p3(end), color: render_color_vec4(end_color) },
-            ]);
+        let new_id = self.containers.borrow_mut().new_container(vec![
+            LinePoint {
+                pos: render_p3(pos),
+                color: render_color_vec4(color),
+            },
+            LinePoint {
+                pos: render_p3(end),
+                color: render_color_vec4(end_color),
+            },
+        ]);
 
         RayMarker {
             containers: self.containers.clone(),

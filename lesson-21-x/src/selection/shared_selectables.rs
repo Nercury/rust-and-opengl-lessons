@@ -1,9 +1,9 @@
-use ncollide3d::bounding_volume::aabb::AABB;
-use ncollide3d::shape::Plane;
-use ncollide3d::query::{RayCast, Ray};
-use nalgebra as na;
-use slab::Slab;
 use super::Action;
+use nalgebra as na;
+use ncollide3d::bounding_volume::aabb::AABB;
+use ncollide3d::query::{Ray, RayCast};
+use ncollide3d::shape::Plane;
+use slab::Slab;
 
 #[derive(Copy, Clone)]
 struct PendingAction {
@@ -44,13 +44,12 @@ impl SharedSelectables {
         }
     }
 
-    pub fn new_container(&mut self, aabb: AABB<f32>, isometry: na::Isometry3<f32>) -> ContainerHandle {
-        ContainerHandle(
-            self.containers.insert(Container {
-                aabb,
-                isometry,
-            })
-        )
+    pub fn new_container(
+        &mut self,
+        aabb: AABB<f32>,
+        isometry: na::Isometry3<f32>,
+    ) -> ContainerHandle {
+        ContainerHandle(self.containers.insert(Container { aabb, isometry }))
     }
 
     pub fn remove_container(&mut self, handle: ContainerHandle) {
@@ -60,7 +59,11 @@ impl SharedSelectables {
         if self.selected == Some(handle) {
             self.selected = None;
         }
-        if let Some(DragState::ViewPlane { handle: drag_handle, .. }) = self.drag_state {
+        if let Some(DragState::ViewPlane {
+            handle: drag_handle,
+            ..
+        }) = self.drag_state
+        {
             if handle == drag_handle {
                 self.drag_state = None;
             }
@@ -84,7 +87,11 @@ impl SharedSelectables {
                 let distance2 = na::distance_squared(&point, &ray.origin);
                 let new_closest = match closest_distance2 {
                     None => true,
-                    Some(ref cd) => if distance2 < *cd { true } else { false },
+                    Some(ref cd) => if distance2 < *cd {
+                        true
+                    } else {
+                        false
+                    },
                 };
 
                 if new_closest {
@@ -114,7 +121,11 @@ impl SharedSelectables {
                     _ => (),
                 }
             },
-            Some(DragState::ViewPlane { handle, initial_isometry, point }) => {
+            Some(DragState::ViewPlane {
+                handle,
+                initial_isometry,
+                point,
+            }) => {
                 let plane = Plane::new(na::Unit::new_normalize(-camera_dir));
                 let plane_isometry = na::Isometry3::from_parts(
                     na::Translation3::from_vector(point.coords),
@@ -130,13 +141,15 @@ impl SharedSelectables {
                                 new_isometry: na::Isometry3::from_parts(
                                     na::Translation3::from_vector(drag_vector),
                                     na::UnitQuaternion::identity(),
-                                ) * initial_isometry
+                                ) * initial_isometry,
                             },
                         });
                     } else {
                         self.query.push(PendingAction {
                             handle: handle,
-                            action: Action::Drag { new_isometry: initial_isometry },
+                            action: Action::Drag {
+                                new_isometry: initial_isometry,
+                            },
                         });
                     }
                 }
@@ -164,11 +177,17 @@ impl SharedSelectables {
 
     pub fn cancel_drag(&mut self) {
         match self.drag_state {
-            Some(DragState::ViewPlane { handle, initial_isometry, .. }) => {
+            Some(DragState::ViewPlane {
+                handle,
+                initial_isometry,
+                ..
+            }) => {
                 self.drag_state = Some(DragState::NoObject);
                 self.query.push(PendingAction {
                     handle,
-                    action: Action::Drag { new_isometry: initial_isometry },
+                    action: Action::Drag {
+                        new_isometry: initial_isometry,
+                    },
                 });
             }
             _ => (),
@@ -176,10 +195,15 @@ impl SharedSelectables {
     }
 
     pub fn drain_pending_action(&mut self, consumer_handle: ContainerHandle) -> Option<Action> {
-        if let Some(matching_action_index) = self.query.iter().enumerate().filter_map(|(index, a)| match a {
-            &PendingAction { handle, .. } if consumer_handle == handle => Some(index),
-            _ => None,
-        }).next() {
+        if let Some(matching_action_index) = self
+            .query
+            .iter()
+            .enumerate()
+            .filter_map(|(index, a)| match a {
+                &PendingAction { handle, .. } if consumer_handle == handle => Some(index),
+                _ => None,
+            }).next()
+        {
             return Some(self.query.remove(matching_action_index).action);
         }
         None

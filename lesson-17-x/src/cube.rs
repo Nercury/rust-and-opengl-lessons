@@ -1,11 +1,10 @@
-use gl;
 use failure;
-use render_gl::{self, data, buffer};
-use resources::Resources;
+use gl;
 use nalgebra as na;
+use render_gl::{self, buffer, data};
+use resources::Resources;
 
-#[derive(VertexAttribPointers)]
-#[derive(Copy, Clone, Debug)]
+#[derive(VertexAttribPointers, Copy, Clone, Debug)]
 #[repr(C, packed)]
 struct Vertex {
     #[location = "0"]
@@ -35,13 +34,17 @@ pub struct Cube {
 }
 
 impl Cube {
-    pub fn new(res: &Resources, gl: &gl::Gl, debug_lines: &render_gl::DebugLines) -> Result<Cube, failure::Error> {
-
+    pub fn new(
+        res: &Resources,
+        gl: &gl::Gl,
+        debug_lines: &render_gl::DebugLines,
+    ) -> Result<Cube, failure::Error> {
         // set up shader program
 
-//        let texture = render_gl::Texture::from_res_rgb("textures/dice_high_contrast.png").load(gl, res)?;
+        //        let texture = render_gl::Texture::from_res_rgb("textures/dice_high_contrast.png").load(gl, res)?;
         let texture = render_gl::Texture::from_res_rgb("textures/dice.png").load(gl, res)?;
-        let texture_specular = render_gl::Texture::from_res_rgb("textures/dice_specular.png").load(gl, res)?;
+        let texture_specular =
+            render_gl::Texture::from_res_rgb("textures/dice_specular.png").load(gl, res)?;
 
         let program = render_gl::Program::from_res(gl, res, "shaders/cube")?;
 
@@ -53,57 +56,57 @@ impl Cube {
 
         // ----------- A: stupid mapping
 
-//        let v0 = (-1.0, -1.0, -1.0);
-//        let v1 = (1.0,  -1.0, -1.0);
-//        let v2 = (-1.0,  1.0, -1.0);
-//        let v3 = (1.0,  1.0, -1.0);
-//        let v4 = (-1.0, -1.0, 1.0);
-//        let v5 = (1.0,  -1.0, 1.0);
-//        let v6 = (-1.0,  1.0, 1.0);
-//        let v7 = (1.0,  1.0, 1.0);
-//
-//        let vbo_data = vec![
-//            Vertex { pos: v0.into(), clr: (1.0, 0.0, 0.0, 1.0).into(), normal: (0.0, 0.0, -1.0).into(), uv: (0.0, 0.0).into() }, // 0
-//            Vertex { pos: v1.into(), clr: (0.0, 1.0, 0.0, 1.0).into(), normal: (0.0, 0.0, -1.0).into(), uv: (1.0, 0.0).into() }, // 1
-//            Vertex { pos: v2.into(), clr: (0.0, 0.0, 1.0, 1.0).into(), normal: (0.0, 0.0, -1.0).into(), uv: (0.0, 1.0).into() }, // 2
-//            Vertex { pos: v3.into(),  clr: (1.0, 1.0, 0.0, 1.0).into(), normal: (0.0, 0.0, -1.0).into(), uv: (1.0, 1.0).into() }, // 3
-//
-//            Vertex { pos: v4.into(),  clr: (0.0, 0.3, 1.0, 1.0).into(), normal: (0.0, 0.0, 1.0).into(), uv: (0.0, 0.0).into() }, // 4
-//            Vertex { pos: v5.into(),  clr: (1.0, 0.0, 0.3, 1.0).into(), normal: (0.0, 0.0, 1.0).into(), uv: (1.0, 0.0).into() }, // 5
-//            Vertex { pos: v6.into(),  clr: (0.7, 0.5, 1.0, 1.0).into(), normal: (0.0, 0.0, 1.0).into(), uv: (0.0, 1.0).into() }, // 6
-//            Vertex { pos: v7.into(),  clr: (1.0, 0.7, 0.5, 1.0).into(), normal: (0.0, 0.0, 1.0).into(), uv: (1.0, 1.0).into() }, // 7
-//
-//            Vertex { pos: v0.into(),  clr: (0.0, 1.0, 0.3, 1.0).into(), normal: (0.0, -1.0, 0.0).into(), uv: (0.0, 0.0).into() }, // 8
-//            Vertex { pos: v1.into(),  clr: (1.0, 0.0, 1.0, 1.0).into(), normal: (0.0, -1.0, 0.0).into(), uv: (1.0, 0.0).into() }, // 9
-//            Vertex { pos: v4.into(),  clr: (0.5, 0.7, 1.0, 1.0).into(), normal: (0.0, -1.0, 0.0).into(), uv: (0.0, 1.0).into() }, // 10
-//            Vertex { pos: v5.into(),  clr: (1.0, 0.5, 0.1, 1.0).into(), normal: (0.0, -1.0, 0.0).into(), uv: (1.0, 1.0).into() }, // 11
-//
-//            Vertex { pos: v2.into(),  clr: (0.3, 1.0, 1.0, 1.0).into(), normal: (0.0, 1.0, 0.0).into(), uv: (0.0, 0.0).into() }, // 12
-//            Vertex { pos: v3.into(),  clr: (0.8, 0.0, 1.0, 1.0).into(), normal: (0.0, 1.0, 0.0).into(), uv: (1.0, 0.0).into() }, // 13
-//            Vertex { pos: v6.into(),  clr: (0.5, 0.5, 0.4, 1.0).into(), normal: (0.0, 1.0, 0.0).into(), uv: (0.0, 1.0).into() }, // 14
-//            Vertex { pos: v7.into(),  clr: (0.4, 0.0, 1.0, 1.0).into(), normal: (0.0, 1.0, 0.0).into(), uv: (1.0, 1.0).into() }, // 15
-//
-//            Vertex { pos: v0.into(),  clr: (0.0, 0.4, 1.0, 1.0).into(), normal: (-1.0, 0.0, 0.0).into(), uv: (0.0, 0.0).into() }, // 16
-//            Vertex { pos: v2.into(),  clr: (1.0, 0.0, 0.4, 1.0).into(), normal: (-1.0, 0.0, 0.0).into(), uv: (1.0, 0.0).into() }, // 17
-//            Vertex { pos: v4.into(),  clr: (0.7, 0.5, 1.0, 1.0).into(), normal: (-1.0, 0.0, 0.0).into(), uv: (0.0, 1.0).into() }, // 18
-//            Vertex { pos: v6.into(),  clr: (1.0, 0.7, 0.5, 1.0).into(), normal: (-1.0, 0.0, 0.0).into(), uv: (1.0, 1.0).into() }, // 19
-//
-//            Vertex { pos: v1.into(),  clr: (0.0, 1.0, 0.0, 1.0).into(), normal: (1.0, 0.0, 0.0).into(), uv: (0.0, 0.0).into() }, // 20
-//            Vertex { pos: v3.into(),  clr: (0.1, 0.0, 1.0, 1.0).into(), normal: (1.0, 0.0, 0.0).into(), uv: (1.0, 0.0).into() }, // 21
-//            Vertex { pos: v5.into(),  clr: (0.1, 0.7, 1.0, 1.0).into(), normal: (1.0, 0.0, 0.0).into(), uv: (0.0, 1.0).into() }, // 22
-//            Vertex { pos: v7.into(),  clr: (1.0, 0.1, 0.7, 1.0).into(), normal: (1.0, 0.0, 0.0).into(), uv: (1.0, 1.0).into() }, // 23
-//        ];
+        //        let v0 = (-1.0, -1.0, -1.0);
+        //        let v1 = (1.0,  -1.0, -1.0);
+        //        let v2 = (-1.0,  1.0, -1.0);
+        //        let v3 = (1.0,  1.0, -1.0);
+        //        let v4 = (-1.0, -1.0, 1.0);
+        //        let v5 = (1.0,  -1.0, 1.0);
+        //        let v6 = (-1.0,  1.0, 1.0);
+        //        let v7 = (1.0,  1.0, 1.0);
+        //
+        //        let vbo_data = vec![
+        //            Vertex { pos: v0.into(), clr: (1.0, 0.0, 0.0, 1.0).into(), normal: (0.0, 0.0, -1.0).into(), uv: (0.0, 0.0).into() }, // 0
+        //            Vertex { pos: v1.into(), clr: (0.0, 1.0, 0.0, 1.0).into(), normal: (0.0, 0.0, -1.0).into(), uv: (1.0, 0.0).into() }, // 1
+        //            Vertex { pos: v2.into(), clr: (0.0, 0.0, 1.0, 1.0).into(), normal: (0.0, 0.0, -1.0).into(), uv: (0.0, 1.0).into() }, // 2
+        //            Vertex { pos: v3.into(),  clr: (1.0, 1.0, 0.0, 1.0).into(), normal: (0.0, 0.0, -1.0).into(), uv: (1.0, 1.0).into() }, // 3
+        //
+        //            Vertex { pos: v4.into(),  clr: (0.0, 0.3, 1.0, 1.0).into(), normal: (0.0, 0.0, 1.0).into(), uv: (0.0, 0.0).into() }, // 4
+        //            Vertex { pos: v5.into(),  clr: (1.0, 0.0, 0.3, 1.0).into(), normal: (0.0, 0.0, 1.0).into(), uv: (1.0, 0.0).into() }, // 5
+        //            Vertex { pos: v6.into(),  clr: (0.7, 0.5, 1.0, 1.0).into(), normal: (0.0, 0.0, 1.0).into(), uv: (0.0, 1.0).into() }, // 6
+        //            Vertex { pos: v7.into(),  clr: (1.0, 0.7, 0.5, 1.0).into(), normal: (0.0, 0.0, 1.0).into(), uv: (1.0, 1.0).into() }, // 7
+        //
+        //            Vertex { pos: v0.into(),  clr: (0.0, 1.0, 0.3, 1.0).into(), normal: (0.0, -1.0, 0.0).into(), uv: (0.0, 0.0).into() }, // 8
+        //            Vertex { pos: v1.into(),  clr: (1.0, 0.0, 1.0, 1.0).into(), normal: (0.0, -1.0, 0.0).into(), uv: (1.0, 0.0).into() }, // 9
+        //            Vertex { pos: v4.into(),  clr: (0.5, 0.7, 1.0, 1.0).into(), normal: (0.0, -1.0, 0.0).into(), uv: (0.0, 1.0).into() }, // 10
+        //            Vertex { pos: v5.into(),  clr: (1.0, 0.5, 0.1, 1.0).into(), normal: (0.0, -1.0, 0.0).into(), uv: (1.0, 1.0).into() }, // 11
+        //
+        //            Vertex { pos: v2.into(),  clr: (0.3, 1.0, 1.0, 1.0).into(), normal: (0.0, 1.0, 0.0).into(), uv: (0.0, 0.0).into() }, // 12
+        //            Vertex { pos: v3.into(),  clr: (0.8, 0.0, 1.0, 1.0).into(), normal: (0.0, 1.0, 0.0).into(), uv: (1.0, 0.0).into() }, // 13
+        //            Vertex { pos: v6.into(),  clr: (0.5, 0.5, 0.4, 1.0).into(), normal: (0.0, 1.0, 0.0).into(), uv: (0.0, 1.0).into() }, // 14
+        //            Vertex { pos: v7.into(),  clr: (0.4, 0.0, 1.0, 1.0).into(), normal: (0.0, 1.0, 0.0).into(), uv: (1.0, 1.0).into() }, // 15
+        //
+        //            Vertex { pos: v0.into(),  clr: (0.0, 0.4, 1.0, 1.0).into(), normal: (-1.0, 0.0, 0.0).into(), uv: (0.0, 0.0).into() }, // 16
+        //            Vertex { pos: v2.into(),  clr: (1.0, 0.0, 0.4, 1.0).into(), normal: (-1.0, 0.0, 0.0).into(), uv: (1.0, 0.0).into() }, // 17
+        //            Vertex { pos: v4.into(),  clr: (0.7, 0.5, 1.0, 1.0).into(), normal: (-1.0, 0.0, 0.0).into(), uv: (0.0, 1.0).into() }, // 18
+        //            Vertex { pos: v6.into(),  clr: (1.0, 0.7, 0.5, 1.0).into(), normal: (-1.0, 0.0, 0.0).into(), uv: (1.0, 1.0).into() }, // 19
+        //
+        //            Vertex { pos: v1.into(),  clr: (0.0, 1.0, 0.0, 1.0).into(), normal: (1.0, 0.0, 0.0).into(), uv: (0.0, 0.0).into() }, // 20
+        //            Vertex { pos: v3.into(),  clr: (0.1, 0.0, 1.0, 1.0).into(), normal: (1.0, 0.0, 0.0).into(), uv: (1.0, 0.0).into() }, // 21
+        //            Vertex { pos: v5.into(),  clr: (0.1, 0.7, 1.0, 1.0).into(), normal: (1.0, 0.0, 0.0).into(), uv: (0.0, 1.0).into() }, // 22
+        //            Vertex { pos: v7.into(),  clr: (1.0, 0.1, 0.7, 1.0).into(), normal: (1.0, 0.0, 0.0).into(), uv: (1.0, 1.0).into() }, // 23
+        //        ];
 
         // ------------- B: Better mapping
 
         let v0 = (-1.0, -1.0, -1.0);
-        let v1 = (1.0,  -1.0, -1.0);
-        let v2 = (-1.0,  1.0, -1.0);
-        let v3 = (1.0,  1.0, -1.0);
+        let v1 = (1.0, -1.0, -1.0);
+        let v2 = (-1.0, 1.0, -1.0);
+        let v3 = (1.0, 1.0, -1.0);
         let v4 = (-1.0, -1.0, 1.0);
-        let v5 = (1.0,  -1.0, 1.0);
-        let v6 = (-1.0,  1.0, 1.0);
-        let v7 = (1.0,  1.0, 1.0);
+        let v5 = (1.0, -1.0, 1.0);
+        let v6 = (-1.0, 1.0, 1.0);
+        let v7 = (1.0, 1.0, 1.0);
 
         let a = 16.0 / 1024.0;
         let b = 336.0 / 1024.0;
@@ -114,60 +117,160 @@ impl Cube {
 
         let vbo_data = vec![
             // 6
-            Vertex { pos: v0.into(), clr: (1.0, 0.0, 0.0, 1.0).into(), normal: (0.0, 0.0, -1.0).into(), uv:  (e, c).into() }, // 0
-            Vertex { pos: v1.into(), clr: (0.0, 1.0, 0.0, 1.0).into(), normal: (0.0, 0.0, -1.0).into(), uv:  (f, c).into() }, // 1
-            Vertex { pos: v2.into(), clr: (0.0, 0.0, 1.0, 1.0).into(), normal: (0.0, 0.0, -1.0).into(), uv:  (e, d).into() }, // 2
-            Vertex { pos: v3.into(),  clr: (1.0, 1.0, 0.0, 1.0).into(), normal: (0.0, 0.0, -1.0).into(), uv: (f, d).into() }, // 3
-
+            Vertex {
+                pos: v0.into(),
+                clr: (1.0, 0.0, 0.0, 1.0).into(),
+                normal: (0.0, 0.0, -1.0).into(),
+                uv: (e, c).into(),
+            }, // 0
+            Vertex {
+                pos: v1.into(),
+                clr: (0.0, 1.0, 0.0, 1.0).into(),
+                normal: (0.0, 0.0, -1.0).into(),
+                uv: (f, c).into(),
+            }, // 1
+            Vertex {
+                pos: v2.into(),
+                clr: (0.0, 0.0, 1.0, 1.0).into(),
+                normal: (0.0, 0.0, -1.0).into(),
+                uv: (e, d).into(),
+            }, // 2
+            Vertex {
+                pos: v3.into(),
+                clr: (1.0, 1.0, 0.0, 1.0).into(),
+                normal: (0.0, 0.0, -1.0).into(),
+                uv: (f, d).into(),
+            }, // 3
             // 1
-            Vertex { pos: v4.into(),  clr: (0.0, 0.3, 1.0, 1.0).into(), normal: (0.0, 0.0, 1.0).into(), uv: (a, b).into() }, // 4
-            Vertex { pos: v5.into(),  clr: (1.0, 0.0, 0.3, 1.0).into(), normal: (0.0, 0.0, 1.0).into(), uv: (b, b).into() }, // 5
-            Vertex { pos: v6.into(),  clr: (0.7, 0.5, 1.0, 1.0).into(), normal: (0.0, 0.0, 1.0).into(), uv: (a, a).into() }, // 6
-            Vertex { pos: v7.into(),  clr: (1.0, 0.7, 0.5, 1.0).into(), normal: (0.0, 0.0, 1.0).into(), uv: (b, a).into() }, // 7
-
+            Vertex {
+                pos: v4.into(),
+                clr: (0.0, 0.3, 1.0, 1.0).into(),
+                normal: (0.0, 0.0, 1.0).into(),
+                uv: (a, b).into(),
+            }, // 4
+            Vertex {
+                pos: v5.into(),
+                clr: (1.0, 0.0, 0.3, 1.0).into(),
+                normal: (0.0, 0.0, 1.0).into(),
+                uv: (b, b).into(),
+            }, // 5
+            Vertex {
+                pos: v6.into(),
+                clr: (0.7, 0.5, 1.0, 1.0).into(),
+                normal: (0.0, 0.0, 1.0).into(),
+                uv: (a, a).into(),
+            }, // 6
+            Vertex {
+                pos: v7.into(),
+                clr: (1.0, 0.7, 0.5, 1.0).into(),
+                normal: (0.0, 0.0, 1.0).into(),
+                uv: (b, a).into(),
+            }, // 7
             // 2
-            Vertex { pos: v0.into(),  clr: (0.0, 1.0, 0.3, 1.0).into(), normal: (0.0, -1.0, 0.0).into(), uv: (c, b).into() }, // 8
-            Vertex { pos: v1.into(),  clr: (1.0, 0.0, 1.0, 1.0).into(), normal: (0.0, -1.0, 0.0).into(), uv: (d, b).into() }, // 9
-            Vertex { pos: v4.into(),  clr: (0.5, 0.7, 1.0, 1.0).into(), normal: (0.0, -1.0, 0.0).into(), uv: (c, a).into() }, // 10
-            Vertex { pos: v5.into(),  clr: (1.0, 0.5, 0.1, 1.0).into(), normal: (0.0, -1.0, 0.0).into(), uv: (d, a).into() }, // 11
-
+            Vertex {
+                pos: v0.into(),
+                clr: (0.0, 1.0, 0.3, 1.0).into(),
+                normal: (0.0, -1.0, 0.0).into(),
+                uv: (c, b).into(),
+            }, // 8
+            Vertex {
+                pos: v1.into(),
+                clr: (1.0, 0.0, 1.0, 1.0).into(),
+                normal: (0.0, -1.0, 0.0).into(),
+                uv: (d, b).into(),
+            }, // 9
+            Vertex {
+                pos: v4.into(),
+                clr: (0.5, 0.7, 1.0, 1.0).into(),
+                normal: (0.0, -1.0, 0.0).into(),
+                uv: (c, a).into(),
+            }, // 10
+            Vertex {
+                pos: v5.into(),
+                clr: (1.0, 0.5, 0.1, 1.0).into(),
+                normal: (0.0, -1.0, 0.0).into(),
+                uv: (d, a).into(),
+            }, // 11
             // 4
-            Vertex { pos: v2.into(),  clr: (0.3, 1.0, 1.0, 1.0).into(), normal: (0.0, 1.0, 0.0).into(), uv: (a, c).into() }, // 12
-            Vertex { pos: v3.into(),  clr: (0.8, 0.0, 1.0, 1.0).into(), normal: (0.0, 1.0, 0.0).into(), uv: (b, c).into() }, // 13
-            Vertex { pos: v6.into(),  clr: (0.5, 0.5, 0.4, 1.0).into(), normal: (0.0, 1.0, 0.0).into(), uv: (a, d).into() }, // 14
-            Vertex { pos: v7.into(),  clr: (0.4, 0.0, 1.0, 1.0).into(), normal: (0.0, 1.0, 0.0).into(), uv: (b, d).into() }, // 15
-
+            Vertex {
+                pos: v2.into(),
+                clr: (0.3, 1.0, 1.0, 1.0).into(),
+                normal: (0.0, 1.0, 0.0).into(),
+                uv: (a, c).into(),
+            }, // 12
+            Vertex {
+                pos: v3.into(),
+                clr: (0.8, 0.0, 1.0, 1.0).into(),
+                normal: (0.0, 1.0, 0.0).into(),
+                uv: (b, c).into(),
+            }, // 13
+            Vertex {
+                pos: v6.into(),
+                clr: (0.5, 0.5, 0.4, 1.0).into(),
+                normal: (0.0, 1.0, 0.0).into(),
+                uv: (a, d).into(),
+            }, // 14
+            Vertex {
+                pos: v7.into(),
+                clr: (0.4, 0.0, 1.0, 1.0).into(),
+                normal: (0.0, 1.0, 0.0).into(),
+                uv: (b, d).into(),
+            }, // 15
             // 3
-            Vertex { pos: v0.into(),  clr: (0.0, 0.4, 1.0, 1.0).into(), normal: (-1.0, 0.0, 0.0).into(), uv: (f, b).into() }, // 16
-            Vertex { pos: v2.into(),  clr: (1.0, 0.0, 0.4, 1.0).into(), normal: (-1.0, 0.0, 0.0).into(), uv: (e, b).into() }, // 17
-            Vertex { pos: v4.into(),  clr: (0.7, 0.5, 1.0, 1.0).into(), normal: (-1.0, 0.0, 0.0).into(), uv: (f, a).into() }, // 18
-            Vertex { pos: v6.into(),  clr: (1.0, 0.7, 0.5, 1.0).into(), normal: (-1.0, 0.0, 0.0).into(), uv: (e, a).into() }, // 19
-
+            Vertex {
+                pos: v0.into(),
+                clr: (0.0, 0.4, 1.0, 1.0).into(),
+                normal: (-1.0, 0.0, 0.0).into(),
+                uv: (f, b).into(),
+            }, // 16
+            Vertex {
+                pos: v2.into(),
+                clr: (1.0, 0.0, 0.4, 1.0).into(),
+                normal: (-1.0, 0.0, 0.0).into(),
+                uv: (e, b).into(),
+            }, // 17
+            Vertex {
+                pos: v4.into(),
+                clr: (0.7, 0.5, 1.0, 1.0).into(),
+                normal: (-1.0, 0.0, 0.0).into(),
+                uv: (f, a).into(),
+            }, // 18
+            Vertex {
+                pos: v6.into(),
+                clr: (1.0, 0.7, 0.5, 1.0).into(),
+                normal: (-1.0, 0.0, 0.0).into(),
+                uv: (e, a).into(),
+            }, // 19
             // 5
-            Vertex { pos: v1.into(),  clr: (0.0, 1.0, 0.0, 1.0).into(), normal: (1.0, 0.0, 0.0).into(), uv: (d, c).into() }, // 20
-            Vertex { pos: v3.into(),  clr: (0.1, 0.0, 1.0, 1.0).into(), normal: (1.0, 0.0, 0.0).into(), uv: (c, c).into() }, // 21
-            Vertex { pos: v5.into(),  clr: (0.1, 0.7, 1.0, 1.0).into(), normal: (1.0, 0.0, 0.0).into(), uv: (d, d).into() }, // 22
-            Vertex { pos: v7.into(),  clr: (1.0, 0.1, 0.7, 1.0).into(), normal: (1.0, 0.0, 0.0).into(), uv: (c, d).into() }, // 23
+            Vertex {
+                pos: v1.into(),
+                clr: (0.0, 1.0, 0.0, 1.0).into(),
+                normal: (1.0, 0.0, 0.0).into(),
+                uv: (d, c).into(),
+            }, // 20
+            Vertex {
+                pos: v3.into(),
+                clr: (0.1, 0.0, 1.0, 1.0).into(),
+                normal: (1.0, 0.0, 0.0).into(),
+                uv: (c, c).into(),
+            }, // 21
+            Vertex {
+                pos: v5.into(),
+                clr: (0.1, 0.7, 1.0, 1.0).into(),
+                normal: (1.0, 0.0, 0.0).into(),
+                uv: (d, d).into(),
+            }, // 22
+            Vertex {
+                pos: v7.into(),
+                clr: (1.0, 0.1, 0.7, 1.0).into(),
+                normal: (1.0, 0.0, 0.0).into(),
+                uv: (c, d).into(),
+            }, // 23
         ];
 
         let ebo_data: Vec<u8> = vec![
-            0,2,1,
-            1,2,3,
-
-            4,5,6,
-            6,5,7,
-
-            8,11,10,
-            8,9,11,
-
-            12,14,15,
-            12,15,13,
-
-            16,18,17,
-            18,19,17,
-
-            20,21,22,
-            22,21,23,
+            0, 2, 1, 1, 2, 3, 4, 5, 6, 6, 5, 7, 8, 11, 10, 8, 9, 11, 12, 14, 15, 12, 15, 13, 16,
+            18, 17, 18, 19, 17, 20, 21, 22, 22, 21, 23,
         ];
 
         let vbo = buffer::ArrayBuffer::new(gl);
@@ -206,15 +309,30 @@ impl Cube {
             _ebo: ebo,
             index_count: ebo_data.len() as i32,
             vao,
-            _debug_rays: vbo_data.iter().map(|v| debug_lines.ray_marker(
-                na::Point3::new(v.pos.d0, v.pos.d1, v.pos.d2),
-                na::Vector3::new(v.normal.d0, v.normal.d1, v.normal.d2),
-                na::Vector4::new(v.clr.inner.x(), v.clr.inner.y(), v.clr.inner.z(), v.clr.inner.w())
-            )).collect()
+            _debug_rays: vbo_data
+                .iter()
+                .map(|v| {
+                    debug_lines.ray_marker(
+                        na::Point3::new(v.pos.d0, v.pos.d1, v.pos.d2),
+                        na::Vector3::new(v.normal.d0, v.normal.d1, v.normal.d2),
+                        na::Vector4::new(
+                            v.clr.inner.x(),
+                            v.clr.inner.y(),
+                            v.clr.inner.z(),
+                            v.clr.inner.w(),
+                        ),
+                    )
+                }).collect(),
         })
     }
 
-    pub fn render(&self, gl: &gl::Gl, view_matrix: &na::Matrix4<f32>, proj_matrix: &na::Matrix4<f32>, camera_pos: &na::Vector3<f32>) {
+    pub fn render(
+        &self,
+        gl: &gl::Gl,
+        view_matrix: &na::Matrix4<f32>,
+        proj_matrix: &na::Matrix4<f32>,
+        camera_pos: &na::Vector3<f32>,
+    ) {
         self.program.set_used();
 
         if let Some(loc) = self.tex_face_location {

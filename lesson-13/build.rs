@@ -50,7 +50,8 @@ fn copy(from: &Path, to: &Path) {
             if entry.file_type().is_dir() {
                 DirBuilder::new()
                     .recursive(true)
-                    .create(target_path).expect("failed to create target dir");
+                    .create(target_path)
+                    .expect("failed to create target dir");
             } else {
                 fs::copy(entry.path(), &target_path).expect("failed to copy");
             }

@@ -1,6 +1,6 @@
 use gl;
 use std;
-use std::ffi::{CString, CStr};
+use std::ffi::{CStr, CString};
 
 pub struct Program {
     id: gl::types::GLuint,
@@ -11,10 +11,14 @@ impl Program {
         let program_id = unsafe { gl::CreateProgram() };
 
         for shader in shaders {
-            unsafe { gl::AttachShader(program_id, shader.id()); }
+            unsafe {
+                gl::AttachShader(program_id, shader.id());
+            }
         }
 
-        unsafe { gl::LinkProgram(program_id); }
+        unsafe {
+            gl::LinkProgram(program_id);
+        }
 
         let mut success: gl::types::GLint = 1;
         unsafe {
@@ -34,7 +38,7 @@ impl Program {
                     program_id,
                     len,
                     std::ptr::null_mut(),
-                    error.as_ptr() as *mut gl::types::GLchar
+                    error.as_ptr() as *mut gl::types::GLchar,
                 );
             }
 
@@ -42,7 +46,9 @@ impl Program {
         }
 
         for shader in shaders {
-            unsafe { gl::DetachShader(program_id, shader.id()); }
+            unsafe {
+                gl::DetachShader(program_id, shader.id());
+            }
         }
 
         Ok(Program { id: program_id })
@@ -72,10 +78,7 @@ pub struct Shader {
 }
 
 impl Shader {
-    pub fn from_source(
-        source: &CStr,
-        kind: gl::types::GLenum
-    ) -> Result<Shader, String> {
+    pub fn from_source(source: &CStr, kind: gl::types::GLenum) -> Result<Shader, String> {
         let id = shader_from_source(source, kind)?;
         Ok(Shader { id })
     }
@@ -101,10 +104,7 @@ impl Drop for Shader {
     }
 }
 
-fn shader_from_source(
-    source: &CStr,
-    kind: gl::types::GLenum
-) -> Result<gl::types::GLuint, String> {
+fn shader_from_source(source: &CStr, kind: gl::types::GLenum) -> Result<gl::types::GLuint, String> {
     let id = unsafe { gl::CreateShader(kind) };
     unsafe {
         gl::ShaderSource(id, 1, &source.as_ptr(), std::ptr::null());
@@ -129,7 +129,7 @@ fn shader_from_source(
                 id,
                 len,
                 std::ptr::null_mut(),
-                error.as_ptr() as *mut gl::types::GLchar
+                error.as_ptr() as *mut gl::types::GLchar,
             );
         }
 

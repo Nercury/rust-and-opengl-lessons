@@ -1,14 +1,14 @@
-use std::collections::VecDeque;
-use nalgebra as na;
+use super::buffers::{Buffers, LinePoint};
 use failure;
-use gl;
-use resources::Resources;
-use render_gl::Program;
-use render_gl::ColorBuffer;
-use render_gl::data;
-use std::time::Instant;
 use floating_duration::TimeAsFloat;
-use super::buffers::{LinePoint, Buffers};
+use gl;
+use nalgebra as na;
+use render_gl::data;
+use render_gl::ColorBuffer;
+use render_gl::Program;
+use resources::Resources;
+use std::collections::VecDeque;
+use std::time::Instant;
 
 const FRAME_DATA_CAPACITY: usize = 20;
 
@@ -24,7 +24,10 @@ impl FrameData {
         FrameData {
             start,
             position: 0,
-            items: [Item { time: Instant::now(), color: (0.0,0.0,0.0,0.0,).into() }; FRAME_DATA_CAPACITY],
+            items: [Item {
+                time: Instant::now(),
+                color: (0.0, 0.0, 0.0, 0.0).into(),
+            }; FRAME_DATA_CAPACITY],
         }
     }
 
@@ -34,7 +37,9 @@ impl FrameData {
     }
 
     pub fn push(&mut self, item: Item) {
-        if self.position >= FRAME_DATA_CAPACITY { return; }
+        if self.position >= FRAME_DATA_CAPACITY {
+            return;
+        }
 
         self.items[self.position] = item;
         self.position += 1;
@@ -65,7 +70,11 @@ pub struct FrameProfiler {
 }
 
 impl FrameProfiler {
-    pub fn new(gl: &gl::Gl, res: &Resources, bottom_offset_px: i32) -> Result<FrameProfiler, failure::Error> {
+    pub fn new(
+        gl: &gl::Gl,
+        res: &Resources,
+        bottom_offset_px: i32,
+    ) -> Result<FrameProfiler, failure::Error> {
         let program = Program::from_res(gl, res, "shaders/render_gl/profiler_lines")?;
         let program_view_projection_location = program.get_uniform_location("ViewProjection");
 
@@ -79,7 +88,7 @@ impl FrameProfiler {
             frame_data_pool: vec![FrameData::new(Instant::now()); 4000], // 4000 pixels width should be enough for everybody
             view_width_pixels: 4000,
             view_height_pixels: 500,
-            bottom_offset_px
+            bottom_offset_px,
         })
     }
 
@@ -88,9 +97,10 @@ impl FrameProfiler {
     }
 
     pub fn begin(&mut self) {
-        let mut data = self.frame_data_pool.pop().unwrap_or_else(|| {
-            FrameData::new(Instant::now())
-        });
+        let mut data = self
+            .frame_data_pool
+            .pop()
+            .unwrap_or_else(|| FrameData::new(Instant::now()));
         data.restart(Instant::now());
 
         ::std::mem::swap(&mut data, &mut self.frame_data);
@@ -115,14 +125,21 @@ impl FrameProfiler {
         let fps_bar_30 = 2;
         let fps_bar_60 = 2;
         let fps_bar_144 = 2;
-        let all_data_len = self.frame_data_history
+        let all_data_len = self
+            .frame_data_history
             .iter()
             .flat_map(|v| v.iter())
-            .count() * 2 + fps_bar_30 + fps_bar_60 + fps_bar_144;
+            .count()
+            * 2
+            + fps_bar_30
+            + fps_bar_60
+            + fps_bar_144;
 
         let recreate_buffer_capacity = match self.buffers {
             None => Some(4096),
-            Some(ref buffers) if buffers.vertex_capacity < all_data_len => Some(buffers.vertex_capacity * 2),
+            Some(ref buffers) if buffers.vertex_capacity < all_data_len => {
+                Some(buffers.vertex_capacity * 2)
+            }
             _ => None,
         };
 
@@ -139,15 +156,22 @@ impl FrameProfiler {
         if let Some(ref mut buffers) = self.buffers {
             if all_data_len > 0 {
                 buffers.lines_vbo.bind();
-                if let Some(mut buffer) = unsafe { buffers.lines_vbo.map_buffer_range_write_invalidate::<LinePoint>(0, all_data_len) } {
+                if let Some(mut buffer) = unsafe {
+                    buffers
+                        .lines_vbo
+                        .map_buffer_range_write_invalidate::<LinePoint>(0, all_data_len)
+                } {
                     for (index, frame) in self.frame_data_history.iter().enumerate() {
                         let mut previous_instant = frame.start;
                         for item in frame.iter() {
-                            let item_start_diff = (previous_instant - frame.start).as_fractional_millis() as f32;
-                            let item_end_diff = (item.time - frame.start).as_fractional_millis() as f32;
+                            let item_start_diff =
+                                (previous_instant - frame.start).as_fractional_millis() as f32;
+                            let item_end_diff =
+                                (item.time - frame.start).as_fractional_millis() as f32;
 
                             buffer.push(LinePoint {
-                                pos: (index as f32, bottom_offset + item_start_diff * y_scale).into(),
+                                pos: (index as f32, bottom_offset + item_start_diff * y_scale)
+                                    .into(),
                                 color: item.color,
                             });
 
@@ -206,7 +230,14 @@ impl FrameProfiler {
         }
     }
 
-    pub fn render(&mut self, gl: &gl::Gl, target: &ColorBuffer, vp_matrix: &na::Matrix4<f32>, view_width_pixels: i32, view_height_pixels: i32) {
+    pub fn render(
+        &mut self,
+        gl: &gl::Gl,
+        target: &ColorBuffer,
+        vp_matrix: &na::Matrix4<f32>,
+        view_width_pixels: i32,
+        view_height_pixels: i32,
+    ) {
         self.view_width_pixels = view_width_pixels;
         self.view_height_pixels = view_height_pixels;
 
@@ -226,11 +257,7 @@ impl FrameProfiler {
                         target.set_default_blend_func(gl);
                         target.enable_blend(gl);
 
-                        gl.DrawArrays(
-                            gl::LINES,
-                            0,
-                            buffers.vertex_count as i32,
-                        );
+                        gl.DrawArrays(gl::LINES, 0, buffers.vertex_count as i32);
 
                         target.disable_blend(gl);
                     }

@@ -1,5 +1,5 @@
-use render_gl;
 use nalgebra as na;
+use render_gl;
 
 pub struct Material {
     texture_location: Option<i32>,
@@ -22,8 +22,15 @@ impl Material {
         }
     }
 
-    pub fn bind(&self, program: &render_gl::Program, viewprojection_matrix: &na::Matrix4<f32>, model_matrix: &na::Matrix4<f32>, camera_pos: &na::Vector3<f32>,
-                texture: &Option<render_gl::Texture>, texture_normals: &Option<render_gl::Texture>) {
+    pub fn bind(
+        &self,
+        program: &render_gl::Program,
+        viewprojection_matrix: &na::Matrix4<f32>,
+        model_matrix: &na::Matrix4<f32>,
+        camera_pos: &na::Vector3<f32>,
+        texture: &Option<render_gl::Texture>,
+        texture_normals: &Option<render_gl::Texture>,
+    ) {
         if let (Some(loc), &Some(ref texture)) = (self.texture_location, texture) {
             texture.bind_at(0);
             program.set_uniform_1i(loc, 0);

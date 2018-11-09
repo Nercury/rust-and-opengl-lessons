@@ -1,6 +1,6 @@
-use {ResourcePath, ResourcePathBuf};
 use slab::Slab;
 use std::time::Instant;
+use {ResourcePath, ResourcePathBuf};
 
 /// Information about the latest resource update.
 ///
@@ -28,9 +28,8 @@ impl ResourceMetadata {
     }
 
     pub fn new_user(&mut self) -> usize {
-        self.users.insert(ResourceUserMetadata {
-            outdated_at: None,
-        })
+        self.users
+            .insert(ResourceUserMetadata { outdated_at: None })
     }
 
     pub fn remove_user(&mut self, id: usize) {
@@ -54,7 +53,11 @@ impl ResourceMetadata {
 
     pub fn everyone_should_reload_except(&mut self, id: usize, outdated_at: Instant) {
         for (user_id, user) in self.users.iter_mut() {
-            user.outdated_at = if user_id != id { Some(outdated_at) } else { None };
+            user.outdated_at = if user_id != id {
+                Some(outdated_at)
+            } else {
+                None
+            };
         }
     }
 

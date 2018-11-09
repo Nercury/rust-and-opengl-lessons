@@ -1,13 +1,13 @@
-use render_gl::Program;
-use render_gl::ColorBuffer;
-use render_gl::buffer;
-use resources::Resources;
-use gl;
 use failure;
+use gl;
 use nalgebra as na;
+use render_gl::buffer;
+use render_gl::ColorBuffer;
+use render_gl::Program;
+use resources::Resources;
 
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 mod line_point;
 mod shared_debug_lines;
@@ -33,9 +33,7 @@ impl PolylineBuilder {
 
     pub fn close_and_finish(self) -> Polyline {
         let first_item = self.items[0].clone();
-        self
-            .with_point(first_item.point, first_item.color)
-            .finish()
+        self.with_point(first_item.point, first_item.color).finish()
     }
 
     pub fn finish(self) -> Polyline {
@@ -133,9 +131,9 @@ impl DebugLines {
                 target.enable_blend(gl);
 
                 gl.DrawArrays(
-                    gl::LINES, // mode
-                    0, // starting index in the enabled arrays
-                    self.line_point_count // number of indices to be rendered
+                    gl::LINES,             // mode
+                    0,                     // starting index in the enabled arrays
+                    self.line_point_count, // number of indices to be rendered
                 );
 
                 target.disable_blend(gl);
@@ -143,9 +141,16 @@ impl DebugLines {
         }
     }
 
-    pub fn start_polyline(&self, start_point: na::Vector3<f32>, start_color: na::Vector4<f32>) -> PolylineBuilder {
+    pub fn start_polyline(
+        &self,
+        start_point: na::Vector3<f32>,
+        start_color: na::Vector4<f32>,
+    ) -> PolylineBuilder {
         PolylineBuilder {
-            items: vec![PolylineBuilderItem { point: start_point, color: start_color }],
+            items: vec![PolylineBuilderItem {
+                point: start_point,
+                color: start_color,
+            }],
             containers: self.containers.clone(),
         }
     }

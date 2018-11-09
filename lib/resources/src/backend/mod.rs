@@ -1,7 +1,7 @@
-use path::{ResourcePath};
-use Error;
+use path::ResourcePath;
 use std::io;
 use std::time::Instant;
+use Error;
 
 #[cfg(any(test, feature = "backend_in_memory"))]
 mod in_memory;

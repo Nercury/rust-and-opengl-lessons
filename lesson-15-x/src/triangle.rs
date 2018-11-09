@@ -1,11 +1,10 @@
-use gl;
 use failure;
-use render_gl::{self, data, buffer};
-use resources::Resources;
+use gl;
 use nalgebra as na;
+use render_gl::{self, buffer, data};
+use resources::Resources;
 
-#[derive(VertexAttribPointers)]
-#[derive(Copy, Clone, Debug)]
+#[derive(VertexAttribPointers, Copy, Clone, Debug)]
 #[repr(C, packed)]
 struct Vertex {
     #[location = "0"]
@@ -23,7 +22,6 @@ pub struct Triangle {
 
 impl Triangle {
     pub fn new(res: &Resources, gl: &gl::Gl) -> Result<Triangle, failure::Error> {
-
         // set up shader program
 
         let program = render_gl::Program::from_res(gl, res, "shaders/triangle")?;
@@ -34,15 +32,15 @@ impl Triangle {
         let vertices: Vec<Vertex> = vec![
             Vertex {
                 pos: (0.5, -0.5, 0.0).into(),
-                clr: (1.0, 0.0, 0.0, 1.0).into()
+                clr: (1.0, 0.0, 0.0, 1.0).into(),
             }, // bottom right
             Vertex {
-                pos: (0.0,  0.5, 0.0).into(),
-                clr: (0.0, 0.0, 1.0, 1.0).into()
-            },  // top
+                pos: (0.0, 0.5, 0.0).into(),
+                clr: (0.0, 0.0, 1.0, 1.0).into(),
+            }, // top
             Vertex {
                 pos: (-0.5, -0.5, 0.0).into(),
-                clr: (0.0, 1.0, 0.0, 1.0).into()
+                clr: (0.0, 1.0, 0.0, 1.0).into(),
             }, // bottom left
         ];
 
@@ -71,14 +69,15 @@ impl Triangle {
 
     pub fn render(&self, gl: &gl::Gl, vp_matrix: &na::Matrix4<f32>) {
         self.program.set_used();
-        self.program.set_uniform_matrix4fv(self.program_view_projection_location, &vp_matrix);
+        self.program
+            .set_uniform_matrix4fv(self.program_view_projection_location, &vp_matrix);
         self.vao.bind();
 
         unsafe {
             gl.DrawArrays(
                 gl::TRIANGLES, // mode
-                0, // starting index in the enabled arrays
-                3 // number of indices to be rendered
+                0,             // starting index in the enabled arrays
+                3,             // number of indices to be rendered
             );
         }
     }

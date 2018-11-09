@@ -46,11 +46,18 @@ impl Tangents {
     pub fn nans() -> Self {
         Tangents {
             tangent: [::std::f32::NAN, ::std::f32::NAN, ::std::f32::NAN].into(),
-            bitangent: [::std::f32::NAN, ::std::f32::NAN, ::std::f32::NAN].into()
+            bitangent: [::std::f32::NAN, ::std::f32::NAN, ::std::f32::NAN].into(),
         }
     }
 
-    pub fn from_triangle(p0: &na::Point3<f32>, p1: &na::Point3<f32>, p2: &na::Point3<f32>, uv0: &na::Vector2<f32>, uv1: &na::Vector2<f32>, uv2: &na::Vector2<f32>) -> Tangents {
+    pub fn from_triangle(
+        p0: &na::Point3<f32>,
+        p1: &na::Point3<f32>,
+        p2: &na::Point3<f32>,
+        uv0: &na::Vector2<f32>,
+        uv1: &na::Vector2<f32>,
+        uv2: &na::Vector2<f32>,
+    ) -> Tangents {
         // position differences p1->p2 and p1->p3
 
         let v = p1 - p0;
@@ -66,26 +73,26 @@ impl Tangents {
 
         // when t1, t2, t3 in same position in UV space, just use default UV direction.
         if sx * ty == sy * tx {
-            sx = 0.0; sy = 1.0;
-            tx = 1.0; ty = 0.0;
+            sx = 0.0;
+            sy = 1.0;
+            tx = 1.0;
+            ty = 0.0;
         }
 
         let mut tangent = na::Vector3::new(
             (w.x * sy - v.x * ty) * dir_correction,
             (w.y * sy - v.y * ty) * dir_correction,
-            (w.z * sy - v.z * ty) * dir_correction
+            (w.z * sy - v.z * ty) * dir_correction,
         );
         let mut bitangent = na::Vector3::new(
             (w.x * sx - v.x * tx) * dir_correction,
             (w.y * sx - v.y * tx) * dir_correction,
-            (w.z * sx - v.z * tx) * dir_correction
+            (w.z * sx - v.z * tx) * dir_correction,
         );
-        tangent.normalize_mut(); bitangent.normalize_mut();
+        tangent.normalize_mut();
+        bitangent.normalize_mut();
 
-        Tangents {
-            tangent,
-            bitangent,
-        }
+        Tangents { tangent, bitangent }
     }
 }
 
@@ -117,14 +124,22 @@ impl Mesh {
         fn update_min(val: &mut Option<f32>, new: f32) {
             *val = match val {
                 None => Some(new),
-                Some(val) => if new < *val { Some(new) } else { return; },
+                Some(val) => if new < *val {
+                    Some(new)
+                } else {
+                    return;
+                },
             };
         }
 
         fn update_max(val: &mut Option<f32>, new: f32) {
             *val = match val {
                 None => Some(new),
-                Some(val) => if new > *val { Some(new) } else { return; },
+                Some(val) => if new > *val {
+                    Some(new)
+                } else {
+                    return;
+                },
             };
         }
 
@@ -137,8 +152,13 @@ impl Mesh {
             update_max(&mut max_z, v.pos.z);
         }
 
-        if let (Some(min_x), Some(min_y), Some(min_z), Some(max_x), Some(max_y), Some(max_z)) = (min_x, min_y, min_z, max_x, max_y, max_z) {
-            Some(AABB::new([min_x, min_y, min_z].into(), [max_x, max_y, max_z].into()))
+        if let (Some(min_x), Some(min_y), Some(min_z), Some(max_x), Some(max_y), Some(max_z)) =
+            (min_x, min_y, min_z, max_x, max_y, max_z)
+        {
+            Some(AABB::new(
+                [min_x, min_y, min_z].into(),
+                [max_x, max_y, max_z].into(),
+            ))
         } else {
             None
         }
@@ -152,10 +172,13 @@ impl Mesh {
                     let b = self.vertices[bi as usize];
                     let c = self.vertices[ci as usize];
 
-                    if let (Some(auv), Some(buv), Some(cuv), Some(an), Some(bn), Some(cn)) = (a.uv, b.uv, c.uv, a.normal, b.normal, c.normal) {
+                    if let (Some(auv), Some(buv), Some(cuv), Some(an), Some(bn), Some(cn)) =
+                        (a.uv, b.uv, c.uv, a.normal, b.normal, c.normal)
+                    {
                         // this was shamelessly "inspired" by assimp library https://github.com/assimp/assimp/blob/master/code/CalcTangentsProcess.cpp
 
-                        let face_tangent_vectors = Tangents::from_triangle(&a.pos, &b.pos, &c.pos, &auv, &buv, &cuv);
+                        let face_tangent_vectors =
+                            Tangents::from_triangle(&a.pos, &b.pos, &c.pos, &auv, &buv, &cuv);
 
                         fn is_special_float(v: f32) -> bool {
                             v.is_nan() || v.is_infinite()
@@ -165,14 +188,20 @@ impl Mesh {
 
                         for (n, i) in &[(an, ai), (bn, bi), (cn, ci)] {
                             // project tangent and bitangent into the plane formed by the vertex' normal
-                            let mut local_tangent = face_tangent_vectors.tangent - n * face_tangent_vectors.tangent.dot(&n);
-                            let mut local_bitangent = face_tangent_vectors.bitangent - n * face_tangent_vectors.bitangent.dot(&n);
+                            let mut local_tangent = face_tangent_vectors.tangent
+                                - n * face_tangent_vectors.tangent.dot(&n);
+                            let mut local_bitangent = face_tangent_vectors.bitangent
+                                - n * face_tangent_vectors.bitangent.dot(&n);
                             local_tangent.normalize_mut();
                             local_bitangent.normalize_mut();
 
                             // reconstruct tangent/bitangent according to normal and bitangent/tangent when it's infinite or NaN.
-                            let invalid_tangent = is_special_float(local_tangent.x) || is_special_float(local_tangent.y) || is_special_float(local_tangent.z);
-                            let invalid_bitangent = is_special_float(local_bitangent.x) || is_special_float(local_bitangent.y) || is_special_float(local_bitangent.z);
+                            let invalid_tangent = is_special_float(local_tangent.x)
+                                || is_special_float(local_tangent.y)
+                                || is_special_float(local_tangent.z);
+                            let invalid_bitangent = is_special_float(local_bitangent.x)
+                                || is_special_float(local_bitangent.y)
+                                || is_special_float(local_bitangent.z);
 
                             if invalid_tangent != invalid_bitangent {
                                 if invalid_tangent {
@@ -184,7 +213,8 @@ impl Mesh {
                                 }
                             }
 
-                            let ref mut existing_tangent_vectors = self.vertices[*i as usize].tangents;
+                            let ref mut existing_tangent_vectors =
+                                self.vertices[*i as usize].tangents;
                             *existing_tangent_vectors = Some(Tangents {
                                 tangent: local_tangent,
                                 bitangent: local_bitangent,

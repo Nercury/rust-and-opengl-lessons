@@ -1,6 +1,6 @@
+use super::buffers::LinePoint;
 use na;
 use std::collections::BTreeMap;
-use super::buffers::LinePoint;
 
 pub struct Container {
     pub transform: na::Projective3<f32>,
@@ -30,10 +30,8 @@ impl SharedDebugLines {
 
     pub fn new_container(&mut self, transform: na::Projective3<f32>, data: Vec<LinePoint>) -> i32 {
         let next_id = self.get_next_id();
-        self.containers.insert(next_id, Container {
-            transform,
-            data,
-        });
+        self.containers
+            .insert(next_id, Container { transform, data });
         self.invalidated = true;
         next_id
     }

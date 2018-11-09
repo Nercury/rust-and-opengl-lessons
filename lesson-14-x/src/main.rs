@@ -1,19 +1,21 @@
-extern crate sdl2;
 extern crate gl;
-extern crate vec_2_10_10_10;
 extern crate half;
 extern crate nalgebra;
-#[macro_use] extern crate failure;
-#[macro_use] extern crate lesson_14_x_render_gl_derive as render_gl_derive;
+extern crate sdl2;
+extern crate vec_2_10_10_10;
+#[macro_use]
+extern crate failure;
+#[macro_use]
+extern crate lesson_14_x_render_gl_derive as render_gl_derive;
 
+mod debug;
 pub mod render_gl;
 pub mod resources;
-mod debug;
 
 use failure::err_msg;
+use nalgebra as na;
 use resources::Resources;
 use std::path::Path;
-use nalgebra as na;
 
 fn main() {
     if let Err(e) = run() {
@@ -39,25 +41,20 @@ fn run() -> Result<(), failure::Error> {
         .build()?;
 
     let _gl_context = window.gl_create_context().map_err(err_msg)?;
-    let gl = gl::Gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void);
+    let gl = gl::Gl::load_with(|s| {
+        video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void
+    });
 
     let mut viewport = render_gl::Viewport::for_window(900, 700);
     let color_buffer = render_gl::ColorBuffer::new();
     let mut debug_lines = render_gl::DebugLines::new(&gl, &res)?;
-    let mut _p = Some(debug_lines
-        .start_polyline(
-            [0.5, -0.5, 0.0].into(),
-            [1.0, 0.0, 0.0, 1.0].into()
-        )
-        .with_point(
-            [0.0, 0.5, 0.0].into(),
-            [0.0, 1.0, 0.0, 1.0].into(),
-        )
-        .with_point(
-            [-0.5, -0.5, 0.0].into(),
-            [1.0, 1.0, 0.0, 0.0].into(),
-        )
-        .close_and_finish());
+    let mut _p = Some(
+        debug_lines
+            .start_polyline([0.5, -0.5, 0.0].into(), [1.0, 0.0, 0.0, 1.0].into())
+            .with_point([0.0, 0.5, 0.0].into(), [0.0, 1.0, 0.0, 1.0].into())
+            .with_point([-0.5, -0.5, 0.0].into(), [1.0, 1.0, 0.0, 0.0].into())
+            .close_and_finish(),
+    );
 
     // set up shared state for window
 
@@ -70,15 +67,15 @@ fn run() -> Result<(), failure::Error> {
     'main: loop {
         for event in event_pump.poll_iter() {
             match event {
-                sdl2::event::Event::Quit {..} => break 'main,
+                sdl2::event::Event::Quit { .. } => break 'main,
                 sdl2::event::Event::Window {
                     win_event: sdl2::event::WindowEvent::Resized(w, h),
                     ..
                 } => {
                     viewport.update_size(w, h);
                     viewport.set_used(&gl);
-                },
-                _ => {},
+                }
+                _ => {}
             }
         }
 

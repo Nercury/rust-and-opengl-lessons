@@ -1,5 +1,5 @@
-extern crate sdl2;
 extern crate gl;
+extern crate sdl2;
 
 fn main() {
     let sdl = sdl2::init().unwrap();
@@ -12,7 +12,8 @@ fn main() {
         .unwrap();
 
     let _gl_context = window.gl_create_context().unwrap();
-    let _gl = gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void);
+    let _gl =
+        gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void);
 
     unsafe {
         gl::ClearColor(0.3, 0.3, 0.5, 1.0);
@@ -22,8 +23,8 @@ fn main() {
     'main: loop {
         for event in event_pump.poll_iter() {
             match event {
-                sdl2::event::Event::Quit {..} => break 'main,
-                _ => {},
+                sdl2::event::Event::Quit { .. } => break 'main,
+                _ => {}
             }
         }
 

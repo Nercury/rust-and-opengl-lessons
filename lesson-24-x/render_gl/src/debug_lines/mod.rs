@@ -1,19 +1,19 @@
-use Program;
-use ColorBuffer;
 use data;
-use resources::Resources;
-use gl;
 use failure;
+use gl;
 use na;
 use ncollide3d;
+use resources::Resources;
+use ColorBuffer;
+use Program;
 
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
-mod shared_debug_lines;
 mod buffers;
+mod shared_debug_lines;
 
-use self::buffers::{Buffers, MultiDrawItem, LinePoint};
+use self::buffers::{Buffers, LinePoint, MultiDrawItem};
 use self::shared_debug_lines::SharedDebugLines;
 
 pub struct DebugLines {
@@ -66,11 +66,12 @@ impl DebugLines {
             }
 
             if let Some(ref mut buffers) = self.buffers {
-                buffers.upload_vertices(shared_debug_lines
-                    .containers
-                    .values()
-                    .flat_map(|v| v.data.iter())
-                    .map(|item| *item)
+                buffers.upload_vertices(
+                    shared_debug_lines
+                        .containers
+                        .values()
+                        .flat_map(|v| v.data.iter())
+                        .map(|item| *item),
                 );
 
                 buffers.multi_draw_items.clear();
@@ -100,7 +101,9 @@ impl DebugLines {
                         self.program.set_uniform_matrix_4fv(loc, &vp_matrix);
                     }
 
-                    let program_model_matrix_location = self.program_model_matrix_location.expect("Debug lines Model uniform must exist");
+                    let program_model_matrix_location = self
+                        .program_model_matrix_location
+                        .expect("Debug lines Model uniform must exist");
 
                     buffers.lines_vao.bind();
 
@@ -109,13 +112,12 @@ impl DebugLines {
                         target.enable_blend(gl);
 
                         for instance in buffers.multi_draw_items.iter() {
-                            self.program.set_uniform_matrix_4fv(program_model_matrix_location, &instance.model_matrix);
-
-                            gl.DrawArrays(
-                                gl::LINES,
-                                instance.starting_index,
-                                instance.index_count,
+                            self.program.set_uniform_matrix_4fv(
+                                program_model_matrix_location,
+                                &instance.model_matrix,
                             );
+
+                            gl.DrawArrays(gl::LINES, instance.starting_index, instance.index_count);
                         }
 
                         target.disable_blend(gl);
@@ -130,18 +132,38 @@ impl DebugLines {
     pub fn marker(&self, pos: na::Point3<f32>, size: f32) -> PointMarker {
         let half = size / 2.0;
 
-        let new_id = self.containers.borrow_mut()
-            .new_container(
-                na::convert(na::Isometry3::from_parts(na::Translation3::from_vector(pos.coords), na::UnitQuaternion::identity())),
-                vec![
-                    LinePoint { pos: render_p3(pos + na::Vector3::x() * half), color: (0.0, 1.0, 0.0, 1.0).into() },
-                    LinePoint { pos: render_p3(pos + na::Vector3::x() * -half), color: (0.0, 1.0, 0.0, 1.0).into() },
-                    LinePoint { pos: render_p3(pos + na::Vector3::y() * half), color: (1.0, 0.0, 0.0, 1.0).into() },
-                    LinePoint { pos: render_p3(pos + na::Vector3::y() * -half), color: (1.0, 0.0, 0.0, 1.0).into() },
-                    LinePoint { pos: render_p3(pos + na::Vector3::z() * half), color: (0.0, 0.0, 1.0, 1.0).into() },
-                    LinePoint { pos: render_p3(pos + na::Vector3::z() * -half), color: (0.0, 0.0, 1.0, 1.0).into() },
-                ],
-            );
+        let new_id = self.containers.borrow_mut().new_container(
+            na::convert(na::Isometry3::from_parts(
+                na::Translation3::from_vector(pos.coords),
+                na::UnitQuaternion::identity(),
+            )),
+            vec![
+                LinePoint {
+                    pos: render_p3(pos + na::Vector3::x() * half),
+                    color: (0.0, 1.0, 0.0, 1.0).into(),
+                },
+                LinePoint {
+                    pos: render_p3(pos + na::Vector3::x() * -half),
+                    color: (0.0, 1.0, 0.0, 1.0).into(),
+                },
+                LinePoint {
+                    pos: render_p3(pos + na::Vector3::y() * half),
+                    color: (1.0, 0.0, 0.0, 1.0).into(),
+                },
+                LinePoint {
+                    pos: render_p3(pos + na::Vector3::y() * -half),
+                    color: (1.0, 0.0, 0.0, 1.0).into(),
+                },
+                LinePoint {
+                    pos: render_p3(pos + na::Vector3::z() * half),
+                    color: (0.0, 0.0, 1.0, 1.0).into(),
+                },
+                LinePoint {
+                    pos: render_p3(pos + na::Vector3::z() * -half),
+                    color: (0.0, 0.0, 1.0, 1.0).into(),
+                },
+            ],
+        );
 
         PointMarker {
             containers: self.containers.clone(),
@@ -149,19 +171,46 @@ impl DebugLines {
         }
     }
 
-    pub fn colored_marker(&self, pos: na::Point3<f32>, color: na::Vector4<f32>, size: f32) -> PointMarker {
+    pub fn colored_marker(
+        &self,
+        pos: na::Point3<f32>,
+        color: na::Vector4<f32>,
+        size: f32,
+    ) -> PointMarker {
         let half = size / 2.0;
 
-        let new_id = self.containers.borrow_mut()
-            .new_container(na::convert(na::Isometry3::from_parts(na::Translation3::from_vector(pos.coords), na::UnitQuaternion::identity())),
-                           vec![
-                               LinePoint { pos: render_p3(pos + na::Vector3::x() * half), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3(pos + na::Vector3::x() * -half), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3(pos + na::Vector3::y() * half), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3(pos + na::Vector3::y() * -half), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3(pos + na::Vector3::z() * half), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3(pos + na::Vector3::z() * -half), color: render_color_vec4(color) },
-                           ]);
+        let new_id = self.containers.borrow_mut().new_container(
+            na::convert(na::Isometry3::from_parts(
+                na::Translation3::from_vector(pos.coords),
+                na::UnitQuaternion::identity(),
+            )),
+            vec![
+                LinePoint {
+                    pos: render_p3(pos + na::Vector3::x() * half),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3(pos + na::Vector3::x() * -half),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3(pos + na::Vector3::y() * half),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3(pos + na::Vector3::y() * -half),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3(pos + na::Vector3::z() * half),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3(pos + na::Vector3::z() * -half),
+                    color: render_color_vec4(color),
+                },
+            ],
+        );
 
         PointMarker {
             containers: self.containers.clone(),
@@ -169,7 +218,13 @@ impl DebugLines {
         }
     }
 
-    pub fn ray_markers(&self, transform: na::Projective3<f32>, pos_direction_colors: impl Iterator<Item=(na::Point3<f32>, na::Vector3<f32>, na::Vector4<f32>)>) -> RayMarkers {
+    pub fn ray_markers(
+        &self,
+        transform: na::Projective3<f32>,
+        pos_direction_colors: impl Iterator<
+            Item = (na::Point3<f32>, na::Vector3<f32>, na::Vector4<f32>),
+        >,
+    ) -> RayMarkers {
         struct PositionsIter {
             pos: na::Point3<f32>,
             dir: na::Vector3<f32>,
@@ -184,30 +239,38 @@ impl DebugLines {
                 match self.index {
                     0 => {
                         self.index = 1;
-                        Some(LinePoint { pos: render_p3(self.pos), color: render_color_vec4(self.color) })
-                    },
+                        Some(LinePoint {
+                            pos: render_p3(self.pos),
+                            color: render_color_vec4(self.color),
+                        })
+                    }
                     1 => {
                         self.index = 2;
-                        Some(LinePoint { pos: render_p3(self.pos + self.dir), color: render_color_vec4(na::Vector4::new(self.color.x, self.color.y, self.color.z, 0.0)) })
-                    },
+                        Some(LinePoint {
+                            pos: render_p3(self.pos + self.dir),
+                            color: render_color_vec4(na::Vector4::new(
+                                self.color.x,
+                                self.color.y,
+                                self.color.z,
+                                0.0,
+                            )),
+                        })
+                    }
                     _ => None,
                 }
             }
         }
 
-        let new_id = self.containers.borrow_mut()
-            .new_container(
-                transform,
-                pos_direction_colors
-                    .flat_map(|(pos, dir, color)|
-                                  PositionsIter {
-                                      pos,
-                                      dir,
-                                      color,
-                                      index: 0
-                                  })
-                    .collect(),
-            );
+        let new_id = self.containers.borrow_mut().new_container(
+            transform,
+            pos_direction_colors
+                .flat_map(|(pos, dir, color)| PositionsIter {
+                    pos,
+                    dir,
+                    color,
+                    index: 0,
+                }).collect(),
+        );
 
         RayMarkers {
             containers: self.containers.clone(),
@@ -215,38 +278,116 @@ impl DebugLines {
         }
     }
 
-    pub fn aabb_marker(&self, transform: na::Projective3<f32>, aabb: ncollide3d::bounding_volume::aabb::AABB<f32>, color: na::Vector4<f32>) -> AabbMarker {
+    pub fn aabb_marker(
+        &self,
+        transform: na::Projective3<f32>,
+        aabb: ncollide3d::bounding_volume::aabb::AABB<f32>,
+        color: na::Vector4<f32>,
+    ) -> AabbMarker {
         let a = aabb.mins();
         let b = aabb.maxs();
 
-        let new_id = self.containers.borrow_mut()
-            .new_container(transform,
-                           vec![
-                               LinePoint { pos: render_p3([a.x, a.y, a.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([b.x, a.y, a.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([a.x, a.y, a.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([a.x, b.y, a.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([a.x, a.y, a.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([a.x, a.y, b.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([a.x, b.y, b.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([b.x, b.y, b.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([b.x, a.y, b.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([b.x, b.y, b.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([b.x, b.y, a.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([b.x, b.y, b.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([a.x, b.y, a.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([b.x, b.y, a.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([a.x, b.y, a.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([a.x, b.y, b.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([a.x, a.y, b.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([a.x, b.y, b.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([a.x, a.y, b.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([b.x, a.y, b.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([b.x, a.y, a.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([b.x, b.y, a.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([b.x, a.y, a.z].into()), color: render_color_vec4(color) },
-                               LinePoint { pos: render_p3([b.x, a.y, b.z].into()), color: render_color_vec4(color) },
-                           ]);
+        let new_id = self.containers.borrow_mut().new_container(
+            transform,
+            vec![
+                LinePoint {
+                    pos: render_p3([a.x, a.y, a.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([b.x, a.y, a.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([a.x, a.y, a.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([a.x, b.y, a.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([a.x, a.y, a.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([a.x, a.y, b.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([a.x, b.y, b.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([b.x, b.y, b.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([b.x, a.y, b.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([b.x, b.y, b.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([b.x, b.y, a.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([b.x, b.y, b.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([a.x, b.y, a.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([b.x, b.y, a.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([a.x, b.y, a.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([a.x, b.y, b.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([a.x, a.y, b.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([a.x, b.y, b.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([a.x, a.y, b.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([b.x, a.y, b.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([b.x, a.y, a.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([b.x, b.y, a.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([b.x, a.y, a.z].into()),
+                    color: render_color_vec4(color),
+                },
+                LinePoint {
+                    pos: render_p3([b.x, a.y, b.z].into()),
+                    color: render_color_vec4(color),
+                },
+            ],
+        );
 
         AabbMarker {
             containers: self.containers.clone(),
@@ -254,11 +395,22 @@ impl DebugLines {
         }
     }
 
-    pub fn rect_marker(&self, transform: na::Projective3<f32>, size: na::Vector2<f32>, color: na::Vector4<f32>) -> RectMarker {
+    pub fn rect_marker(
+        &self,
+        transform: na::Projective3<f32>,
+        size: na::Vector2<f32>,
+        color: na::Vector4<f32>,
+    ) -> RectMarker {
         RectMarker::new(self.containers.clone(), transform, size, color)
     }
 
-    pub fn grid_marker(&self, transform: na::Projective3<f32>, spacing: f32, count: i32, color: na::Vector4<f32>) -> GridMarker {
+    pub fn grid_marker(
+        &self,
+        transform: na::Projective3<f32>,
+        spacing: f32,
+        count: i32,
+        color: na::Vector4<f32>,
+    ) -> GridMarker {
         let mut lines = Vec::with_capacity((count * 2 + 4) as usize);
 
         let mut half_count = count / 2;
@@ -270,20 +422,31 @@ impl DebugLines {
             let start = na::Point3::new(x as f32 * spacing, -half_count as f32 * spacing, 0.0);
             let end = na::Point3::new(x as f32 * spacing, half_count as f32 * spacing, 0.0);
 
-            lines.push(LinePoint { pos: render_p3(start), color: render_color_vec4(color) });
-            lines.push(LinePoint { pos: render_p3(end), color: render_color_vec4(color) });
+            lines.push(LinePoint {
+                pos: render_p3(start),
+                color: render_color_vec4(color),
+            });
+            lines.push(LinePoint {
+                pos: render_p3(end),
+                color: render_color_vec4(color),
+            });
         }
 
         for y in -half_count..=half_count {
             let start = na::Point3::new(-half_count as f32 * spacing, y as f32 * spacing, 0.0);
             let end = na::Point3::new(half_count as f32 * spacing, y as f32 * spacing, 0.0);
 
-            lines.push(LinePoint { pos: render_p3(start), color: render_color_vec4(color) });
-            lines.push(LinePoint { pos: render_p3(end), color: render_color_vec4(color) });
+            lines.push(LinePoint {
+                pos: render_p3(start),
+                color: render_color_vec4(color),
+            });
+            lines.push(LinePoint {
+                pos: render_p3(end),
+                color: render_color_vec4(color),
+            });
         }
 
-        let new_id = self.containers.borrow_mut()
-            .new_container(transform, lines);
+        let new_id = self.containers.borrow_mut().new_container(transform, lines);
 
         GridMarker {
             containers: self.containers.clone(),
@@ -336,14 +499,17 @@ pub struct RectMarker {
 }
 
 impl RectMarker {
-    fn new(containers: Rc<RefCell<SharedDebugLines>>, transform: na::Projective3<f32>, size: na::Vector2<f32>, color: na::Vector4<f32>) -> RectMarker {
-        let id = containers.borrow_mut()
+    fn new(
+        containers: Rc<RefCell<SharedDebugLines>>,
+        transform: na::Projective3<f32>,
+        size: na::Vector2<f32>,
+        color: na::Vector4<f32>,
+    ) -> RectMarker {
+        let id = containers
+            .borrow_mut()
             .new_container(transform, Vec::with_capacity(8));
 
-        let marker = RectMarker {
-            id,
-            containers,
-        };
+        let marker = RectMarker { id, containers };
 
         marker.update_lines(size, color);
         marker
@@ -363,17 +529,41 @@ impl RectMarker {
             let a = na::Point3::new(c.x, 0.0, 0.0);
             let b = na::Point3::new(0.0, c.y, 0.0);
 
-            lines.push(LinePoint { pos: render_p3(pos), color: render_color_vec4(color) });
-            lines.push(LinePoint { pos: render_p3(a), color: render_color_vec4(color) });
+            lines.push(LinePoint {
+                pos: render_p3(pos),
+                color: render_color_vec4(color),
+            });
+            lines.push(LinePoint {
+                pos: render_p3(a),
+                color: render_color_vec4(color),
+            });
 
-            lines.push(LinePoint { pos: render_p3(a), color: render_color_vec4(color) });
-            lines.push(LinePoint { pos: render_p3(c), color: render_color_vec4(color) });
+            lines.push(LinePoint {
+                pos: render_p3(a),
+                color: render_color_vec4(color),
+            });
+            lines.push(LinePoint {
+                pos: render_p3(c),
+                color: render_color_vec4(color),
+            });
 
-            lines.push(LinePoint { pos: render_p3(c), color: render_color_vec4(color) });
-            lines.push(LinePoint { pos: render_p3(b), color: render_color_vec4(color) });
+            lines.push(LinePoint {
+                pos: render_p3(c),
+                color: render_color_vec4(color),
+            });
+            lines.push(LinePoint {
+                pos: render_p3(b),
+                color: render_color_vec4(color),
+            });
 
-            lines.push(LinePoint { pos: render_p3(pos), color: render_color_vec4(color) });
-            lines.push(LinePoint { pos: render_p3(b), color: render_color_vec4(color) });
+            lines.push(LinePoint {
+                pos: render_p3(pos),
+                color: render_color_vec4(color),
+            });
+            lines.push(LinePoint {
+                pos: render_p3(b),
+                color: render_color_vec4(color),
+            });
         }
     }
 
@@ -430,7 +620,10 @@ pub struct PointMarker {
 impl PointMarker {
     pub fn update_position(&self, pos: na::Point3<f32>) {
         if let Some(data) = self.containers.borrow_mut().get_container_mut(self.id) {
-            data.transform = na::convert(na::Isometry3::from_parts(na::Translation3::from_vector(pos.coords), na::UnitQuaternion::identity()));
+            data.transform = na::convert(na::Isometry3::from_parts(
+                na::Translation3::from_vector(pos.coords),
+                na::UnitQuaternion::identity(),
+            ));
         }
     }
 }

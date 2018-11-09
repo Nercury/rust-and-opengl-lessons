@@ -9,12 +9,7 @@ pub struct Viewport {
 
 impl Viewport {
     pub fn for_window(w: i32, h: i32) -> Viewport {
-        Viewport {
-            x: 0,
-            y: 0,
-            w,
-            h
-        }
+        Viewport { x: 0, y: 0, w, h }
     }
 
     pub fn update_size(&mut self, w: i32, h: i32) {

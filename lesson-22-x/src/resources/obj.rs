@@ -1,7 +1,7 @@
-use tobj;
 use mesh;
-use std::path::{Path};
 use resources::{ResourcePath, ResourcePathBuf};
+use std::path::Path;
+use tobj;
 
 #[derive(Debug, Fail)]
 pub enum Error {
@@ -25,7 +25,9 @@ pub struct ModelsWithMaterials {
 impl ModelsWithMaterials {
     pub fn load(root_path: &Path, resource_path: &ResourcePath) -> Result<mesh::MeshSet, Error> {
         let fs_path = super::resource_name_to_path(root_path, resource_path);
-        let resource_dir = resource_path.parent().ok_or(Error::ResourcePathMustNotBeEmpty)?;
+        let resource_dir = resource_path
+            .parent()
+            .ok_or(Error::ResourcePathMustNotBeEmpty)?;
 
         let (models, materials) = tobj::load_obj(&fs_path)?;
 
@@ -38,17 +40,19 @@ impl ModelsWithMaterials {
                 } else {
                     Some(resource_dir.join(&platform_path_to_rel_resource_path(&m.diffuse_texture)))
                 },
-                bump_map: match m.unknown_param.iter()
-                    .filter(|(k, _)|
-                        k.to_lowercase() == "map_bump" || k.to_lowercase() == "bump"
-                    ).map(|(_, v)| v)
+                bump_map: match m
+                    .unknown_param
+                    .iter()
+                    .filter(|(k, _)| k.to_lowercase() == "map_bump" || k.to_lowercase() == "bump")
+                    .map(|(_, v)| v)
                     .next()
-                    {
-                        Some(ref name) => Some(resource_dir.join(&platform_path_to_rel_resource_path(name))),
-                        None => None,
+                {
+                    Some(ref name) => {
+                        Some(resource_dir.join(&platform_path_to_rel_resource_path(name)))
                     }
-            })
-            .collect::<Vec<_>>();
+                    None => None,
+                },
+            }).collect::<Vec<_>>();
 
         let mapped_meshes = models
             .into_iter()
@@ -63,9 +67,16 @@ impl ModelsWithMaterials {
 }
 
 fn map_model_to_mesh(model: tobj::Model, mapped_materials: &[mesh::Material]) -> mesh::Mesh {
-
-    let normals = if model.mesh.normals.len() == 0 { None } else { Some(model.mesh.normals) };
-    let texcoords = if model.mesh.texcoords.len() == 0 { None } else { Some(model.mesh.texcoords) };
+    let normals = if model.mesh.normals.len() == 0 {
+        None
+    } else {
+        Some(model.mesh.normals)
+    };
+    let texcoords = if model.mesh.texcoords.len() == 0 {
+        None
+    } else {
+        Some(model.mesh.texcoords)
+    };
     let mut vertices = Vec::with_capacity(model.mesh.positions.len() / 3);
 
     for (index, p) in model.mesh.positions.chunks(3).enumerate() {
@@ -83,22 +94,30 @@ fn map_model_to_mesh(model: tobj::Model, mapped_materials: &[mesh::Material]) ->
         });
     }
 
-    let primitives = model.mesh.indices.chunks(3)
-        .filter_map(|c| if c.len() == 3 {
-            Some(mesh::Primitive::Triangle(c[0], c[1], c[2]))
-        } else {
-            None
-        })
-        .collect::<Vec<_>>();
+    let primitives = model
+        .mesh
+        .indices
+        .chunks(3)
+        .filter_map(|c| {
+            if c.len() == 3 {
+                Some(mesh::Primitive::Triangle(c[0], c[1], c[2]))
+            } else {
+                None
+            }
+        }).collect::<Vec<_>>();
 
     let mut mesh = mesh::Mesh {
         name: Some(model.name),
         vertices,
         primitives,
         material_index: match model.mesh.material_id {
-            Some(id) => if id >= mapped_materials.len() { None } else { Some(id) },
+            Some(id) => if id >= mapped_materials.len() {
+                None
+            } else {
+                Some(id)
+            },
             None => None,
-        }
+        },
     };
 
     mesh.calculate_tangents();

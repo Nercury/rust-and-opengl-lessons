@@ -1,131 +1,79 @@
+#![forbid(unsafe_code)]
+
 extern crate nalgebra as na;
+#[macro_use]
+extern crate log;
 
 mod tree;
 
-pub use tree::{Events, Tree, Leaf, Base};
-
-pub mod controls {
-    use super::*;
-
-    pub struct Text;
-
-    impl Element for Text {
-        fn inflate(&mut self, _base: Base) {
-
-        }
-
-        fn resize(&mut self, mut _base: Base, size: BoxSize) -> Option<ResolvedSize> {
-            match size {
-                BoxSize::Hidden => None,
-                BoxSize::Auto => Some(ResolvedSize { w: 100, h: 60 }),
-                BoxSize::Fixed { w, h } => Some(ResolvedSize { w, h }),
-            }
-        }
-
-        fn update(&mut self, mut _base: Base, _delta: f32) {
-            println!("update Text");
-        }
-    }
-
-    pub struct Button {
-        margin: i32,
-        step: i32,
-        delta_acc: f32,
-        last_size: Option<BoxSize>,
-    }
-
-    impl Button {
-        pub fn new() -> Button {
-            Button {
-                margin:10,
-                step: 1,
-                delta_acc: 0.0,
-                last_size: None,
-            }
-        }
-    }
-
-    impl Element for Button {
-        fn inflate(&mut self, mut base: Base) {
-            base.add(Text);
-            base.add(Text);
-            base.enable_update(true);
-        }
-
-        fn resize(&mut self, mut base: Base, size: BoxSize) -> Option<ResolvedSize> {
-            self.last_size = Some(size);
-            base.layout_vertical(size, self.margin)
-        }
-
-        fn update(&mut self, mut base: Base, delta: f32) {
-            self.delta_acc += delta;
-            if self.delta_acc > 0.05 {
-                self.margin += self.step;
-                if self.margin > 20 || self.margin < 1 {
-                    self.step = -self.step;
-                }
-
-                if let Some(BoxSize::Fixed { w, h }) = self.last_size {
-                    base.layout_vertical(BoxSize::Fixed { w: w, h: h }, self.margin);
-                } else {
-                    base.layout_vertical(BoxSize::Auto, self.margin);
-                }
-
-                self.delta_acc = 0.0;
-            }
-        }
-    }
-
-    pub struct Fill {
-        fixed_size: Option<(i32, i32)>,
-    }
-
-    impl Fill {
-        pub fn new() -> Fill {
-            Fill {
-                fixed_size: None,
-            }
-        }
-    }
-
-    impl Element for Fill {
-        fn inflate(&mut self, mut base: Base) {
-            base.add(Text);
-            base.add(Button::new());
-        }
-
-        fn resize(&mut self, mut base: Base, size: BoxSize) -> Option<ResolvedSize> {
-            base.layout_vertical(size, 5)
-        }
-    }
-}
+pub use tree::{Base, Events, LastResolvedSize, Leaf, Tree};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum BoxSize {
     Hidden,
     Auto,
-    Fixed { w: i32, h: i32 }
+    Fixed { w: i32, h: i32 },
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct ResolvedSize {
-    w: i32, h: i32,
+    pub w: i32,
+    pub h: i32,
+}
+
+impl ResolvedSize {
+    pub fn from_flow(flow: FlowDirection, width: i32, forward_val: i32) -> ResolvedSize {
+        match flow {
+            FlowDirection::Horizontal => ResolvedSize { w: forward_val, h: width },
+            FlowDirection::Vertical => ResolvedSize { w: width, h: forward_val },
+        }
+    }
+
+    pub fn to_flow(&self, flow: FlowDirection) -> (i32, i32) {
+        match flow {
+            FlowDirection::Horizontal => (self.h, self.w),
+            FlowDirection::Vertical => (self.w, self.h),
+        }
+    }
+
+    pub fn par(&self, flow: FlowDirection) -> i32 {
+        match flow { FlowDirection::Vertical => self.h, FlowDirection::Horizontal => self.w }
+    }
+
+    pub fn ort(&self, flow: FlowDirection) -> i32 {
+        match flow { FlowDirection::Vertical => self.w, FlowDirection::Horizontal => self.h }
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum FlowDirection {
+    Horizontal,
+    Vertical
 }
 
 #[derive(Debug, Copy, Clone)]
 pub enum Effect {
-    Add { id: Ix, parent_id: Option<Ix> },
-    Remove { id: Ix },
-    Resize { id: Ix, size: Option<(i32, i32)> },
-    Transform { id: Ix, absolute_transform: na::Projective3<f32> },
+    Add {
+        id: Ix,
+        parent_id: Option<Ix>,
+    },
+    Remove {
+        id: Ix,
+    },
+    Resize {
+        id: Ix,
+        size: Option<(i32, i32)>,
+    },
+    Transform {
+        id: Ix,
+        absolute_transform: na::Projective3<f32>,
+    },
 }
 
 pub trait Element {
-
-    fn inflate(&mut self, _base: Base) {}
-    fn resize(&mut self, _base: Base, _size: BoxSize) -> Option<ResolvedSize>;
-    fn update(&mut self, _base: Base, _delta: f32) {}
-
+    fn inflate(&mut self, _base: &mut Base) {}
+    fn resize(&mut self, _base: &mut Base);
+    fn update(&mut self, _base: &mut Base, _delta: f32) {}
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]

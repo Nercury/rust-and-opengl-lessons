@@ -73,12 +73,16 @@ impl Buffer where {
         }
     }
 
-    pub unsafe fn map_buffer_range_write_invalidate<'r, T>(&self, offset: usize, size: usize) -> Option<MappedBuffer<'r, T>> {
+    pub unsafe fn map_buffer_range_write_invalidate<'r, T>(
+        &self,
+        offset: usize,
+        size: usize,
+    ) -> Option<MappedBuffer<'r, T>> {
         let ptr = self.gl.MapBufferRange(
-            self.buffer_type, // target
+            self.buffer_type,                                               // target
             (offset * ::std::mem::size_of::<T>()) as gl::types::GLsizeiptr, // offset
-            (size * ::std::mem::size_of::<T>()) as gl::types::GLsizeiptr, //  length
-            gl::MAP_WRITE_BIT | gl::MAP_INVALIDATE_RANGE_BIT, // usage
+            (size * ::std::mem::size_of::<T>()) as gl::types::GLsizeiptr,   //  length
+            gl::MAP_WRITE_BIT | gl::MAP_INVALIDATE_RANGE_BIT,               // usage
         );
         if ptr == ::std::ptr::null_mut() {
             return None;
@@ -141,7 +145,7 @@ impl VertexArray {
 
         VertexArray {
             gl: gl.clone(),
-            vao
+            vao,
         }
     }
 

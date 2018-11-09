@@ -1,9 +1,8 @@
-use render_gl::data;
-use nalgebra as na;
 use gl;
+use nalgebra as na;
+use render_gl::data;
 
-#[derive(VertexAttribPointers)]
-#[derive(Copy, Clone, Debug)]
+#[derive(VertexAttribPointers, Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct LinePoint {
     #[location = "0"]
@@ -57,7 +56,10 @@ impl Buffers {
     pub fn upload_vertices(&self, items: impl Iterator<Item = LinePoint>) {
         if self.vbo_capacity > 0 {
             self.lines_vbo.bind();
-            if let Some(mut buffer) = unsafe { self.lines_vbo.map_buffer_range_write_invalidate::<LinePoint>(0, self.vbo_capacity) } {
+            if let Some(mut buffer) = unsafe {
+                self.lines_vbo
+                    .map_buffer_range_write_invalidate::<LinePoint>(0, self.vbo_capacity)
+            } {
                 for (index, item) in items.enumerate().take(self.vbo_capacity) {
                     *unsafe { buffer.get_unchecked_mut(index) } = item;
                 }

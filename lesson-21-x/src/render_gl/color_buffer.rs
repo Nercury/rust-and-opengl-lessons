@@ -1,5 +1,5 @@
-use nalgebra as na;
 use gl;
+use nalgebra as na;
 
 pub struct ColorBuffer;
 

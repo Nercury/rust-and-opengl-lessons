@@ -18,11 +18,13 @@ impl RenderSelectables {
         let selected = selectables.get_selected_aabb();
 
         self.selected = match (selected.clone(), self.selected.take()) {
-            (Some((_, c)), None) => Some(debug_lines.aabb_marker(c.isometry, c.aabb, [1.0, 1.0, 1.0, 1.0].into())),
+            (Some((_, c)), None) => {
+                Some(debug_lines.aabb_marker(c.isometry, c.aabb, [1.0, 1.0, 1.0, 1.0].into()))
+            }
             (Some((_, c)), Some(item)) => {
                 item.update_isometry(c.isometry);
                 Some(item)
-            },
+            }
             _ => None,
         };
 
@@ -34,16 +36,18 @@ impl RenderSelectables {
                 } else {
                     Some((hover_handle, hover_aabb))
                 }
-            },
+            }
             (_, hover) => hover,
         };
 
         self.hover = match (hover, self.hover.take()) {
-            (Some((_, c)), None) => Some(debug_lines.aabb_marker(c.isometry, c.aabb, [1.0, 1.0, 1.0, 0.3].into())),
+            (Some((_, c)), None) => {
+                Some(debug_lines.aabb_marker(c.isometry, c.aabb, [1.0, 1.0, 1.0, 0.3].into()))
+            }
             (Some((_, c)), Some(item)) => {
                 item.update_isometry(c.isometry);
                 Some(item)
-            },
+            }
             _ => None,
         };
     }

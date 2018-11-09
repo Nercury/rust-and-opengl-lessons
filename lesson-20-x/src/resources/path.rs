@@ -41,7 +41,9 @@ impl AsRef<ResourcePath> for ResourcePathBuf {
 
 impl<'a> From<&'a ResourcePath> for ResourcePathBuf {
     fn from(other: &ResourcePath) -> Self {
-        ResourcePathBuf { inner: other.inner.into() }
+        ResourcePathBuf {
+            inner: other.inner.into(),
+        }
     }
 }
 
@@ -73,7 +75,7 @@ impl ResourcePath {
                 None
             } else {
                 Some(ResourcePath::from_inner(""))
-            }
+            },
         }
     }
 
@@ -81,7 +83,7 @@ impl ResourcePath {
         self.inner.into()
     }
 
-    pub fn items(&self) -> impl Iterator<Item=&str> {
+    pub fn items(&self) -> impl Iterator<Item = &str> {
         self.inner.split('/')
     }
 
@@ -101,11 +103,15 @@ impl ResourcePath {
         let left = self.as_clean_str();
         let right = other.as_ref().as_clean_str();
 
-        if left.is_empty() { return ResourcePathBuf::from(right.as_ref()); }
-        if right.is_empty() { return ResourcePathBuf::from(left.as_ref()); }
+        if left.is_empty() {
+            return ResourcePathBuf::from(right.as_ref());
+        }
+        if right.is_empty() {
+            return ResourcePathBuf::from(left.as_ref());
+        }
 
         ResourcePathBuf {
-            inner: [left, "/", right].concat()
+            inner: [left, "/", right].concat(),
         }
     }
 }
@@ -116,9 +122,7 @@ use std::fmt;
 
 impl fmt::Debug for ResourcePath {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        f.debug_tuple("ResourcePath")
-            .field(&&self.inner)
-            .finish()
+        f.debug_tuple("ResourcePath").field(&&self.inner).finish()
     }
 }
 
@@ -130,9 +134,7 @@ impl fmt::Display for ResourcePath {
 
 impl fmt::Debug for ResourcePathBuf {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        f.debug_tuple("ResourcePathBuf")
-            .field(&self.inner)
-            .finish()
+        f.debug_tuple("ResourcePathBuf").field(&self.inner).finish()
     }
 }
 
@@ -141,4 +143,3 @@ impl fmt::Display for ResourcePathBuf {
         fmt::Display::fmt(&self.inner, f)
     }
 }
-

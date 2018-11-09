@@ -1,9 +1,8 @@
-use render_gl::data;
-use render_gl::buffer::{Buffer, VertexArray};
 use gl;
+use render_gl::buffer::{Buffer, VertexArray};
+use render_gl::data;
 
-#[derive(VertexAttribPointers)]
-#[derive(Copy, Clone, Debug)]
+#[derive(VertexAttribPointers, Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct LinePoint {
     #[location = "0"]

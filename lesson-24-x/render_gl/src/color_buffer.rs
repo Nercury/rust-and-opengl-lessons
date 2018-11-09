@@ -1,5 +1,5 @@
-use na;
 use gl;
+use na;
 
 pub struct ColorBuffer;
 

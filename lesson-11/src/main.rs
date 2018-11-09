@@ -1,20 +1,21 @@
-extern crate sdl2;
 extern crate gl;
-extern crate vec_2_10_10_10;
 extern crate half;
-#[macro_use] extern crate failure;
-#[macro_use] extern crate lesson_11_render_gl_derive as render_gl_derive;
+extern crate sdl2;
+extern crate vec_2_10_10_10;
+#[macro_use]
+extern crate failure;
+#[macro_use]
+extern crate lesson_11_render_gl_derive as render_gl_derive;
 
 pub mod render_gl;
 pub mod resources;
 
-use render_gl::data;
 use failure::err_msg;
+use render_gl::data;
 use resources::Resources;
 use std::path::Path;
 
-#[derive(VertexAttribPointers)]
-#[derive(Copy, Clone, Debug)]
+#[derive(VertexAttribPointers, Copy, Clone, Debug)]
 #[repr(C, packed)]
 struct Vertex {
     #[location = "0"]
@@ -47,7 +48,9 @@ fn run() -> Result<(), failure::Error> {
         .build()?;
 
     let _gl_context = window.gl_create_context().map_err(err_msg)?;
-    let gl = gl::Gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void);
+    let gl = gl::Gl::load_with(|s| {
+        video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void
+    });
 
     // set up shader program
 
@@ -58,16 +61,16 @@ fn run() -> Result<(), failure::Error> {
     let vertices: Vec<Vertex> = vec![
         Vertex {
             pos: (0.5, -0.5, 0.0).into(),
-            clr: (1.0, 0.0, 0.0, 1.0).into()
+            clr: (1.0, 0.0, 0.0, 1.0).into(),
         }, // bottom right
         Vertex {
             pos: (-0.5, -0.5, 0.0).into(),
-            clr: (0.0, 1.0, 0.0, 1.0).into()
+            clr: (0.0, 1.0, 0.0, 1.0).into(),
         }, // bottom left
         Vertex {
-            pos: (0.0,  0.5, 0.0).into(),
-            clr: (0.0, 0.0, 1.0, 1.0).into()
-        }  // top
+            pos: (0.0, 0.5, 0.0).into(),
+            clr: (0.0, 0.0, 1.0, 1.0).into(),
+        }, // top
     ];
 
     let mut vbo: gl::types::GLuint = 0;
@@ -116,8 +119,8 @@ fn run() -> Result<(), failure::Error> {
     'main: loop {
         for event in event_pump.poll_iter() {
             match event {
-                sdl2::event::Event::Quit {..} => break 'main,
-                _ => {},
+                sdl2::event::Event::Quit { .. } => break 'main,
+                _ => {}
             }
         }
 
@@ -132,8 +135,8 @@ fn run() -> Result<(), failure::Error> {
             gl.BindVertexArray(vao);
             gl.DrawArrays(
                 gl::TRIANGLES, // mode
-                0, // starting index in the enabled arrays
-                3 // number of indices to be rendered
+                0,             // starting index in the enabled arrays
+                3,             // number of indices to be rendered
             );
         }
 
@@ -148,7 +151,13 @@ pub fn failure_to_string(e: failure::Error) -> String {
 
     let mut result = String::new();
 
-    for (i, cause) in e.iter_chain().collect::<Vec<_>>().into_iter().rev().enumerate() {
+    for (i, cause) in e
+        .iter_chain()
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .enumerate()
+    {
         if i > 0 {
             let _ = writeln!(&mut result, "   Which caused the following issue:");
         }

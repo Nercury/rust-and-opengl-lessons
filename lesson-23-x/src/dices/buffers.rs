@@ -1,10 +1,9 @@
 use gl;
-use render_gl::{data};
-use render_gl::buffer::{Buffer, VertexArray};
 use mesh;
+use render_gl::buffer::{Buffer, VertexArray};
+use render_gl::data;
 
-#[derive(VertexAttribPointers)]
-#[derive(Copy, Clone, Debug)]
+#[derive(VertexAttribPointers, Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct ModelVertex {
     #[location = "0"]
@@ -26,8 +25,9 @@ pub struct Buffers {
 
 impl Buffers {
     pub fn new(gl: &gl::Gl, mesh: &mesh::Mesh) -> Buffers {
-
-        let vbo_data = mesh.vertices.clone()
+        let vbo_data = mesh
+            .vertices
+            .clone()
             .into_iter()
             .map(|v| {
                 let tv = v.tangents.unwrap_or_else(|| {
@@ -48,8 +48,7 @@ impl Buffers {
                     t: (tv.tangent.x, tv.tangent.y, tv.tangent.z).into(),
                     n: (normal.x, normal.y, normal.z).into(),
                 }
-            })
-            .collect::<Vec<_>>();
+            }).collect::<Vec<_>>();
 
         let ebo_data = mesh.triangle_indices();
 

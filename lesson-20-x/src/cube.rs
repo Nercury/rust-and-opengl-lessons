@@ -1,12 +1,11 @@
-use gl;
 use failure;
-use render_gl::{self, data, buffer};
-use resources::Resources;
-use nalgebra as na;
+use gl;
 use mesh;
+use nalgebra as na;
+use render_gl::{self, buffer, data};
+use resources::Resources;
 
-#[derive(VertexAttribPointers)]
-#[derive(Copy, Clone, Debug)]
+#[derive(VertexAttribPointers, Copy, Clone, Debug)]
 #[repr(C, packed)]
 struct Vertex {
     #[location = "0"]
@@ -39,8 +38,11 @@ pub struct Cube {
 }
 
 impl Cube {
-    pub fn new(res: &Resources, gl: &gl::Gl, debug_lines: &render_gl::DebugLines) -> Result<Cube, failure::Error> {
-
+    pub fn new(
+        res: &Resources,
+        gl: &gl::Gl,
+        debug_lines: &render_gl::DebugLines,
+    ) -> Result<Cube, failure::Error> {
         // set up shader program
 
         let program = render_gl::Program::from_res(gl, res, "shaders/cube")?;
@@ -58,32 +60,36 @@ impl Cube {
         let material = imported_models.materials.into_iter().next();
         let material_index = material.as_ref().map(|_| 0); // it is first or None
 
-        let texture = material.as_ref()
-            .and_then(|m| m.diffuse_map.as_ref()
-                .and_then(|resource_path|
-                    render_gl::Texture::from_res_rgb(&resource_path)
-                        .with_gen_mipmaps()
-                        .load(gl, res)
-                        .map_err(|e| println!("Error loading {}: {}", resource_path, e))
-                        .ok()
-                ));
-        let texture_normals = material.as_ref()
-            .and_then(|m| m.bump_map.as_ref()
-                .and_then(|resource_path|
-                    render_gl::Texture::from_res_rgb(&resource_path)
-                        .with_gen_mipmaps()
-                        .load(gl, res)
-                        .map_err(|e| println!("Error loading {}: {}", resource_path, e))
-                        .ok()
-                ));
+        let texture = material.as_ref().and_then(|m| {
+            m.diffuse_map.as_ref().and_then(|resource_path| {
+                render_gl::Texture::from_res_rgb(&resource_path)
+                    .with_gen_mipmaps()
+                    .load(gl, res)
+                    .map_err(|e| println!("Error loading {}: {}", resource_path, e))
+                    .ok()
+            })
+        });
+        let texture_normals = material.as_ref().and_then(|m| {
+            m.bump_map.as_ref().and_then(|resource_path| {
+                render_gl::Texture::from_res_rgb(&resource_path)
+                    .with_gen_mipmaps()
+                    .load(gl, res)
+                    .map_err(|e| println!("Error loading {}: {}", resource_path, e))
+                    .ok()
+            })
+        });
 
         // match mesh to material id and get the mesh
-        let mesh = imported_models.meshes.into_iter()
+        let mesh = imported_models
+            .meshes
+            .into_iter()
             .filter(|model| model.material_index == material_index)
             .next()
             .expect("expected obj file to contain a mesh");
 
-        let vbo_data = mesh.vertices.clone()
+        let vbo_data = mesh
+            .vertices
+            .clone()
             .into_iter()
             .map(|v| {
                 let tv = v.tangents.unwrap_or_else(|| {
@@ -103,10 +109,9 @@ impl Cube {
                     uv: (uv.x, -uv.y).into(),
                     t: (tv.tangent.x, tv.tangent.y, tv.tangent.z).into(),
                     b: (tv.bitangent.x, tv.bitangent.y, tv.bitangent.z).into(),
-                    n: (normal.x, normal.y, normal.z).into()
+                    n: (normal.x, normal.y, normal.z).into(),
                 }
-            })
-            .collect::<Vec<_>>();
+            }).collect::<Vec<_>>();
 
         let ebo_data = mesh.triangle_indices();
 
@@ -146,30 +151,43 @@ impl Cube {
             _ebo: ebo,
             index_count: ebo_data.len() as i32,
             vao,
-            _debug_tangent_normals: vbo_data.iter().map(|v| debug_lines.ray_marker(
-                na::Point3::new(v.pos.d0, v.pos.d1, v.pos.d2),
-                na::Vector3::new(v.n.d0, v.n.d1, v.n.d2) * 0.2,
-                na::Vector4::new(0.0, 0.0, 1.0, 1.0)
-            )).chain(vbo_data.iter().map(|v| debug_lines.ray_marker(
-                na::Point3::new(v.pos.d0, v.pos.d1, v.pos.d2),
-                na::Vector3::new(v.t.d0, v.t.d1, v.t.d2) * 0.2,
-                na::Vector4::new(0.0, 1.0, 0.0, 1.0)
-            ))).chain(vbo_data.iter().map(|v| debug_lines.ray_marker(
-                na::Point3::new(v.pos.d0, v.pos.d1, v.pos.d2),
-                na::Vector3::new(v.b.d0, v.b.d1, v.b.d2) * 0.2,
-                na::Vector4::new(1.0, 0.0, 0.0, 1.0)
-            )))
-                .collect(),
+            _debug_tangent_normals: vbo_data
+                .iter()
+                .map(|v| {
+                    debug_lines.ray_marker(
+                        na::Point3::new(v.pos.d0, v.pos.d1, v.pos.d2),
+                        na::Vector3::new(v.n.d0, v.n.d1, v.n.d2) * 0.2,
+                        na::Vector4::new(0.0, 0.0, 1.0, 1.0),
+                    )
+                }).chain(vbo_data.iter().map(|v| {
+                    debug_lines.ray_marker(
+                        na::Point3::new(v.pos.d0, v.pos.d1, v.pos.d2),
+                        na::Vector3::new(v.t.d0, v.t.d1, v.t.d2) * 0.2,
+                        na::Vector4::new(0.0, 1.0, 0.0, 1.0),
+                    )
+                })).chain(vbo_data.iter().map(|v| {
+                    debug_lines.ray_marker(
+                        na::Point3::new(v.pos.d0, v.pos.d1, v.pos.d2),
+                        na::Vector3::new(v.b.d0, v.b.d1, v.b.d2) * 0.2,
+                        na::Vector4::new(1.0, 0.0, 0.0, 1.0),
+                    )
+                })).collect(),
             _debug_normals: vec![],
-//            _debug_normals: vertices.iter().map(|v| debug_lines.ray_marker(
-//                na::Point3::new(v.pos.x, v.pos.y, v.pos.z),
-//                na::Vector3::new(v.normal.x, v.normal.y, v.normal.z) * 0.2,
-//                na::Vector4::new(0.1, 0.9, 0.1, 0.6)
-//            )).collect()
+            //            _debug_normals: vertices.iter().map(|v| debug_lines.ray_marker(
+            //                na::Point3::new(v.pos.x, v.pos.y, v.pos.z),
+            //                na::Vector3::new(v.normal.x, v.normal.y, v.normal.z) * 0.2,
+            //                na::Vector4::new(0.1, 0.9, 0.1, 0.6)
+            //            )).collect()
         })
     }
 
-    pub fn render(&self, gl: &gl::Gl, view_matrix: &na::Matrix4<f32>, proj_matrix: &na::Matrix4<f32>, camera_pos: &na::Vector3<f32>) {
+    pub fn render(
+        &self,
+        gl: &gl::Gl,
+        view_matrix: &na::Matrix4<f32>,
+        proj_matrix: &na::Matrix4<f32>,
+        camera_pos: &na::Vector3<f32>,
+    ) {
         self.program.set_used();
 
         if let (Some(loc), &Some(ref texture)) = (self.texture_location, &self.texture) {
@@ -177,7 +195,9 @@ impl Cube {
             self.program.set_uniform_1i(loc, 0);
         }
 
-        if let (Some(loc), &Some(ref texture)) = (self.texture_normals_location, &self.texture_normals) {
+        if let (Some(loc), &Some(ref texture)) =
+            (self.texture_normals_location, &self.texture_normals)
+        {
             texture.bind_at(1);
             self.program.set_uniform_1i(loc, 1);
         }

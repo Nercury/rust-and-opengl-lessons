@@ -1,6 +1,6 @@
-mod frame_profiler;
-mod event_count_profiler;
 mod buffers;
+mod event_count_profiler;
+mod frame_profiler;
 
-pub use self::frame_profiler::FrameProfiler;
 pub use self::event_count_profiler::EventCountProfiler;
+pub use self::frame_profiler::FrameProfiler;

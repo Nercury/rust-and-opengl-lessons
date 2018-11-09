@@ -1,5 +1,5 @@
+use std::path::{Path, PathBuf};
 use tobj;
-use std::path::{PathBuf, Path};
 
 #[derive(Debug, Fail)]
 pub enum Error {
@@ -43,9 +43,6 @@ impl ModelsWithMaterials {
             println!("material: {:#?}", obj);
         }
 
-        Ok(ModelsWithMaterials {
-            models,
-            materials,
-        })
+        Ok(ModelsWithMaterials { models, materials })
     }
 }

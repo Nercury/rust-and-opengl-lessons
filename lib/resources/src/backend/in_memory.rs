@@ -1,10 +1,10 @@
 use backend::{Backend, BackendSyncPoint};
-use std::sync::{RwLock, Arc};
 use std::collections::HashMap;
-use std::io;
 use std::hash::BuildHasherDefault;
+use std::io;
+use std::sync::{Arc, RwLock};
 use twox_hash::XxHash;
-use {ResourcePathBuf, ResourcePath, Error};
+use {Error, ResourcePath, ResourcePathBuf};
 
 #[derive(Debug)]
 struct Shared {
@@ -33,12 +33,13 @@ pub struct InMemory {
 impl InMemory {
     pub fn new() -> InMemory {
         InMemory {
-            shared: Arc::new(RwLock::new(Shared::new()))
+            shared: Arc::new(RwLock::new(Shared::new())),
         }
     }
 
     pub fn with<P: AsRef<ResourcePath>>(self, key: P, value: &[u8]) -> Self {
-        self.shared.write()
+        self.shared
+            .write()
             .expect("failed to lock InMemory for write")
             .insert(key.as_ref(), value);
         self
@@ -51,12 +52,18 @@ impl Backend for InMemory {
     }
 
     fn exists(&self, path: &ResourcePath) -> bool {
-        self.shared.read().expect("failed to lock InMemory for read")
-            .map.contains_key::<ResourcePath>( path.as_clean_str().as_ref())
+        self.shared
+            .read()
+            .expect("failed to lock InMemory for read")
+            .map
+            .contains_key::<ResourcePath>(path.as_clean_str().as_ref())
     }
 
     fn notify_changes_synced(&mut self, point: BackendSyncPoint) {
-        let mut shared_ref = self.shared.write().expect("failed to lock InMemory for write");
+        let mut shared_ref = self
+            .shared
+            .write()
+            .expect("failed to lock InMemory for write");
 
         if shared_ref.unsynced_change_time == Some(point) {
             shared_ref.unsynced_change_time = None;
@@ -64,15 +71,20 @@ impl Backend for InMemory {
     }
 
     fn new_changes(&mut self) -> Option<BackendSyncPoint> {
-        self.shared.read().expect("failed to lock InMemory for read")
+        self.shared
+            .read()
+            .expect("failed to lock InMemory for read")
             .unsynced_change_time
     }
 
     fn read_into(&mut self, path: &ResourcePath, output: &mut io::Write) -> Result<(), Error> {
-        let shared = self.shared.read().expect("failed to lock InMemory for read");
+        let shared = self
+            .shared
+            .read()
+            .expect("failed to lock InMemory for read");
         let item_ref = match shared.map.get(path) {
             None => return Err(Error::NotFound),
-            Some(val) => val
+            Some(val) => val,
         };
         output.write_all(&item_ref)?;
         Ok(())
@@ -82,7 +94,10 @@ impl Backend for InMemory {
         let mut data = Vec::new();
         buffer.read_to_end(&mut data)?;
 
-        let mut shared = self.shared.write().expect("failed to lock InMemory for write");
+        let mut shared = self
+            .shared
+            .write()
+            .expect("failed to lock InMemory for write");
         shared.map.insert(path.into(), data);
         shared.unsynced_change_time = Some(BackendSyncPoint::now());
 

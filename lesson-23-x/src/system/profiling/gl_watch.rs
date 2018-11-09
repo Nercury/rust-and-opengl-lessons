@@ -5,8 +5,7 @@ pub fn reset() {
 }
 
 #[cfg(not(feature = "gl_debug"))]
-pub fn reset() {
-}
+pub fn reset() {}
 
 #[cfg(feature = "gl_debug")]
 pub fn calls() -> usize {

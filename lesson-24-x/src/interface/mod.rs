@@ -1,13 +1,14 @@
-use ui::*;
-use ui::controls;
+use failure;
 use gl;
 use na;
 use render_gl::ColorBuffer;
 use render_gl::{DebugLines, RectMarker};
-use std::collections::HashMap;
-use std::collections::BTreeSet;
-use failure;
 use resources;
+use std::collections::BTreeSet;
+use std::collections::HashMap;
+use ui::*;
+
+mod controls;
 
 struct ControlInfo {
     _id: Ix,
@@ -42,7 +43,7 @@ impl ControlInfo {
                     na::Vector2::new((wh.0 - 1) as f32, (wh.1 - 1) as f32),
                     na::Vector4::new(1.0, 0.5, 0.2, 1.0),
                 ))
-            },
+            }
             (true, Some(wh), Some(t)) => {
                 let marker = self.marker.as_mut().unwrap();
                 marker.update_size_and_color(
@@ -50,12 +51,9 @@ impl ControlInfo {
                     na::Vector4::new(1.0, 0.5, 0.2, 1.0),
                 );
                 marker.update_transform(t * na::Translation3::new(1.0, 0.0, 0.0));
-            },
-            (false, _, _) => {
-            },
-            (true, _, _) => {
-                self.marker = None
-            },
+            }
+            (false, _, _) => {}
+            (true, _, _) => self.marker = None,
         }
     }
 }
@@ -72,7 +70,11 @@ pub struct Interface {
 }
 
 impl Interface {
-    pub fn new(gl: &gl::Gl, resources: &resources::Resources, size: BoxSize) -> Result<Interface, failure::Error> {
+    pub fn new(
+        gl: &gl::Gl,
+        resources: &resources::Resources,
+        size: BoxSize,
+    ) -> Result<Interface, failure::Error> {
         let tree = Tree::new();
 
         let events = tree.events();
@@ -109,19 +111,28 @@ impl Interface {
                     self.controls.get_mut(&id).map(|c| c.update_size(size));
                     self.flush_updates_set.insert(id);
                 }
-                Effect::Transform { id, absolute_transform } => {
-                    self.controls.get_mut(&id).map(|c| c.update_transform(&absolute_transform));
+                Effect::Transform {
+                    id,
+                    absolute_transform,
+                } => {
+                    self.controls
+                        .get_mut(&id)
+                        .map(|c| c.update_transform(&absolute_transform));
                     self.flush_updates_set.insert(id);
                 }
                 Effect::Remove { id } => {
-                    self.controls.remove(&id).expect("process_events: self.controls.remove(&id)");
+                    self.controls
+                        .remove(&id)
+                        .expect("process_events: self.controls.remove(&id)");
                 }
             }
         }
 
         for id in &self.flush_updates_set {
             let debug_lines = &self.debug_lines;
-            self.controls.get_mut(id).map(|c| c.flush_updates(debug_lines));
+            self.controls
+                .get_mut(id)
+                .map(|c| c.flush_updates(debug_lines));
         }
     }
 

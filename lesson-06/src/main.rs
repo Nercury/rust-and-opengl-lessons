@@ -1,5 +1,5 @@
-extern crate sdl2;
 extern crate gl;
+extern crate sdl2;
 
 pub mod render_gl;
 
@@ -20,30 +20,33 @@ fn main() {
         .unwrap();
 
     let _gl_context = window.gl_create_context().unwrap();
-    let gl = gl::Gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void);
+    let gl = gl::Gl::load_with(|s| {
+        video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void
+    });
 
     // set up shader program
 
-    use std::ffi::{CString};
+    use std::ffi::CString;
     let vert_shader = render_gl::Shader::from_vert_source(
-        &gl, &CString::new(include_str!("triangle.vert")).unwrap()
+        &gl,
+        &CString::new(include_str!("triangle.vert")).unwrap(),
     ).unwrap();
 
     let frag_shader = render_gl::Shader::from_frag_source(
-        &gl, &CString::new(include_str!("triangle.frag")).unwrap()
+        &gl,
+        &CString::new(include_str!("triangle.frag")).unwrap(),
     ).unwrap();
 
-    let shader_program = render_gl::Program::from_shaders(
-        &gl, &[vert_shader, frag_shader]
-    ).unwrap();
+    let shader_program =
+        render_gl::Program::from_shaders(&gl, &[vert_shader, frag_shader]).unwrap();
 
     // set up vertex buffer object
 
     let vertices: Vec<f32> = vec![
         // positions      // colors
-        0.5, -0.5, 0.0,   1.0, 0.0, 0.0,   // bottom right
-        -0.5, -0.5, 0.0,  0.0, 1.0, 0.0,   // bottom left
-        0.0,  0.5, 0.0,   0.0, 0.0, 1.0    // top
+        0.5, -0.5, 0.0, 1.0, 0.0, 0.0, // bottom right
+        -0.5, -0.5, 0.0, 0.0, 1.0, 0.0, // bottom left
+        0.0, 0.5, 0.0, 0.0, 0.0, 1.0, // top
     ];
 
     let mut vbo: gl::types::GLuint = 0;
@@ -109,8 +112,8 @@ fn main() {
     'main: loop {
         for event in event_pump.poll_iter() {
             match event {
-                sdl2::event::Event::Quit {..} => break 'main,
-                _ => {},
+                sdl2::event::Event::Quit { .. } => break 'main,
+                _ => {}
             }
         }
 
@@ -125,8 +128,8 @@ fn main() {
             gl.BindVertexArray(vao);
             gl.DrawArrays(
                 gl::TRIANGLES, // mode
-                0, // starting index in the enabled arrays
-                3 // number of indices to be rendered
+                0,             // starting index in the enabled arrays
+                3,             // number of indices to be rendered
             );
         }
 

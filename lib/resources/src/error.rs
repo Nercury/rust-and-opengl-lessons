@@ -1,6 +1,6 @@
+use failure;
 use std::io;
 use ResourcePathBuf;
-use failure;
 
 #[derive(Debug, Fail)]
 pub enum Error {
@@ -11,7 +11,10 @@ pub enum Error {
     #[fail(display = "Backend can not write")]
     NotWritable,
     #[fail(display = "Failed to write {}, {}", path, inner)]
-    BackendFailedToWrite { path: ResourcePathBuf, inner: failure::Error },
+    BackendFailedToWrite {
+        path: ResourcePathBuf,
+        inner: failure::Error,
+    },
 }
 
 impl From<io::Error> for Error {

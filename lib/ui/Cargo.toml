@@ -5,3 +5,4 @@ authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
 
 [dependencies]
 nalgebra = "0.16"
+log = "*"

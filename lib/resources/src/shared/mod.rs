@@ -1,11 +1,11 @@
-use std::time::Instant;
-use std::collections::HashMap;
-use std::collections::BTreeMap;
-use std::hash::BuildHasherDefault;
-use twox_hash::XxHash;
+use backend::{Backend, BackendSyncPoint};
 use path::{ResourcePath, ResourcePathBuf};
 use slab::Slab;
-use backend::{Backend, BackendSyncPoint};
+use std::collections::BTreeMap;
+use std::collections::HashMap;
+use std::hash::BuildHasherDefault;
+use std::time::Instant;
+use twox_hash::XxHash;
 
 mod resource_metadata;
 
@@ -79,12 +79,10 @@ impl SharedResources {
         }
         for (key, backend) in self.backends.iter_mut() {
             if let Some(sync_point) = backend.new_changes() {
-                return Some(
-                    InternalSyncPoint::Backend {
-                        backend_hash: backend_hash(&key.id),
-                        sync_point,
-                    }
-                );
+                return Some(InternalSyncPoint::Backend {
+                    backend_hash: backend_hash(&key.id),
+                    sync_point,
+                });
             }
         }
         None
@@ -95,7 +93,10 @@ impl SharedResources {
             InternalSyncPoint::Everything { time } => if self.outdated_at == Some(time) {
                 self.outdated_at = None;
             },
-            InternalSyncPoint::Backend { backend_hash: bh, sync_point: sp } => {
+            InternalSyncPoint::Backend {
+                backend_hash: bh,
+                sync_point: sp,
+            } => {
                 for (key, backend) in self.backends.iter_mut() {
                     if backend_hash(&key.id) == bh {
                         backend.notify_changes_synced(sp);
@@ -114,9 +115,13 @@ impl SharedResources {
                 let mut metadata = ResourceMetadata::new(clean_path_str);
                 let user_id = metadata.new_user();
                 let resource_id = self.resource_metadata.insert(metadata);
-                self.path_resource_ids.insert(ResourcePathBuf::from(clean_path_str), resource_id);
+                self.path_resource_ids
+                    .insert(ResourcePathBuf::from(clean_path_str), resource_id);
 
-                UserKey { resource_id, user_id }
+                UserKey {
+                    resource_id,
+                    user_id,
+                }
             }
         }
     }
@@ -125,7 +130,9 @@ impl SharedResources {
     pub fn append_resource_user(&mut self, resource_id: usize) -> UserKey {
         UserKey {
             resource_id,
-            user_id: self.resource_metadata.get_mut(resource_id)
+            user_id: self
+                .resource_metadata
+                .get_mut(resource_id)
                 .expect("expected resource_id to exist when appending new user")
                 .new_user(),
         }
@@ -148,16 +155,23 @@ impl SharedResources {
     }
 
     pub fn get_path_user_metadata(&self, key: UserKey) -> Option<&ResourceUserMetadata> {
-        self.resource_metadata.get(key.resource_id)
+        self.resource_metadata
+            .get(key.resource_id)
             .and_then(|path_metadata| path_metadata.get_user_metadata(key.user_id))
     }
 
     fn get_path_user_metadata_mut(&mut self, key: UserKey) -> Option<&mut ResourceUserMetadata> {
-        self.resource_metadata.get_mut(key.resource_id)
+        self.resource_metadata
+            .get_mut(key.resource_id)
             .and_then(|path_metadata| path_metadata.get_user_metadata_mut(key.user_id))
     }
 
-    pub fn insert_loader<L: Backend + 'static>(&mut self, loader_id: &str, order: isize, backend: L) {
+    pub fn insert_loader<L: Backend + 'static>(
+        &mut self,
+        loader_id: &str,
+        order: isize,
+        backend: L,
+    ) {
         let outdated_at = Instant::now();
         for (path, resource_id) in self.path_resource_ids.iter() {
             if backend.exists(&path) {
@@ -167,7 +181,10 @@ impl SharedResources {
             }
         }
         self.backends.insert(
-            LoaderKey { id: loader_id.into(), order },
+            LoaderKey {
+                id: loader_id.into(),
+                order,
+            },
             Box::new(backend) as Box<Backend>,
         );
         if self.path_resource_ids.len() > 0 {
@@ -177,7 +194,12 @@ impl SharedResources {
 
     pub fn remove_loader(&mut self, loader_id: &str) {
         let outdated_at = Instant::now();
-        let remove_keys: Vec<_> = self.backends.keys().filter(|k| k.id == loader_id).map(|k| k.clone()).collect();
+        let remove_keys: Vec<_> = self
+            .backends
+            .keys()
+            .filter(|k| k.id == loader_id)
+            .map(|k| k.clone())
+            .collect();
         for removed_key in remove_keys {
             if let Some(removed_backend) = self.backends.remove(&removed_key) {
                 for (path, resource_id) in self.path_resource_ids.iter() {
@@ -194,30 +216,42 @@ impl SharedResources {
         }
     }
 
-    pub fn resource_backends(&mut self, key: UserKey) -> impl Iterator<Item=(&ResourcePath, Option<Instant>, &mut Box<Backend>)> {
-        let path_with_modification_time = self.resource_metadata.get(key.resource_id)
-            .and_then(|m|
-                m.users.get(key.user_id)
+    pub fn resource_backends(
+        &mut self,
+        key: UserKey,
+    ) -> impl Iterator<Item = (&ResourcePath, Option<Instant>, &mut Box<Backend>)> {
+        let path_with_modification_time =
+            self.resource_metadata.get(key.resource_id).and_then(|m| {
+                m.users
+                    .get(key.user_id)
                     .map(|u| (m.path.as_ref(), u.outdated_at))
-            );
+            });
 
-        self.backends.iter_mut().rev()
-            .filter_map(move |(_, b)|
-                path_with_modification_time.map(move |(path, instant)|
-                    (path, instant, b)
-                )
-            )
+        self.backends.iter_mut().rev().filter_map(move |(_, b)| {
+            path_with_modification_time.map(move |(path, instant)| (path, instant, b))
+        })
     }
 
     #[allow(dead_code)]
-    pub fn get_resource_path_backend(&self, backend_id: &str, key: UserKey) -> Option<(&ResourcePath, Option<Instant>, &Box<Backend>)> {
-        let path_with_modification_time = self.resource_metadata.get(key.resource_id)
-            .and_then(|m|
-                m.users.get(key.user_id)
+    pub fn get_resource_path_backend(
+        &self,
+        backend_id: &str,
+        key: UserKey,
+    ) -> Option<(&ResourcePath, Option<Instant>, &Box<Backend>)> {
+        let path_with_modification_time =
+            self.resource_metadata.get(key.resource_id).and_then(|m| {
+                m.users
+                    .get(key.user_id)
                     .map(|u| (m.path.as_ref(), u.outdated_at))
-            );
+            });
 
-        if let (Some((path, modification_time)), Some((_, backend))) = (path_with_modification_time, self.backends.iter().filter(|(k, _)| &k.id == backend_id).next()) {
+        if let (Some((path, modification_time)), Some((_, backend))) = (
+            path_with_modification_time,
+            self.backends
+                .iter()
+                .filter(|(k, _)| &k.id == backend_id)
+                .next(),
+        ) {
             return Some((path, modification_time, backend));
         }
 
@@ -225,16 +259,21 @@ impl SharedResources {
     }
 
     pub fn get_resource_path(&self, key: UserKey) -> Option<&ResourcePath> {
-        self.resource_metadata.get(key.resource_id)
+        self.resource_metadata
+            .get(key.resource_id)
             .map(|m| m.path.as_ref())
     }
 
-    pub fn get_resource_path_backend_containing_resource(&self, key: UserKey) -> Option<(&ResourcePath, Option<Instant>, &Box<Backend>)> {
-        let path_with_modification_time = self.resource_metadata.get(key.resource_id)
-            .and_then(|m|
-                m.users.get(key.user_id)
+    pub fn get_resource_path_backend_containing_resource(
+        &self,
+        key: UserKey,
+    ) -> Option<(&ResourcePath, Option<Instant>, &Box<Backend>)> {
+        let path_with_modification_time =
+            self.resource_metadata.get(key.resource_id).and_then(|m| {
+                m.users
+                    .get(key.user_id)
                     .map(|u| (m.path.as_ref(), u.outdated_at))
-            );
+            });
 
         if let Some((path, modification_time)) = path_with_modification_time {
             for backend in self.backends.values().rev() {

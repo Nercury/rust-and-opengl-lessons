@@ -1,26 +1,32 @@
 extern crate miniz_oxide as miniz;
 
-use failure;
 use backend::{Backend, BackendSyncPoint};
-use std::io::{self};
-use {ResourcePath, ResourcePathBuf, Error};
+use failure;
+use std::io;
+use {Error, ResourcePath, ResourcePathBuf};
 
 #[derive(Debug)]
-pub struct Miniz<T> where T: Backend {
+pub struct Miniz<T>
+where
+    T: Backend,
+{
     inner: T,
     level: u8,
 }
 
-impl<T> Miniz<T> where T: Backend {
+impl<T> Miniz<T>
+where
+    T: Backend,
+{
     pub fn new(inner: T, level: u8) -> Miniz<T> {
-        Miniz {
-            inner,
-            level,
-        }
+        Miniz { inner, level }
     }
 }
 
-impl<T> Backend for Miniz<T> where T: Backend {
+impl<T> Backend for Miniz<T>
+where
+    T: Backend,
+{
     fn can_write(&self) -> bool {
         self.inner.can_write()
     }
@@ -40,7 +46,8 @@ impl<T> Backend for Miniz<T> where T: Backend {
     fn read_into(&mut self, path: &ResourcePath, output: &mut io::Write) -> Result<(), Error> {
         let mut input_data = Vec::new();
         self.inner.read_into(path, &mut input_data)?;
-        let output_data = self::miniz::inflate::decompress_to_vec_zlib(&mut input_data).map_err(write_error)?;
+        let output_data =
+            self::miniz::inflate::decompress_to_vec_zlib(&mut input_data).map_err(write_error)?;
         output.write_all(&output_data[..])?;
         Ok(())
     }
@@ -69,7 +76,7 @@ fn write_error(miniz_error: self::miniz::inflate::TINFLStatus) -> Error {
 
 #[cfg(test)]
 mod test {
-    use backend::{Backend, Miniz, InMemory};
+    use backend::{Backend, InMemory, Miniz};
 
     #[test]
     fn test_can_write_and_read() {

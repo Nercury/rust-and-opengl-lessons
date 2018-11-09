@@ -1,21 +1,35 @@
 use gl;
-use std;
-use std::ffi::{CString, CStr};
-use resources::{self, Resources};
 use nalgebra as na;
+use resources::{self, Resources};
+use std;
+use std::ffi::{CStr, CString};
 
 #[derive(Debug, Fail)]
 pub enum Error {
     #[fail(display = "Failed to load resource {}", name)]
-    ResourceLoad { name: String, #[cause] inner: resources::Error },
-    #[fail(display = "Can not determine shader type for resource {}", name)]
+    ResourceLoad {
+        name: String,
+        #[cause]
+        inner: resources::Error,
+    },
+    #[fail(
+        display = "Can not determine shader type for resource {}",
+        name
+    )]
     CanNotDetermineShaderTypeForResource { name: String },
     #[fail(display = "Failed to compile shader {}: {}", name, message)]
     CompileError { name: String, message: String },
     #[fail(display = "Failed to link program {}: {}", name, message)]
     LinkError { name: String, message: String },
-    #[fail(display = "Failed find uniform {} in {}", uniform_name, program_name)]
-    UniformLocationNotFound { program_name: String, uniform_name: String },
+    #[fail(
+        display = "Failed find uniform {} in {}",
+        uniform_name,
+        program_name
+    )]
+    UniformLocationNotFound {
+        program_name: String,
+        uniform_name: String,
+    },
 }
 
 pub struct Program {
@@ -26,33 +40,36 @@ pub struct Program {
 
 impl Program {
     pub fn from_res(gl: &gl::Gl, res: &Resources, name: &str) -> Result<Program, Error> {
-        const POSSIBLE_EXT: [&str; 2] = [
-            ".vert",
-            ".frag",
-        ];
+        const POSSIBLE_EXT: [&str; 2] = [".vert", ".frag"];
 
-        let resource_names = POSSIBLE_EXT.iter()
+        let resource_names = POSSIBLE_EXT
+            .iter()
             .map(|file_extension| format!("{}{}", name, file_extension))
             .collect::<Vec<String>>();
 
-        let shaders = resource_names.iter()
-            .map(|resource_name| {
-                Shader::from_res(gl, res, resource_name)
-            })
+        let shaders = resource_names
+            .iter()
+            .map(|resource_name| Shader::from_res(gl, res, resource_name))
             .collect::<Result<Vec<Shader>, Error>>()?;
 
-        Program::from_shaders(name, gl, &shaders[..])
-            .map_err(|message| Error::LinkError { name: name.into(), message })
+        Program::from_shaders(name, gl, &shaders[..]).map_err(|message| Error::LinkError {
+            name: name.into(),
+            message,
+        })
     }
 
     pub fn from_shaders(name: &str, gl: &gl::Gl, shaders: &[Shader]) -> Result<Program, String> {
         let program_id = unsafe { gl.CreateProgram() };
 
         for shader in shaders {
-            unsafe { gl.AttachShader(program_id, shader.id()); }
+            unsafe {
+                gl.AttachShader(program_id, shader.id());
+            }
         }
 
-        unsafe { gl.LinkProgram(program_id); }
+        unsafe {
+            gl.LinkProgram(program_id);
+        }
 
         let mut success: gl::types::GLint = 1;
         unsafe {
@@ -72,7 +89,7 @@ impl Program {
                     program_id,
                     len,
                     std::ptr::null_mut(),
-                    error.as_ptr() as *mut gl::types::GLchar
+                    error.as_ptr() as *mut gl::types::GLchar,
                 );
             }
 
@@ -80,10 +97,16 @@ impl Program {
         }
 
         for shader in shaders {
-            unsafe { gl.DetachShader(program_id, shader.id()); }
+            unsafe {
+                gl.DetachShader(program_id, shader.id());
+            }
         }
 
-        Ok(Program { name: name.into(), gl: gl.clone(), id: program_id })
+        Ok(Program {
+            name: name.into(),
+            gl: gl.clone(),
+            id: program_id,
+        })
     }
 
     pub fn id(&self) -> gl::types::GLuint {
@@ -97,15 +120,18 @@ impl Program {
     }
 
     pub fn get_uniform_location(&self, name: &str) -> Result<i32, Error> {
-        let cname = CString::new(name)
-            .expect("expected uniform name to have no nul bytes");
+        let cname = CString::new(name).expect("expected uniform name to have no nul bytes");
 
         let location = unsafe {
-            self.gl.GetUniformLocation(self.id, cname.as_bytes_with_nul().as_ptr() as *const i8)
+            self.gl
+                .GetUniformLocation(self.id, cname.as_bytes_with_nul().as_ptr() as *const i8)
         };
 
         if location == -1 {
-            return Err(Error::UniformLocationNotFound { program_name: self.name.clone(), uniform_name: name.into() });
+            return Err(Error::UniformLocationNotFound {
+                program_name: self.name.clone(),
+                uniform_name: name.into(),
+            });
         }
 
         Ok(location)
@@ -113,10 +139,12 @@ impl Program {
 
     pub fn set_uniform_matrix4fv(&self, location: i32, value: &na::Matrix4<f32>) {
         unsafe {
-            self.gl.UniformMatrix4fv(location,
-                                     1,
-                                     gl::FALSE,
-                                     value.as_slice().as_ptr() as *const f32);
+            self.gl.UniformMatrix4fv(
+                location,
+                1,
+                gl::FALSE,
+                value.as_slice().as_ptr() as *const f32,
+            );
         }
     }
 
@@ -142,29 +170,30 @@ pub struct Shader {
 
 impl Shader {
     pub fn from_res(gl: &gl::Gl, res: &Resources, name: &str) -> Result<Shader, Error> {
-        const POSSIBLE_EXT: [(&str, gl::types::GLenum); 2] = [
-            (".vert", gl::VERTEX_SHADER),
-            (".frag", gl::FRAGMENT_SHADER),
-        ];
+        const POSSIBLE_EXT: [(&str, gl::types::GLenum); 2] =
+            [(".vert", gl::VERTEX_SHADER), (".frag", gl::FRAGMENT_SHADER)];
 
-        let shader_kind = POSSIBLE_EXT.iter()
-            .find(|&&(file_extension, _)| {
-                name.ends_with(file_extension)
-            })
+        let shader_kind = POSSIBLE_EXT
+            .iter()
+            .find(|&&(file_extension, _)| name.ends_with(file_extension))
             .map(|&(_, kind)| kind)
             .ok_or_else(|| Error::CanNotDetermineShaderTypeForResource { name: name.into() })?;
 
-        let source = res.load_cstring(name)
-            .map_err(|e| Error::ResourceLoad { name: name.into(), inner: e })?;
+        let source = res.load_cstring(name).map_err(|e| Error::ResourceLoad {
+            name: name.into(),
+            inner: e,
+        })?;
 
-        Shader::from_source(gl, &source, shader_kind)
-            .map_err(|message| Error::CompileError { name: name.into(), message })
+        Shader::from_source(gl, &source, shader_kind).map_err(|message| Error::CompileError {
+            name: name.into(),
+            message,
+        })
     }
 
     pub fn from_source(
         gl: &gl::Gl,
         source: &CStr,
-        kind: gl::types::GLenum
+        kind: gl::types::GLenum,
     ) -> Result<Shader, String> {
         let id = shader_from_source(gl, source, kind)?;
         Ok(Shader { gl: gl.clone(), id })
@@ -194,7 +223,7 @@ impl Drop for Shader {
 fn shader_from_source(
     gl: &gl::Gl,
     source: &CStr,
-    kind: gl::types::GLenum
+    kind: gl::types::GLenum,
 ) -> Result<gl::types::GLuint, String> {
     let id = unsafe { gl.CreateShader(kind) };
     unsafe {
@@ -220,7 +249,7 @@ fn shader_from_source(
                 id,
                 len,
                 std::ptr::null_mut(),
-                error.as_ptr() as *mut gl::types::GLchar
+                error.as_ptr() as *mut gl::types::GLchar,
             );
         }
 

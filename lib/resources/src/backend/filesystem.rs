@@ -1,7 +1,7 @@
-use std::path::{Path, PathBuf};
-use std::{io, fs};
 use backend::{Backend, BackendSyncPoint};
-use {ResourcePath, Error};
+use std::path::{Path, PathBuf};
+use std::{fs, io};
+use {Error, ResourcePath};
 
 pub struct FileSystem {
     root_path: PathBuf,
@@ -10,7 +10,10 @@ pub struct FileSystem {
 }
 
 impl FileSystem {
-    pub fn from_rel_path<P: AsRef<Path>, RP: AsRef<ResourcePath>>(root_path: P, rel_path: RP) -> FileSystem {
+    pub fn from_rel_path<P: AsRef<Path>, RP: AsRef<ResourcePath>>(
+        root_path: P,
+        rel_path: RP,
+    ) -> FileSystem {
         FileSystem::from_path(resource_name_to_path(root_path.as_ref(), rel_path.as_ref()))
     }
 
@@ -42,8 +45,7 @@ impl Backend for FileSystem {
         resource_name_to_path(&self.root_path, path).exists()
     }
 
-    fn notify_changes_synced(&mut self, _point: BackendSyncPoint) {
-    }
+    fn notify_changes_synced(&mut self, _point: BackendSyncPoint) {}
 
     fn new_changes(&mut self) -> Option<BackendSyncPoint> {
         None

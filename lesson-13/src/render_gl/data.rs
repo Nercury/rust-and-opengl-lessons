@@ -13,13 +13,20 @@ impl i8_ {
         i8_ { d0 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                1, // the number of components per generic vertex attribute
-                                gl::BYTE, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            1,        // the number of components per generic vertex attribute
+            gl::BYTE, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -43,13 +50,20 @@ impl i8_i8 {
         i8_i8 { d0, d1 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                2, // the number of components per generic vertex attribute
-                                gl::BYTE, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            2,        // the number of components per generic vertex attribute
+            gl::BYTE, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -74,13 +88,19 @@ impl i8_i8_i8 {
         i8_i8_i8 { d0, d1, d2 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
-
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                3, // the number of components per generic vertex attribute
-                                gl::BYTE, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            3,        // the number of components per generic vertex attribute
+            gl::BYTE, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
 
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
     }
@@ -108,13 +128,20 @@ impl i8_i8_i8_i8 {
         i8_i8_i8_i8 { d0, d1, d2, d3 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                4, // the number of components per generic vertex attribute
-                                gl::BYTE, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            4,        // the number of components per generic vertex attribute
+            gl::BYTE, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -137,14 +164,21 @@ impl i8_float {
         i8_float { d0 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               1, // the number of components per generic vertex attribute
-                               gl::BYTE, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            1,        // the number of components per generic vertex attribute
+            gl::BYTE, // data type
+            gl::TRUE, // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -168,14 +202,21 @@ impl i8_i8_float {
         i8_i8_float { d0, d1 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               2, // the number of components per generic vertex attribute
-                               gl::BYTE, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            2,        // the number of components per generic vertex attribute
+            gl::BYTE, // data type
+            gl::TRUE, // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -200,14 +241,21 @@ impl i8_i8_i8_float {
         i8_i8_i8_float { d0, d1, d2 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               3, // the number of components per generic vertex attribute
-                               gl::BYTE, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            3,        // the number of components per generic vertex attribute
+            gl::BYTE, // data type
+            gl::TRUE, // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -233,14 +281,21 @@ impl i8_i8_i8_i8_float {
         i8_i8_i8_i8_float { d0, d1, d2, d3 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               4, // the number of components per generic vertex attribute
-                               gl::BYTE, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            4,        // the number of components per generic vertex attribute
+            gl::BYTE, // data type
+            gl::TRUE, // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -263,13 +318,20 @@ impl i16_ {
         i16_ { d0 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                1, // the number of components per generic vertex attribute
-                                gl::SHORT, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            1,         // the number of components per generic vertex attribute
+            gl::SHORT, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -293,13 +355,20 @@ impl i16_i16 {
         i16_i16 { d0, d1 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                2, // the number of components per generic vertex attribute
-                                gl::SHORT, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            2,         // the number of components per generic vertex attribute
+            gl::SHORT, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -324,13 +393,20 @@ impl i16_i16_i16 {
         i16_i16_i16 { d0, d1, d2 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                3, // the number of components per generic vertex attribute
-                                gl::SHORT, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            3,         // the number of components per generic vertex attribute
+            gl::SHORT, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -356,13 +432,20 @@ impl i16_i16_i16_i16 {
         i16_i16_i16_i16 { d0, d1, d2, d3 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                4, // the number of components per generic vertex attribute
-                                gl::SHORT, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            4,         // the number of components per generic vertex attribute
+            gl::SHORT, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -385,14 +468,21 @@ impl i16_float {
         i16_float { d0 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               1, // the number of components per generic vertex attribute
-                               gl::SHORT, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            1,         // the number of components per generic vertex attribute
+            gl::SHORT, // data type
+            gl::TRUE,  // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -416,14 +506,21 @@ impl i16_i16_float {
         i16_i16_float { d0, d1 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               2, // the number of components per generic vertex attribute
-                               gl::SHORT, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            2,         // the number of components per generic vertex attribute
+            gl::SHORT, // data type
+            gl::TRUE,  // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -448,14 +545,21 @@ impl i16_i16_i16_float {
         i16_i16_i16_float { d0, d1, d2 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               3, // the number of components per generic vertex attribute
-                               gl::SHORT, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            3,         // the number of components per generic vertex attribute
+            gl::SHORT, // data type
+            gl::TRUE,  // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -481,14 +585,21 @@ impl i16_i16_i16_i16_float {
         i16_i16_i16_i16_float { d0, d1, d2, d3 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               4, // the number of components per generic vertex attribute
-                               gl::SHORT, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            4,         // the number of components per generic vertex attribute
+            gl::SHORT, // data type
+            gl::TRUE,  // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -511,13 +622,20 @@ impl i32_ {
         i32_ { d0 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                1, // the number of components per generic vertex attribute
-                                gl::INT, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            1,       // the number of components per generic vertex attribute
+            gl::INT, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -541,13 +659,20 @@ impl i32_i32 {
         i32_i32 { d0, d1 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                2, // the number of components per generic vertex attribute
-                                gl::INT, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            2,       // the number of components per generic vertex attribute
+            gl::INT, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -572,13 +697,20 @@ impl i32_i32_i32 {
         i32_i32_i32 { d0, d1, d2 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                3, // the number of components per generic vertex attribute
-                                gl::INT, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            3,       // the number of components per generic vertex attribute
+            gl::INT, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -604,13 +736,20 @@ impl i32_i32_i32_i32 {
         i32_i32_i32_i32 { d0, d1, d2, d3 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                4, // the number of components per generic vertex attribute
-                                gl::INT, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            4,       // the number of components per generic vertex attribute
+            gl::INT, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -633,14 +772,21 @@ impl i32_float {
         i32_float { d0 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               1, // the number of components per generic vertex attribute
-                               gl::INT, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            1,        // the number of components per generic vertex attribute
+            gl::INT,  // data type
+            gl::TRUE, // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -664,14 +810,21 @@ impl i32_i32_float {
         i32_i32_float { d0, d1 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               2, // the number of components per generic vertex attribute
-                               gl::INT, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            2,        // the number of components per generic vertex attribute
+            gl::INT,  // data type
+            gl::TRUE, // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -696,14 +849,21 @@ impl i32_i32_i32_float {
         i32_i32_i32_float { d0, d1, d2 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               3, // the number of components per generic vertex attribute
-                               gl::INT, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            3,        // the number of components per generic vertex attribute
+            gl::INT,  // data type
+            gl::TRUE, // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -729,14 +889,21 @@ impl i32_i32_i32_i32_float {
         i32_i32_i32_i32_float { d0, d1, d2, d3 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               4, // the number of components per generic vertex attribute
-                               gl::INT, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            4,        // the number of components per generic vertex attribute
+            gl::INT,  // data type
+            gl::TRUE, // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -759,13 +926,20 @@ impl u8_ {
         u8_ { d0 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                1, // the number of components per generic vertex attribute
-                                gl::UNSIGNED_BYTE, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            1,                 // the number of components per generic vertex attribute
+            gl::UNSIGNED_BYTE, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -789,13 +963,20 @@ impl u8_u8 {
         u8_u8 { d0, d1 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                2, // the number of components per generic vertex attribute
-                                gl::UNSIGNED_BYTE, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            2,                 // the number of components per generic vertex attribute
+            gl::UNSIGNED_BYTE, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -820,13 +1001,20 @@ impl u8_u8_u8 {
         u8_u8_u8 { d0, d1, d2 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                3, // the number of components per generic vertex attribute
-                                gl::UNSIGNED_BYTE, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            3,                 // the number of components per generic vertex attribute
+            gl::UNSIGNED_BYTE, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -852,13 +1040,20 @@ impl u8_u8_u8_u8 {
         u8_u8_u8_u8 { d0, d1, d2, d3 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                4, // the number of components per generic vertex attribute
-                                gl::UNSIGNED_BYTE, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            4,                 // the number of components per generic vertex attribute
+            gl::UNSIGNED_BYTE, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -881,14 +1076,21 @@ impl u8_float {
         u8_float { d0 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               1, // the number of components per generic vertex attribute
-                               gl::UNSIGNED_BYTE, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            1,                 // the number of components per generic vertex attribute
+            gl::UNSIGNED_BYTE, // data type
+            gl::TRUE,          // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -912,14 +1114,21 @@ impl u8_u8_float {
         u8_u8_float { d0, d1 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               2, // the number of components per generic vertex attribute
-                               gl::UNSIGNED_BYTE, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            2,                 // the number of components per generic vertex attribute
+            gl::UNSIGNED_BYTE, // data type
+            gl::TRUE,          // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -944,14 +1153,21 @@ impl u8_u8_u8_float {
         u8_u8_u8_float { d0, d1, d2 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               3, // the number of components per generic vertex attribute
-                               gl::UNSIGNED_BYTE, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            3,                 // the number of components per generic vertex attribute
+            gl::UNSIGNED_BYTE, // data type
+            gl::TRUE,          // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -977,14 +1193,21 @@ impl u8_u8_u8_u8_float {
         u8_u8_u8_u8_float { d0, d1, d2, d3 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               4, // the number of components per generic vertex attribute
-                               gl::UNSIGNED_BYTE, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            4,                 // the number of components per generic vertex attribute
+            gl::UNSIGNED_BYTE, // data type
+            gl::TRUE,          // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -1007,13 +1230,20 @@ impl u16_ {
         u16_ { d0 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                1, // the number of components per generic vertex attribute
-                                gl::UNSIGNED_SHORT, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            1,                  // the number of components per generic vertex attribute
+            gl::UNSIGNED_SHORT, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -1037,13 +1267,20 @@ impl u16_u16 {
         u16_u16 { d0, d1 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                2, // the number of components per generic vertex attribute
-                                gl::UNSIGNED_SHORT, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            2,                  // the number of components per generic vertex attribute
+            gl::UNSIGNED_SHORT, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -1068,13 +1305,20 @@ impl u16_u16_u16 {
         u16_u16_u16 { d0, d1, d2 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                3, // the number of components per generic vertex attribute
-                                gl::UNSIGNED_SHORT, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            3,                  // the number of components per generic vertex attribute
+            gl::UNSIGNED_SHORT, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -1100,13 +1344,20 @@ impl u16_u16_u16_u16 {
         u16_u16_u16_u16 { d0, d1, d2, d3 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                4, // the number of components per generic vertex attribute
-                                gl::UNSIGNED_SHORT, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            4,                  // the number of components per generic vertex attribute
+            gl::UNSIGNED_SHORT, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -1129,14 +1380,21 @@ impl u16_float {
         u16_float { d0 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               1, // the number of components per generic vertex attribute
-                               gl::UNSIGNED_SHORT, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            1,                  // the number of components per generic vertex attribute
+            gl::UNSIGNED_SHORT, // data type
+            gl::TRUE,           // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -1160,14 +1418,21 @@ impl u16_u16_float {
         u16_u16_float { d0, d1 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               2, // the number of components per generic vertex attribute
-                               gl::UNSIGNED_SHORT, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            2,                  // the number of components per generic vertex attribute
+            gl::UNSIGNED_SHORT, // data type
+            gl::TRUE,           // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -1192,14 +1457,21 @@ impl u16_u16_u16_float {
         u16_u16_u16_float { d0, d1, d2 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               3, // the number of components per generic vertex attribute
-                               gl::UNSIGNED_SHORT, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            3,                  // the number of components per generic vertex attribute
+            gl::UNSIGNED_SHORT, // data type
+            gl::TRUE,           // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -1225,14 +1497,21 @@ impl u16_u16_u16_u16_float {
         u16_u16_u16_u16_float { d0, d1, d2, d3 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               4, // the number of components per generic vertex attribute
-                               gl::UNSIGNED_SHORT, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            4,                  // the number of components per generic vertex attribute
+            gl::UNSIGNED_SHORT, // data type
+            gl::TRUE,           // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -1255,13 +1534,20 @@ impl u32_ {
         u32_ { d0 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                1, // the number of components per generic vertex attribute
-                                gl::UNSIGNED_INT, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            1,                // the number of components per generic vertex attribute
+            gl::UNSIGNED_INT, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -1285,13 +1571,20 @@ impl u32_u32 {
         u32_u32 { d0, d1 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                2, // the number of components per generic vertex attribute
-                                gl::UNSIGNED_INT, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            2,                // the number of components per generic vertex attribute
+            gl::UNSIGNED_INT, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -1316,13 +1609,20 @@ impl u32_u32_u32 {
         u32_u32_u32 { d0, d1, d2 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                3, // the number of components per generic vertex attribute
-                                gl::UNSIGNED_INT, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            3,                // the number of components per generic vertex attribute
+            gl::UNSIGNED_INT, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -1348,13 +1648,20 @@ impl u32_u32_u32_u32 {
         u32_u32_u32_u32 { d0, d1, d2, d3 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribIPointer(location as gl::types::GLuint,
-                                4, // the number of components per generic vertex attribute
-                                gl::UNSIGNED_INT, // data type
-                                stride as gl::types::GLint,
-                                offset as *const gl::types::GLvoid);
+        gl.VertexAttribIPointer(
+            location as gl::types::GLuint,
+            4,                // the number of components per generic vertex attribute
+            gl::UNSIGNED_INT, // data type
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -1377,14 +1684,21 @@ impl u32_float {
         u32_float { d0 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               1, // the number of components per generic vertex attribute
-                               gl::UNSIGNED_INT, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            1,                // the number of components per generic vertex attribute
+            gl::UNSIGNED_INT, // data type
+            gl::TRUE,         // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -1408,14 +1722,21 @@ impl u32_u32_float {
         u32_u32_float { d0, d1 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               2, // the number of components per generic vertex attribute
-                               gl::UNSIGNED_INT, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            2,                // the number of components per generic vertex attribute
+            gl::UNSIGNED_INT, // data type
+            gl::TRUE,         // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -1440,14 +1761,21 @@ impl u32_u32_u32_float {
         u32_u32_u32_float { d0, d1, d2 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               3, // the number of components per generic vertex attribute
-                               gl::UNSIGNED_INT, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            3,                // the number of components per generic vertex attribute
+            gl::UNSIGNED_INT, // data type
+            gl::TRUE,         // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -1473,14 +1801,21 @@ impl u32_u32_u32_u32_float {
         u32_u32_u32_u32_float { d0, d1, d2, d3 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
-        gl.VertexAttribPointer(location as gl::types::GLuint,
-                               4, // the number of components per generic vertex attribute
-                               gl::UNSIGNED_INT, // data type
-                               gl::TRUE, // normalized (int-to-float conversion)
-                               stride as gl::types::GLint,
-                               offset as *const gl::types::GLvoid);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            4,                // the number of components per generic vertex attribute
+            gl::UNSIGNED_INT, // data type
+            gl::TRUE,         // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
     }
 }
 
@@ -1500,20 +1835,23 @@ pub struct f16_ {
 
 impl f16_ {
     pub fn new(d0: ::half::f16) -> f16_ {
-        f16_ {
-            d0
-        }
+        f16_ { d0 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
         gl.VertexAttribPointer(
             location as gl::types::GLuint,
-            1, // the number of components per generic vertex attribute
+            1,              // the number of components per generic vertex attribute
             gl::HALF_FLOAT, // data type
-            gl::FALSE, // normalized (int-to-float conversion)
+            gl::FALSE,      // normalized (int-to-float conversion)
             stride as gl::types::GLint,
-            offset as *const gl::types::GLvoid
+            offset as *const gl::types::GLvoid,
         );
     }
 }
@@ -1535,20 +1873,23 @@ pub struct f16_f16 {
 
 impl f16_f16 {
     pub fn new(d0: ::half::f16, d1: ::half::f16) -> f16_f16 {
-        f16_f16 {
-            d0, d1
-        }
+        f16_f16 { d0, d1 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
         gl.VertexAttribPointer(
             location as gl::types::GLuint,
-            2, // the number of components per generic vertex attribute
+            2,              // the number of components per generic vertex attribute
             gl::HALF_FLOAT, // data type
-            gl::FALSE, // normalized (int-to-float conversion)
+            gl::FALSE,      // normalized (int-to-float conversion)
             stride as gl::types::GLint,
-            offset as *const gl::types::GLvoid
+            offset as *const gl::types::GLvoid,
         );
     }
 }
@@ -1571,20 +1912,23 @@ pub struct f16_f16_f16 {
 
 impl f16_f16_f16 {
     pub fn new(d0: ::half::f16, d1: ::half::f16, d2: ::half::f16) -> f16_f16_f16 {
-        f16_f16_f16 {
-            d0, d1, d2
-        }
+        f16_f16_f16 { d0, d1, d2 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
         gl.VertexAttribPointer(
             location as gl::types::GLuint,
-            3, // the number of components per generic vertex attribute
+            3,              // the number of components per generic vertex attribute
             gl::HALF_FLOAT, // data type
-            gl::FALSE, // normalized (int-to-float conversion)
+            gl::FALSE,      // normalized (int-to-float conversion)
             stride as gl::types::GLint,
-            offset as *const gl::types::GLvoid
+            offset as *const gl::types::GLvoid,
         );
     }
 }
@@ -1607,21 +1951,29 @@ pub struct f16_f16_f16_f16 {
 }
 
 impl f16_f16_f16_f16 {
-    pub fn new(d0: ::half::f16, d1: ::half::f16, d2: ::half::f16, d3: ::half::f16) -> f16_f16_f16_f16 {
-        f16_f16_f16_f16 {
-            d0, d1, d2, d3
-        }
+    pub fn new(
+        d0: ::half::f16,
+        d1: ::half::f16,
+        d2: ::half::f16,
+        d3: ::half::f16,
+    ) -> f16_f16_f16_f16 {
+        f16_f16_f16_f16 { d0, d1, d2, d3 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
         gl.VertexAttribPointer(
             location as gl::types::GLuint,
-            4, // the number of components per generic vertex attribute
+            4,              // the number of components per generic vertex attribute
             gl::HALF_FLOAT, // data type
-            gl::FALSE, // normalized (int-to-float conversion)
+            gl::FALSE,      // normalized (int-to-float conversion)
             stride as gl::types::GLint,
-            offset as *const gl::types::GLvoid
+            offset as *const gl::types::GLvoid,
         );
     }
 }
@@ -1642,20 +1994,23 @@ pub struct f32_ {
 
 impl f32_ {
     pub fn new(d0: f32) -> f32_ {
-        f32_ {
-            d0
-        }
+        f32_ { d0 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
         gl.VertexAttribPointer(
             location as gl::types::GLuint,
-            1, // the number of components per generic vertex attribute
+            1,         // the number of components per generic vertex attribute
             gl::FLOAT, // data type
             gl::FALSE, // normalized (int-to-float conversion)
             stride as gl::types::GLint,
-            offset as *const gl::types::GLvoid
+            offset as *const gl::types::GLvoid,
         );
     }
 }
@@ -1677,20 +2032,23 @@ pub struct f32_f32 {
 
 impl f32_f32 {
     pub fn new(d0: f32, d1: f32) -> f32_f32 {
-        f32_f32 {
-            d0, d1
-        }
+        f32_f32 { d0, d1 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
         gl.VertexAttribPointer(
             location as gl::types::GLuint,
-            2, // the number of components per generic vertex attribute
+            2,         // the number of components per generic vertex attribute
             gl::FLOAT, // data type
             gl::FALSE, // normalized (int-to-float conversion)
             stride as gl::types::GLint,
-            offset as *const gl::types::GLvoid
+            offset as *const gl::types::GLvoid,
         );
     }
 }
@@ -1713,20 +2071,23 @@ pub struct f32_f32_f32 {
 
 impl f32_f32_f32 {
     pub fn new(d0: f32, d1: f32, d2: f32) -> f32_f32_f32 {
-        f32_f32_f32 {
-            d0, d1, d2
-        }
+        f32_f32_f32 { d0, d1, d2 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
         gl.VertexAttribPointer(
             location as gl::types::GLuint,
-            3, // the number of components per generic vertex attribute
+            3,         // the number of components per generic vertex attribute
             gl::FLOAT, // data type
             gl::FALSE, // normalized (int-to-float conversion)
             stride as gl::types::GLint,
-            offset as *const gl::types::GLvoid
+            offset as *const gl::types::GLvoid,
         );
     }
 }
@@ -1750,20 +2111,23 @@ pub struct f32_f32_f32_f32 {
 
 impl f32_f32_f32_f32 {
     pub fn new(d0: f32, d1: f32, d2: f32, d3: f32) -> f32_f32_f32_f32 {
-        f32_f32_f32_f32 {
-            d0, d1, d2, d3
-        }
+        f32_f32_f32_f32 { d0, d1, d2, d3 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
         gl.VertexAttribPointer(
             location as gl::types::GLuint,
-            4, // the number of components per generic vertex attribute
+            4,         // the number of components per generic vertex attribute
             gl::FLOAT, // data type
             gl::FALSE, // normalized (int-to-float conversion)
             stride as gl::types::GLint,
-            offset as *const gl::types::GLvoid
+            offset as *const gl::types::GLvoid,
         );
     }
 }
@@ -1784,19 +2148,22 @@ pub struct f64_ {
 
 impl f64_ {
     pub fn new(d0: f64) -> f64_ {
-        f64_ {
-            d0
-        }
+        f64_ { d0 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
         gl.VertexAttribLPointer(
             location as gl::types::GLuint,
-            1, // the number of components per generic vertex attribute
+            1,          // the number of components per generic vertex attribute
             gl::DOUBLE, // data type
             stride as gl::types::GLint,
-            offset as *const gl::types::GLvoid
+            offset as *const gl::types::GLvoid,
         );
     }
 }
@@ -1818,19 +2185,22 @@ pub struct f64_f64 {
 
 impl f64_f64 {
     pub fn new(d0: f64, d1: f64) -> f64_f64 {
-        f64_f64 {
-            d0, d1
-        }
+        f64_f64 { d0, d1 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
         gl.VertexAttribLPointer(
             location as gl::types::GLuint,
-            2, // the number of components per generic vertex attribute
+            2,          // the number of components per generic vertex attribute
             gl::DOUBLE, // data type
             stride as gl::types::GLint,
-            offset as *const gl::types::GLvoid
+            offset as *const gl::types::GLvoid,
         );
     }
 }
@@ -1853,19 +2223,22 @@ pub struct f64_f64_f64 {
 
 impl f64_f64_f64 {
     pub fn new(d0: f64, d1: f64, d2: f64) -> f64_f64_f64 {
-        f64_f64_f64 {
-            d0, d1, d2
-        }
+        f64_f64_f64 { d0, d1, d2 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
         gl.VertexAttribLPointer(
             location as gl::types::GLuint,
-            3, // the number of components per generic vertex attribute
+            3,          // the number of components per generic vertex attribute
             gl::DOUBLE, // data type
             stride as gl::types::GLint,
-            offset as *const gl::types::GLvoid
+            offset as *const gl::types::GLvoid,
         );
     }
 }
@@ -1889,19 +2262,22 @@ pub struct f64_f64_f64_f64 {
 
 impl f64_f64_f64_f64 {
     pub fn new(d0: f64, d1: f64, d2: f64, d3: f64) -> f64_f64_f64_f64 {
-        f64_f64_f64_f64 {
-            d0, d1, d2, d3
-        }
+        f64_f64_f64_f64 { d0, d1, d2, d3 }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
         gl.VertexAttribLPointer(
             location as gl::types::GLuint,
-            4, // the number of components per generic vertex attribute
+            4,          // the number of components per generic vertex attribute
             gl::DOUBLE, // data type
             stride as gl::types::GLint,
-            offset as *const gl::types::GLvoid
+            offset as *const gl::types::GLvoid,
         );
     }
 }
@@ -1922,20 +2298,23 @@ pub struct i2_i10_i10_i10_rev {
 
 impl i2_i10_i10_i10_rev {
     pub fn new(inner: u32) -> i2_i10_i10_i10_rev {
-        i2_i10_i10_i10_rev {
-            inner
-        }
+        i2_i10_i10_i10_rev { inner }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
         gl.VertexAttribPointer(
             location as gl::types::GLuint,
-            4, // the number of components per generic vertex attribute
+            4,                      // the number of components per generic vertex attribute
             gl::INT_2_10_10_10_REV, // data type
-            gl::FALSE, // normalized (int-to-float conversion)
+            gl::FALSE,              // normalized (int-to-float conversion)
             stride as gl::types::GLint,
-            offset as *const gl::types::GLvoid
+            offset as *const gl::types::GLvoid,
         );
     }
 }
@@ -1950,12 +2329,15 @@ pub struct u2_u10_u10_u10_rev {
 
 impl u2_u10_u10_u10_rev {
     pub fn new(inner: ::vec_2_10_10_10::Vector) -> u2_u10_u10_u10_rev {
-        u2_u10_u10_u10_rev {
-            inner
-        }
+        u2_u10_u10_u10_rev { inner }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
         gl.VertexAttribPointer(
             location as gl::types::GLuint,
@@ -1963,7 +2345,7 @@ impl u2_u10_u10_u10_rev {
             gl::UNSIGNED_INT_2_10_10_10_REV, // data type
             gl::FALSE, // normalized (int-to-float conversion)
             stride as gl::types::GLint,
-            offset as *const gl::types::GLvoid
+            offset as *const gl::types::GLvoid,
         );
     }
 }
@@ -1971,7 +2353,7 @@ impl u2_u10_u10_u10_rev {
 impl From<(f32, f32, f32, f32)> for u2_u10_u10_u10_rev {
     fn from(other: (f32, f32, f32, f32)) -> Self {
         u2_u10_u10_u10_rev {
-            inner: ::vec_2_10_10_10::Vector::new(other.0, other.1, other.2, other.3)
+            inner: ::vec_2_10_10_10::Vector::new(other.0, other.1, other.2, other.3),
         }
     }
 }
@@ -1986,12 +2368,15 @@ pub struct u10_u11_u11_rev {
 
 impl u10_u11_u11_rev {
     pub fn new(inner: u32) -> u10_u11_u11_rev {
-        u10_u11_u11_rev {
-            inner
-        }
+        u10_u11_u11_rev { inner }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
         gl.VertexAttribPointer(
             location as gl::types::GLuint,
@@ -1999,7 +2384,7 @@ impl u10_u11_u11_rev {
             gl::UNSIGNED_INT_10F_11F_11F_REV, // data type
             gl::FALSE, // normalized (int-to-float conversion)
             stride as gl::types::GLint,
-            offset as *const gl::types::GLvoid
+            offset as *const gl::types::GLvoid,
         );
     }
 }
@@ -2014,20 +2399,23 @@ pub struct i2_i10_i10_i10_rev_float {
 
 impl i2_i10_i10_i10_rev_float {
     pub fn new(inner: u32) -> i2_i10_i10_i10_rev_float {
-        i2_i10_i10_i10_rev_float {
-            inner
-        }
+        i2_i10_i10_i10_rev_float { inner }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
         gl.VertexAttribPointer(
             location as gl::types::GLuint,
-            4, // the number of components per generic vertex attribute
+            4,                      // the number of components per generic vertex attribute
             gl::INT_2_10_10_10_REV, // data type
-            gl::TRUE, // normalized (int-to-float conversion)
+            gl::TRUE,               // normalized (int-to-float conversion)
             stride as gl::types::GLint,
-            offset as *const gl::types::GLvoid
+            offset as *const gl::types::GLvoid,
         );
     }
 }
@@ -2042,12 +2430,15 @@ pub struct u2_u10_u10_u10_rev_float {
 
 impl u2_u10_u10_u10_rev_float {
     pub fn new(inner: ::vec_2_10_10_10::Vector) -> u2_u10_u10_u10_rev_float {
-        u2_u10_u10_u10_rev_float {
-            inner
-        }
+        u2_u10_u10_u10_rev_float { inner }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
         gl.VertexAttribPointer(
             location as gl::types::GLuint,
@@ -2055,7 +2446,7 @@ impl u2_u10_u10_u10_rev_float {
             gl::UNSIGNED_INT_2_10_10_10_REV, // data type
             gl::TRUE, // normalized (int-to-float conversion)
             stride as gl::types::GLint,
-            offset as *const gl::types::GLvoid
+            offset as *const gl::types::GLvoid,
         );
     }
 }
@@ -2063,7 +2454,7 @@ impl u2_u10_u10_u10_rev_float {
 impl From<(f32, f32, f32, f32)> for u2_u10_u10_u10_rev_float {
     fn from(other: (f32, f32, f32, f32)) -> Self {
         u2_u10_u10_u10_rev_float {
-            inner: ::vec_2_10_10_10::Vector::new(other.0, other.1, other.2, other.3)
+            inner: ::vec_2_10_10_10::Vector::new(other.0, other.1, other.2, other.3),
         }
     }
 }
@@ -2078,12 +2469,15 @@ pub struct u10_u11_u11_rev_float {
 
 impl u10_u11_u11_rev_float {
     pub fn new(inner: u32) -> u10_u11_u11_rev_float {
-        u10_u11_u11_rev_float {
-            inner
-        }
+        u10_u11_u11_rev_float { inner }
     }
 
-    pub unsafe fn vertex_attrib_pointer(gl: &gl::Gl, stride: usize, location: usize, offset: usize) {
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
         gl.EnableVertexAttribArray(location as gl::types::GLuint);
         gl.VertexAttribPointer(
             location as gl::types::GLuint,
@@ -2091,7 +2485,7 @@ impl u10_u11_u11_rev_float {
             gl::UNSIGNED_INT_10F_11F_11F_REV, // data type
             gl::TRUE, // normalized (int-to-float conversion)
             stride as gl::types::GLint,
-            offset as *const gl::types::GLvoid
+            offset as *const gl::types::GLvoid,
         );
     }
 }

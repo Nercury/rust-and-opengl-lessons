@@ -1,21 +1,21 @@
-pub mod data;
 pub mod buffer;
+pub mod data;
 
-mod shader;
-mod texture;
-mod viewport;
 mod color_buffer;
 mod debug_lines;
 mod profiler;
+mod shader;
+mod texture;
+mod viewport;
 
 use gl;
 
-pub use self::shader::{Shader, Program, Error};
+pub use self::color_buffer::ColorBuffer;
+pub use self::debug_lines::{AabbMarker, DebugLines, RayMarkers};
+pub use self::profiler::{EventCountProfiler, FrameProfiler};
+pub use self::shader::{Error, Program, Shader};
 pub use self::texture::{Texture, TextureLoadBuilder, TextureLoadOptions};
 pub use self::viewport::Viewport;
-pub use self::color_buffer::ColorBuffer;
-pub use self::debug_lines::{DebugLines, RayMarkers, AabbMarker};
-pub use self::profiler::{FrameProfiler, EventCountProfiler};
 
 fn gl_error_to_str(error: u32) -> &'static str {
     match error {
@@ -74,8 +74,6 @@ pub fn check_err(gl: &gl::Gl) -> bool {
         return false;
     }
 
-    println!("GL error {}: {}",
-             res,
-             gl_error_to_str(res));
+    println!("GL error {}: {}", res, gl_error_to_str(res));
     true
 }

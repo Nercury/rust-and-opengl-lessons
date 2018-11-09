@@ -14,13 +14,19 @@ impl BufferType for BufferTypeElementArray {
     const BUFFER_TYPE: gl::types::GLuint = gl::ELEMENT_ARRAY_BUFFER;
 }
 
-pub struct Buffer<B> where B: BufferType {
+pub struct Buffer<B>
+where
+    B: BufferType,
+{
     gl: gl::Gl,
     vbo: gl::types::GLuint,
     _marker: ::std::marker::PhantomData<B>,
 }
 
-impl<B> Buffer<B> where B: BufferType {
+impl<B> Buffer<B>
+where
+    B: BufferType,
+{
     pub fn new(gl: &gl::Gl) -> Buffer<B> {
         let mut vbo: gl::types::GLuint = 0;
         unsafe {
@@ -79,12 +85,16 @@ impl<B> Buffer<B> where B: BufferType {
         }
     }
 
-    pub unsafe fn map_buffer_range_write_invalidate<'r, T>(&self, offset: usize, size: usize) -> Option<MappedBuffer<'r, B, T>> {
+    pub unsafe fn map_buffer_range_write_invalidate<'r, T>(
+        &self,
+        offset: usize,
+        size: usize,
+    ) -> Option<MappedBuffer<'r, B, T>> {
         let ptr = self.gl.MapBufferRange(
-            B::BUFFER_TYPE, // target
+            B::BUFFER_TYPE,                                                 // target
             (offset * ::std::mem::size_of::<T>()) as gl::types::GLsizeiptr, // offset
-            (size * ::std::mem::size_of::<T>()) as gl::types::GLsizeiptr, //  length
-            gl::MAP_WRITE_BIT | gl::MAP_INVALIDATE_RANGE_BIT, // usage
+            (size * ::std::mem::size_of::<T>()) as gl::types::GLsizeiptr,   //  length
+            gl::MAP_WRITE_BIT | gl::MAP_INVALIDATE_RANGE_BIT,               // usage
         );
         if ptr == ::std::ptr::null_mut() {
             return None;
@@ -97,7 +107,10 @@ impl<B> Buffer<B> where B: BufferType {
     }
 }
 
-impl<B> Drop for Buffer<B> where B: BufferType {
+impl<B> Drop for Buffer<B>
+where
+    B: BufferType,
+{
     fn drop(&mut self) {
         unsafe {
             self.gl.DeleteBuffers(1, &mut self.vbo);
@@ -105,13 +118,19 @@ impl<B> Drop for Buffer<B> where B: BufferType {
     }
 }
 
-pub struct MappedBuffer<'a, B, DataT: 'a> where B: BufferType {
+pub struct MappedBuffer<'a, B, DataT: 'a>
+where
+    B: BufferType,
+{
     gl: gl::Gl,
     data: &'a mut [DataT],
     _marker: ::std::marker::PhantomData<B>,
 }
 
-impl<'a, B, DataT: 'a> ::std::ops::Deref for MappedBuffer<'a, B, DataT> where B: BufferType {
+impl<'a, B, DataT: 'a> ::std::ops::Deref for MappedBuffer<'a, B, DataT>
+where
+    B: BufferType,
+{
     type Target = [DataT];
 
     fn deref(&self) -> &Self::Target {
@@ -119,13 +138,19 @@ impl<'a, B, DataT: 'a> ::std::ops::Deref for MappedBuffer<'a, B, DataT> where B:
     }
 }
 
-impl<'a, B, DataT: 'a> ::std::ops::DerefMut for MappedBuffer<'a, B, DataT> where B: BufferType {
+impl<'a, B, DataT: 'a> ::std::ops::DerefMut for MappedBuffer<'a, B, DataT>
+where
+    B: BufferType,
+{
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.data
     }
 }
 
-impl<'a, B, DataT: 'a> Drop for MappedBuffer<'a, B, DataT> where B: BufferType {
+impl<'a, B, DataT: 'a> Drop for MappedBuffer<'a, B, DataT>
+where
+    B: BufferType,
+{
     fn drop(&mut self) {
         unsafe {
             self.gl.UnmapBuffer(B::BUFFER_TYPE);
@@ -150,7 +175,7 @@ impl VertexArray {
 
         VertexArray {
             gl: gl.clone(),
-            vao
+            vao,
         }
     }
 

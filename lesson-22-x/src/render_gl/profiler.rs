@@ -1,17 +1,16 @@
-use std::collections::VecDeque;
-use nalgebra as na;
 use failure;
+use floating_duration::TimeAsFloat;
 use gl;
-use resources::Resources;
-use render_gl::Program;
-use render_gl::ColorBuffer;
+use nalgebra as na;
 use render_gl::buffer::{Buffer, VertexArray};
 use render_gl::data;
+use render_gl::ColorBuffer;
+use render_gl::Program;
+use resources::Resources;
+use std::collections::VecDeque;
 use std::time::Instant;
-use floating_duration::TimeAsFloat;
 
-#[derive(VertexAttribPointers)]
-#[derive(Copy, Clone, Debug)]
+#[derive(VertexAttribPointers, Copy, Clone, Debug)]
 #[repr(C, packed)]
 pub struct LinePoint {
     #[location = "0"]
@@ -36,7 +35,7 @@ impl FrameData {
     pub fn new(start: Instant) -> FrameData {
         FrameData {
             start,
-            items: vec![]
+            items: vec![],
         }
     }
 }
@@ -93,7 +92,10 @@ impl Profiler {
     }
 
     pub fn begin(&mut self) {
-        let mut data = self.frame_data_pool.pop().unwrap_or_else(|| FrameData::new(Instant::now()));
+        let mut data = self
+            .frame_data_pool
+            .pop()
+            .unwrap_or_else(|| FrameData::new(Instant::now()));
         data.restart(Instant::now());
 
         ::std::mem::swap(&mut data, &mut self.frame_data);
@@ -118,10 +120,15 @@ impl Profiler {
         let fps_bar_30 = 2;
         let fps_bar_60 = 2;
         let fps_bar_144 = 2;
-        let all_data_len = self.frame_data_history
+        let all_data_len = self
+            .frame_data_history
             .iter()
             .flat_map(|v| v.items.iter())
-            .count() * 2 + fps_bar_30 + fps_bar_60 + fps_bar_144;
+            .count()
+            * 2
+            + fps_bar_30
+            + fps_bar_60
+            + fps_bar_144;
 
         self.lines_vbo.bind();
 
@@ -133,21 +140,30 @@ impl Profiler {
 
         if should_recreate_buffer {
             let old_capacity = self.lines_vbo_capacity.unwrap_or(0);
-            let new_capacity = if old_capacity == 0 { 1024 } else { old_capacity * 2 };
+            let new_capacity = if old_capacity == 0 {
+                1024
+            } else {
+                old_capacity * 2
+            };
 
-            self.lines_vbo.dynamic_draw_data_null::<LinePoint>(new_capacity);
+            self.lines_vbo
+                .dynamic_draw_data_null::<LinePoint>(new_capacity);
             self.lines_vbo_capacity = Some(new_capacity);
         }
 
         const Y_SCALE: f32 = 10.0;
 
         if let Some(_) = self.lines_vbo_capacity {
-            if let Some(mut buffer) = unsafe { self.lines_vbo.map_buffer_range_write_invalidate::<LinePoint>(0, all_data_len) } {
+            if let Some(mut buffer) = unsafe {
+                self.lines_vbo
+                    .map_buffer_range_write_invalidate::<LinePoint>(0, all_data_len)
+            } {
                 let mut buffer_index = 0;
                 for (index, frame) in self.frame_data_history.iter().enumerate() {
                     let mut previous_instant = frame.start;
                     for item in frame.items.iter() {
-                        let item_start_diff = (previous_instant - frame.start).as_fractional_millis() as f32;
+                        let item_start_diff =
+                            (previous_instant - frame.start).as_fractional_millis() as f32;
                         let item_end_diff = (item.time - frame.start).as_fractional_millis() as f32;
 
                         let line_point = LinePoint {
@@ -175,13 +191,15 @@ impl Profiler {
                     pos: (0.0, bar_height).into(),
                     color: (1.0, 0.0, 0.0, 0.6).into(),
                 };
-                *unsafe { buffer.get_unchecked_mut(buffer_index) } = line_point; buffer_index += 1;
+                *unsafe { buffer.get_unchecked_mut(buffer_index) } = line_point;
+                buffer_index += 1;
 
                 let line_point = LinePoint {
                     pos: (self.view_width_pixels as f32, bar_height).into(),
                     color: (1.0, 0.0, 0.0, 0.3).into(),
                 };
-                *unsafe { buffer.get_unchecked_mut(buffer_index) } = line_point; buffer_index += 1;
+                *unsafe { buffer.get_unchecked_mut(buffer_index) } = line_point;
+                buffer_index += 1;
 
                 // 60 fps bar, yellow
                 let bar_height = 16.666 * Y_SCALE;
@@ -190,13 +208,15 @@ impl Profiler {
                     pos: (0.0, bar_height).into(),
                     color: (1.0, 1.0, 0.0, 0.6).into(),
                 };
-                *unsafe { buffer.get_unchecked_mut(buffer_index) } = line_point; buffer_index += 1;
+                *unsafe { buffer.get_unchecked_mut(buffer_index) } = line_point;
+                buffer_index += 1;
 
                 let line_point = LinePoint {
                     pos: (self.view_width_pixels as f32, bar_height).into(),
                     color: (1.0, 1.0, 0.0, 0.3).into(),
                 };
-                *unsafe { buffer.get_unchecked_mut(buffer_index) } = line_point; buffer_index += 1;
+                *unsafe { buffer.get_unchecked_mut(buffer_index) } = line_point;
+                buffer_index += 1;
 
                 // 144 fps bar, green
                 let bar_height = 6.9 * Y_SCALE;
@@ -205,7 +225,8 @@ impl Profiler {
                     pos: (0.0, bar_height).into(),
                     color: (0.0, 1.0, 0.0, 0.6).into(),
                 };
-                *unsafe { buffer.get_unchecked_mut(buffer_index) } = line_point; buffer_index += 1;
+                *unsafe { buffer.get_unchecked_mut(buffer_index) } = line_point;
+                buffer_index += 1;
 
                 let line_point = LinePoint {
                     pos: (self.view_width_pixels as f32, bar_height).into(),
@@ -220,13 +241,18 @@ impl Profiler {
         self.lines_vbo.unbind();
     }
 
-    pub fn render(&mut self, gl: &gl::Gl, target: &ColorBuffer, vp_matrix: &na::Matrix4<f32>, view_width_pixels: i32) {
+    pub fn render(
+        &mut self,
+        gl: &gl::Gl,
+        target: &ColorBuffer,
+        vp_matrix: &na::Matrix4<f32>,
+        view_width_pixels: i32,
+    ) {
         self.view_width_pixels = view_width_pixels;
         if self.draw_enabled {
             self.update_buffer();
 
             if self.lines_vbo_count > 0 {
-
                 self.program.set_used();
                 if let Some(loc) = self.program_view_projection_location {
                     self.program.set_uniform_matrix_4fv(loc, &vp_matrix);
@@ -238,11 +264,7 @@ impl Profiler {
                     target.set_default_blend_func(gl);
                     target.enable_blend(gl);
 
-                    gl.DrawArrays(
-                        gl::LINES,
-                        0,
-                        self.lines_vbo_count,
-                    );
+                    gl.DrawArrays(gl::LINES, 0, self.lines_vbo_count);
 
                     target.disable_blend(gl);
                 }

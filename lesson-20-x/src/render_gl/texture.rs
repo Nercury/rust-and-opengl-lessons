@@ -1,6 +1,6 @@
-use gl;
-use resources::{Resources, ResourcePath};
 use failure;
+use gl;
+use resources::{ResourcePath, Resources};
 use std::os::raw;
 
 pub struct TextureLoadOptions<'a> {
@@ -66,7 +66,11 @@ impl Texture {
         }
     }
 
-    pub fn from_res<'a>(options: TextureLoadOptions<'a>, gl: &gl::Gl, res: &Resources) -> Result<Texture, failure::Error> {
+    pub fn from_res<'a>(
+        options: TextureLoadOptions<'a>,
+        gl: &gl::Gl,
+        res: &Resources,
+    ) -> Result<Texture, failure::Error> {
         let mut obj: gl::types::GLuint = 0;
         unsafe {
             gl.GenTextures(1, &mut obj);
@@ -74,7 +78,7 @@ impl Texture {
 
         let texture = Texture {
             gl: gl.clone(),
-            obj
+            obj,
         };
 
         texture.update(options, res)?;
@@ -82,7 +86,11 @@ impl Texture {
         Ok(texture)
     }
 
-    pub fn update<'a>(&self, options: TextureLoadOptions<'a>, res: &Resources) -> Result<(), failure::Error> {
+    pub fn update<'a>(
+        &self,
+        options: TextureLoadOptions<'a>,
+        res: &Resources,
+    ) -> Result<(), failure::Error> {
         let gl = &self.gl;
 
         unsafe {
@@ -97,66 +105,74 @@ impl Texture {
 
                 if options.gen_mipmaps {
                     unsafe {
-                        gl.TexImage2D(gl::TEXTURE_2D,
-                                      0,
-                                      gl::RGB8 as gl::types::GLint,
-                                      img.width() as i32,
-                                      img.height() as i32,
-                                      0,
-                                      gl::RGB,
-                                      gl::UNSIGNED_BYTE,
-                                      img.as_ptr() as *const raw::c_void);
+                        gl.TexImage2D(
+                            gl::TEXTURE_2D,
+                            0,
+                            gl::RGB8 as gl::types::GLint,
+                            img.width() as i32,
+                            img.height() as i32,
+                            0,
+                            gl::RGB,
+                            gl::UNSIGNED_BYTE,
+                            img.as_ptr() as *const raw::c_void,
+                        );
                         gl.GenerateMipmap(gl::TEXTURE_2D);
                     }
                 } else {
                     unsafe {
                         gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_BASE_LEVEL, 0);
                         gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAX_LEVEL, 0);
-                        gl.TexImage2D(gl::TEXTURE_2D,
-                                      0,
-                                      gl::RGB8 as gl::types::GLint,
-                                      img.width() as i32,
-                                      img.height() as i32,
-                                      0,
-                                      gl::RGB,
-                                      gl::UNSIGNED_BYTE,
-                                      img.as_ptr() as *const raw::c_void);
+                        gl.TexImage2D(
+                            gl::TEXTURE_2D,
+                            0,
+                            gl::RGB8 as gl::types::GLint,
+                            img.width() as i32,
+                            img.height() as i32,
+                            0,
+                            gl::RGB,
+                            gl::UNSIGNED_BYTE,
+                            img.as_ptr() as *const raw::c_void,
+                        );
                     }
                 }
-            },
+            }
             gl::RGBA => {
                 let img = res.load_rgba_image(options.resource_name)?;
 
                 if options.gen_mipmaps {
                     unsafe {
-                        gl.TexImage2D(gl::TEXTURE_2D,
-                                      0,
-                                      gl::RGBA8 as gl::types::GLint,
-                                      img.width() as i32,
-                                      img.height() as i32,
-                                      0,
-                                      gl::RGBA,
-                                      gl::UNSIGNED_BYTE,
-                                      img.as_ptr() as *const raw::c_void);
+                        gl.TexImage2D(
+                            gl::TEXTURE_2D,
+                            0,
+                            gl::RGBA8 as gl::types::GLint,
+                            img.width() as i32,
+                            img.height() as i32,
+                            0,
+                            gl::RGBA,
+                            gl::UNSIGNED_BYTE,
+                            img.as_ptr() as *const raw::c_void,
+                        );
                         gl.GenerateMipmap(gl::TEXTURE_2D);
                     }
                 } else {
                     unsafe {
                         gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_BASE_LEVEL, 0);
                         gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAX_LEVEL, 0);
-                        gl.TexImage2D(gl::TEXTURE_2D,
-                                      0,
-                                      gl::RGBA8 as gl::types::GLint,
-                                      img.width() as i32,
-                                      img.height() as i32,
-                                      0,
-                                      gl::RGBA,
-                                      gl::UNSIGNED_BYTE,
-                                      img.as_ptr() as *const raw::c_void);
+                        gl.TexImage2D(
+                            gl::TEXTURE_2D,
+                            0,
+                            gl::RGBA8 as gl::types::GLint,
+                            img.width() as i32,
+                            img.height() as i32,
+                            0,
+                            gl::RGBA,
+                            gl::UNSIGNED_BYTE,
+                            img.as_ptr() as *const raw::c_void,
+                        );
                     }
                 }
-            },
-            _ => unreachable!("Only RGB or RGBA images can be constructed")
+            }
+            _ => unreachable!("Only RGB or RGBA images can be constructed"),
         }
 
         unsafe {

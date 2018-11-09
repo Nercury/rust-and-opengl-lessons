@@ -1,5 +1,5 @@
-extern crate sdl2;
 extern crate gl;
+extern crate sdl2;
 
 pub mod render_gl;
 
@@ -20,25 +20,24 @@ fn main() {
         .unwrap();
 
     let _gl_context = window.gl_create_context().unwrap();
-    let _gl = gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void);
+    let _gl =
+        gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void);
 
     unsafe {
         gl::Viewport(0, 0, 900, 700);
         gl::ClearColor(0.3, 0.3, 0.5, 1.0);
     }
 
-    use std::ffi::{CString};
-    let vert_shader = render_gl::Shader::from_vert_source(
-        &CString::new(include_str!("triangle.vert")).unwrap()
-    ).unwrap();
+    use std::ffi::CString;
+    let vert_shader =
+        render_gl::Shader::from_vert_source(&CString::new(include_str!("triangle.vert")).unwrap())
+            .unwrap();
 
-    let frag_shader = render_gl::Shader::from_frag_source(
-        &CString::new(include_str!("triangle.frag")).unwrap()
-    ).unwrap();
+    let frag_shader =
+        render_gl::Shader::from_frag_source(&CString::new(include_str!("triangle.frag")).unwrap())
+            .unwrap();
 
-    let shader_program = render_gl::Program::from_shaders(
-        &[vert_shader, frag_shader]
-    ).unwrap();
+    let shader_program = render_gl::Program::from_shaders(&[vert_shader, frag_shader]).unwrap();
 
     shader_program.set_used();
 
@@ -46,8 +45,8 @@ fn main() {
     'main: loop {
         for event in event_pump.poll_iter() {
             match event {
-                sdl2::event::Event::Quit {..} => break 'main,
-                _ => {},
+                sdl2::event::Event::Quit { .. } => break 'main,
+                _ => {}
             }
         }
 

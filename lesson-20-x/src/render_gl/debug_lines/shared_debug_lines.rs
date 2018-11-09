@@ -1,5 +1,5 @@
-use std::collections::BTreeMap;
 use super::LinePoint;
+use std::collections::BTreeMap;
 
 pub struct SharedDebugLines {
     pub invalidated: bool,

@@ -1,11 +1,11 @@
+use nalgebra as na;
 use ncollide3d::bounding_volume::aabb::AABB;
 use ncollide3d::query::Ray;
-use nalgebra as na;
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 mod shared_selectables;
-use self::shared_selectables::{SharedSelectables, ContainerHandle, Container};
+use self::shared_selectables::{Container, ContainerHandle, SharedSelectables};
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum Action {
@@ -65,8 +65,7 @@ impl Selectables {
     }
 
     pub fn selectable(&self, aabb: AABB<f32>, isometry: na::Isometry3<f32>) -> SelectableAABB {
-        let new_handle = self.shared.borrow_mut()
-            .new_container(aabb, isometry);
+        let new_handle = self.shared.borrow_mut().new_container(aabb, isometry);
 
         SelectableAABB {
             shared: self.shared.clone(),

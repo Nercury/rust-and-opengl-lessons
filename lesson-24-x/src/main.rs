@@ -1,37 +1,48 @@
+extern crate env_logger;
+extern crate failure;
+extern crate floating_duration;
 extern crate gl;
+extern crate lesson_24_x_render as render;
+extern crate lesson_24_x_render_gl as render_gl;
+#[macro_use] extern crate log;
+extern crate nalgebra as na;
+extern crate resources;
 extern crate sdl2;
 extern crate ui;
-extern crate nalgebra as na;
-extern crate failure;
-extern crate lesson_24_x_render as render;
-extern crate resources;
-extern crate lesson_24_x_render_gl as render_gl;
-extern crate floating_duration;
 
-pub mod profiling;
 pub mod debug;
-pub mod system;
 pub mod interface;
+pub mod profiling;
+pub mod system;
 
 use failure::err_msg;
-use std::time::{Instant, Duration};
 use floating_duration::TimeAsFloat;
 use interface::Interface;
+use std::time::{Duration, Instant};
 
 fn main() {
+    let mut builder = env_logger::Builder::new();
+    builder.filter(None, log::LevelFilter::Trace);
+    builder.default_format_module_path(true);
+    builder.default_format_level(true);
+    if ::std::env::var("RUST_LOG").is_ok() {
+        builder.parse(&::std::env::var("RUST_LOG").unwrap());
+    }
+    builder.init();
+
     if let Err(e) = run() {
         println!("{}", debug::failure_to_string(e));
     }
 }
 
 fn run() -> Result<(), failure::Error> {
-    let resources = resources::Resources::new()
-        .loaded_from(
-            "core", 0,
-            resources::backend::FileSystem::from_rel_path(env!("CARGO_MANIFEST_DIR"), "core")
-                .with_write()
-                .with_watch(),
-        );
+    let resources = resources::Resources::new().loaded_from(
+        "core",
+        0,
+        resources::backend::FileSystem::from_rel_path(env!("CARGO_MANIFEST_DIR"), "core")
+            .with_write()
+            .with_watch(),
+    );
 
     let sdl = sdl2::init().map_err(err_msg)?;
     let video_subsystem = sdl.video().map_err(err_msg)?;
@@ -46,7 +57,7 @@ fn run() -> Result<(), failure::Error> {
         width: 960,
         height: 600,
         highdpi_width: 960,
-        highdpi_height: 600
+        highdpi_height: 600,
     };
 
     let window = video_subsystem
@@ -61,7 +72,9 @@ fn run() -> Result<(), failure::Error> {
     window_size.highdpi_height = drawable_size.1 as i32;
 
     let _gl_context = window.gl_create_context().map_err(err_msg)?;
-    let gl = gl::Gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void);
+    let gl = gl::Gl::load_with(|s| {
+        video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void
+    });
 
     // 0 for immediate updates,
     // 1 for updates synchronized with the vertical retrace,
@@ -70,7 +83,8 @@ fn run() -> Result<(), failure::Error> {
     let vsync = false;
     video_subsystem.gl_set_swap_interval(if vsync { 1 } else { 0 });
 
-    let mut viewport = render_gl::Viewport::for_window(window_size.highdpi_width, window_size.highdpi_height);
+    let mut viewport =
+        render_gl::Viewport::for_window(window_size.highdpi_width, window_size.highdpi_height);
     let color_buffer = render_gl::ColorBuffer::new();
 
     // set up shared state for window
@@ -79,7 +93,14 @@ fn run() -> Result<(), failure::Error> {
     color_buffer.set_clear_color(&gl, na::Vector3::new(0.3, 0.3, 0.5));
 
     let mut iface_auto_size = false;
-    let mut iface = Interface::new(&gl, &resources, ui::BoxSize::Fixed { w: viewport.w, h: viewport.h })?;
+    let mut iface = Interface::new(
+        &gl,
+        &resources,
+        ui::BoxSize::Fixed {
+            w: viewport.w,
+            h: viewport.h,
+        },
+    )?;
 
     // main loop
 
@@ -87,9 +108,15 @@ fn run() -> Result<(), failure::Error> {
 
     let mut event_pump = sdl.event_pump().map_err(err_msg)?;
     'main: loop {
-
         for event in event_pump.poll_iter() {
-            if system::input::window::handle_default_window_events(&event, &gl, &window, &mut window_size, &mut viewport) == system::input::window::HandleResult::Quit {
+            if system::input::window::handle_default_window_events(
+                &event,
+                &gl,
+                &window,
+                &mut window_size,
+                &mut viewport,
+            ) == system::input::window::HandleResult::Quit
+            {
                 break 'main;
             }
 
@@ -105,21 +132,28 @@ fn run() -> Result<(), failure::Error> {
                     viewport.update_size(hdpi_w as i32, hdpi_h as i32);
                     viewport.set_used(&gl);
                     if iface_auto_size {
-                        iface.resize(ui::BoxSize::Auto );
+                        iface.resize(ui::BoxSize::Auto);
                     } else {
-                        iface.resize(ui::BoxSize::Fixed { w: viewport.w, h: viewport.h });
+                        iface.resize(ui::BoxSize::Fixed {
+                            w: viewport.w,
+                            h: viewport.h,
+                        });
                     }
-                },
+                }
                 Event::KeyDown {
-                    scancode: Some(Scancode::L), ..
+                    scancode: Some(Scancode::L),
+                    ..
                 } => {
                     iface_auto_size = !iface_auto_size;
                     if iface_auto_size {
-                        iface.resize(ui::BoxSize::Auto );
+                        iface.resize(ui::BoxSize::Auto);
                     } else {
-                        iface.resize(ui::BoxSize::Fixed { w: viewport.w, h: viewport.h });
+                        iface.resize(ui::BoxSize::Fixed {
+                            w: viewport.w,
+                            h: viewport.h,
+                        });
                     }
-                },
+                }
                 _ => (),
             };
         }
@@ -143,7 +177,14 @@ fn run() -> Result<(), failure::Error> {
         let bottom = 0;
 
         let ui_matrix = na::Matrix4::new_nonuniform_scaling(&[1.0, -1.0, 1.0].into())
-            * na::Matrix4::new_orthographic(left as f32, right as f32, bottom as f32, top as f32, -10.0, 10.0);
+            * na::Matrix4::new_orthographic(
+                left as f32,
+                right as f32,
+                bottom as f32,
+                top as f32,
+                -10.0,
+                10.0,
+            );
 
         iface.render(&gl, &color_buffer, &ui_matrix);
 

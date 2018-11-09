@@ -1,14 +1,13 @@
-use gl;
 use failure;
-use render_gl::{self, data, buffer, DebugLines};
-use selection::{self, Selectables, SelectableAABB};
-use resources::Resources;
+use gl;
+use mesh;
 use nalgebra as na;
 use ncollide3d::bounding_volume::aabb::AABB;
-use mesh;
+use render_gl::{self, buffer, data, DebugLines};
+use resources::Resources;
+use selection::{self, SelectableAABB, Selectables};
 
-#[derive(VertexAttribPointers)]
-#[derive(Copy, Clone, Debug)]
+#[derive(VertexAttribPointers, Copy, Clone, Debug)]
 #[repr(C, packed)]
 struct Vertex {
     #[location = "0"]
@@ -40,8 +39,12 @@ pub struct Dice {
 }
 
 impl Dice {
-    pub fn new(res: &Resources, gl: &gl::Gl, debug_lines: &DebugLines, selectables: &Selectables) -> Result<Dice, failure::Error> {
-
+    pub fn new(
+        res: &Resources,
+        gl: &gl::Gl,
+        debug_lines: &DebugLines,
+        selectables: &Selectables,
+    ) -> Result<Dice, failure::Error> {
         // set up shader program
 
         let program = render_gl::Program::from_res(gl, res, "shaders/shiny")?;
@@ -59,32 +62,36 @@ impl Dice {
         let material = imported_models.materials.into_iter().next();
         let material_index = material.as_ref().map(|_| 0); // it is first or None
 
-        let texture = material.as_ref()
-            .and_then(|m| m.diffuse_map.as_ref()
-                .and_then(|resource_path|
-                    render_gl::Texture::from_res_rgb(&resource_path)
-                        .with_gen_mipmaps()
-                        .load(gl, res)
-                        .map_err(|e| println!("Error loading {}: {}", resource_path, e))
-                        .ok()
-                ));
-        let texture_normals = material.as_ref()
-            .and_then(|m| m.bump_map.as_ref()
-                .and_then(|resource_path|
-                    render_gl::Texture::from_res_rgb(&resource_path)
-                        .with_gen_mipmaps()
-                        .load(gl, res)
-                        .map_err(|e| println!("Error loading {}: {}", resource_path, e))
-                        .ok()
-                ));
+        let texture = material.as_ref().and_then(|m| {
+            m.diffuse_map.as_ref().and_then(|resource_path| {
+                render_gl::Texture::from_res_rgb(&resource_path)
+                    .with_gen_mipmaps()
+                    .load(gl, res)
+                    .map_err(|e| println!("Error loading {}: {}", resource_path, e))
+                    .ok()
+            })
+        });
+        let texture_normals = material.as_ref().and_then(|m| {
+            m.bump_map.as_ref().and_then(|resource_path| {
+                render_gl::Texture::from_res_rgb(&resource_path)
+                    .with_gen_mipmaps()
+                    .load(gl, res)
+                    .map_err(|e| println!("Error loading {}: {}", resource_path, e))
+                    .ok()
+            })
+        });
 
         // match mesh to material id and get the mesh
-        let mesh = imported_models.meshes.into_iter()
+        let mesh = imported_models
+            .meshes
+            .into_iter()
             .filter(|model| model.material_index == material_index)
             .next()
             .expect("expected obj file to contain a mesh");
 
-        let vbo_data = mesh.vertices.clone()
+        let vbo_data = mesh
+            .vertices
+            .clone()
             .into_iter()
             .map(|v| {
                 let tv = v.tangents.unwrap_or_else(|| {
@@ -105,8 +112,7 @@ impl Dice {
                     t: (tv.tangent.x, tv.tangent.y, tv.tangent.z).into(),
                     n: (normal.x, normal.y, normal.z).into(),
                 }
-            })
-            .collect::<Vec<_>>();
+            }).collect::<Vec<_>>();
 
         let ebo_data = mesh.triangle_indices();
 
@@ -149,18 +155,23 @@ impl Dice {
             _ebo: ebo,
             index_count: ebo_data.len() as i32,
             vao,
-            debug_tangent_normals: vbo_data.iter().map(|v| debug_lines.ray_marker(
-                initial_isometry,
-                na::Point3::new(v.pos.d0, v.pos.d1, v.pos.d2),
-                na::Vector3::new(v.n.d0, v.n.d1, v.n.d2) * 0.2,
-                na::Vector4::new(0.0, 0.0, 1.0, 1.0),
-            )).chain(vbo_data.iter().map(|v| debug_lines.ray_marker(
-                initial_isometry,
-                na::Point3::new(v.pos.d0, v.pos.d1, v.pos.d2),
-                na::Vector3::new(v.t.d0, v.t.d1, v.t.d2) * 0.2,
-                na::Vector4::new(0.0, 1.0, 0.0, 1.0),
-            )))
-                .collect(),
+            debug_tangent_normals: vbo_data
+                .iter()
+                .map(|v| {
+                    debug_lines.ray_marker(
+                        initial_isometry,
+                        na::Point3::new(v.pos.d0, v.pos.d1, v.pos.d2),
+                        na::Vector3::new(v.n.d0, v.n.d1, v.n.d2) * 0.2,
+                        na::Vector4::new(0.0, 0.0, 1.0, 1.0),
+                    )
+                }).chain(vbo_data.iter().map(|v| {
+                    debug_lines.ray_marker(
+                        initial_isometry,
+                        na::Point3::new(v.pos.d0, v.pos.d1, v.pos.d2),
+                        na::Vector3::new(v.t.d0, v.t.d1, v.t.d2) * 0.2,
+                        na::Vector4::new(0.0, 1.0, 0.0, 1.0),
+                    )
+                })).collect(),
             selectable_aabb: {
                 let mut min_x = None;
                 let mut min_y = None;
@@ -172,14 +183,22 @@ impl Dice {
                 fn update_min(val: &mut Option<f32>, new: f32) {
                     *val = match val {
                         None => Some(new),
-                        Some(val) => if new < *val { Some(new) } else { return; },
+                        Some(val) => if new < *val {
+                            Some(new)
+                        } else {
+                            return;
+                        },
                     };
                 }
 
                 fn update_max(val: &mut Option<f32>, new: f32) {
                     *val = match val {
                         None => Some(new),
-                        Some(val) => if new > *val { Some(new) } else { return; },
+                        Some(val) => if new > *val {
+                            Some(new)
+                        } else {
+                            return;
+                        },
                     };
                 }
 
@@ -192,13 +211,19 @@ impl Dice {
                     update_max(&mut max_z, v.pos.d2);
                 }
 
-                if let (Some(min_x), Some(min_y), Some(min_z), Some(max_x), Some(max_y), Some(max_z)) = (min_x, min_y, min_z, max_x, max_y, max_z) {
-                    Some(
-                        selectables.selectable(
-                            AABB::new([min_x, min_y, min_z].into(), [max_x, max_y, max_z].into()),
-                            initial_isometry,
-                        )
-                    )
+                if let (
+                    Some(min_x),
+                    Some(min_y),
+                    Some(min_z),
+                    Some(max_x),
+                    Some(max_y),
+                    Some(max_z),
+                ) = (min_x, min_y, min_z, max_x, max_y, max_z)
+                {
+                    Some(selectables.selectable(
+                        AABB::new([min_x, min_y, min_z].into(), [max_x, max_y, max_z].into()),
+                        initial_isometry,
+                    ))
                 } else {
                     None
                 }
@@ -208,10 +233,15 @@ impl Dice {
 
     pub fn update(&mut self, _delta: f32) {
         loop {
-            let action = self.selectable_aabb.as_ref().and_then(|s| s.drain_pending_action());
+            let action = self
+                .selectable_aabb
+                .as_ref()
+                .and_then(|s| s.drain_pending_action());
 
             match action {
-                Some(selection::Action::Click) => { self.selectable_aabb.as_ref().map(|s| s.select()); },
+                Some(selection::Action::Click) => {
+                    self.selectable_aabb.as_ref().map(|s| s.select());
+                }
                 Some(selection::Action::Drag { new_isometry }) => self.set_transform(new_isometry),
                 _ => break,
             }
@@ -228,7 +258,12 @@ impl Dice {
         }
     }
 
-    pub fn render(&self, gl: &gl::Gl, viewprojection_matrix: &na::Matrix4<f32>, camera_pos: &na::Vector3<f32>) {
+    pub fn render(
+        &self,
+        gl: &gl::Gl,
+        viewprojection_matrix: &na::Matrix4<f32>,
+        camera_pos: &na::Vector3<f32>,
+    ) {
         self.program.set_used();
 
         if let (Some(loc), &Some(ref texture)) = (self.texture_location, &self.texture) {
@@ -236,16 +271,20 @@ impl Dice {
             self.program.set_uniform_1i(loc, 0);
         }
 
-        if let (Some(loc), &Some(ref texture)) = (self.texture_normals_location, &self.texture_normals) {
+        if let (Some(loc), &Some(ref texture)) =
+            (self.texture_normals_location, &self.texture_normals)
+        {
             texture.bind_at(1);
             self.program.set_uniform_1i(loc, 1);
         }
 
         if let Some(loc) = self.program_viewprojection_location {
-            self.program.set_uniform_matrix_4fv(loc, viewprojection_matrix);
+            self.program
+                .set_uniform_matrix_4fv(loc, viewprojection_matrix);
         }
         if let Some(loc) = self.program_model_location {
-            self.program.set_uniform_matrix_4fv(loc, &self.transform.to_homogeneous());
+            self.program
+                .set_uniform_matrix_4fv(loc, &self.transform.to_homogeneous());
         }
         if let Some(loc) = self.camera_pos_location {
             self.program.set_uniform_3f(loc, camera_pos);

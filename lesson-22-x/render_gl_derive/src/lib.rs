@@ -1,8 +1,9 @@
-#![recursion_limit="128"]
+#![recursion_limit = "128"]
 
 extern crate proc_macro;
 extern crate syn;
-#[macro_use] extern crate quote;
+#[macro_use]
+extern crate quote;
 
 #[proc_macro_derive(VertexAttribPointers, attributes(location))]
 pub fn vertex_attrib_pointers_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -34,11 +35,16 @@ fn generate_impl(ast: &syn::DeriveInput) -> quote::Tokens {
 fn generate_vertex_attrib_pointer_calls(body: &syn::Body) -> Vec<quote::Tokens> {
     match body {
         &syn::Body::Enum(_) => panic!("VertexAttribPointers can not be implemented for enums"),
-        &syn::Body::Struct(syn::VariantData::Unit) =>  panic!("VertexAttribPointers can not be implemented for Unit structs"),
-        &syn::Body::Struct(syn::VariantData::Tuple(_)) =>  panic!("VertexAttribPointers can not be implemented for Tuple structs"),
-        &syn::Body::Struct(syn::VariantData::Struct(ref s)) => {
-            s.iter().map(generate_struct_field_vertex_attrib_pointer_call).collect()
-        },
+        &syn::Body::Struct(syn::VariantData::Unit) => {
+            panic!("VertexAttribPointers can not be implemented for Unit structs")
+        }
+        &syn::Body::Struct(syn::VariantData::Tuple(_)) => {
+            panic!("VertexAttribPointers can not be implemented for Tuple structs")
+        }
+        &syn::Body::Struct(syn::VariantData::Struct(ref s)) => s
+            .iter()
+            .map(generate_struct_field_vertex_attrib_pointer_call)
+            .collect(),
     }
 }
 
@@ -49,17 +55,25 @@ fn generate_struct_field_vertex_attrib_pointer_call(field: &syn::Field) -> quote
     };
     let field_ty = &field.ty;
 
-    if let Some(location_attr) = field.attrs
+    if let Some(location_attr) = field
+        .attrs
         .iter()
         .filter(|a| a.value.name() == "location")
-        .next() {
-
+        .next()
+    {
         let location_value: usize = match location_attr.value {
-            syn::MetaItem::NameValue(_, syn::Lit::Str(ref s, _)) => s.parse()
-                .unwrap_or_else(
-                    |_| panic!("Field {} location attribute value must contain an integer", field_name)
-                ),
-            _ => panic!("Field {} location attribute value must be a string literal", field_name)
+            syn::MetaItem::NameValue(_, syn::Lit::Str(ref s, _)) => {
+                s.parse().unwrap_or_else(|_| {
+                    panic!(
+                        "Field {} location attribute value must contain an integer",
+                        field_name
+                    )
+                })
+            }
+            _ => panic!(
+                "Field {} location attribute value must be a string literal",
+                field_name
+            ),
         };
 
         quote! {
