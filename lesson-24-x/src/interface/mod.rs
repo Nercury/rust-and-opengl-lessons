@@ -1,12 +1,15 @@
 use failure;
 use gl;
 use na;
+use render_gl::data;
 use render_gl::ColorBuffer;
 use render_gl::{DebugLines, RectMarker};
+use render_gl::{Flatlander, Alphabet, FlatlanderVertex};
 use resources;
 use std::collections::BTreeSet;
-use std::collections::HashMap;
+use std::collections::{HashMap, self};
 use ui::*;
+use lyon_path::default::Path;
 
 mod controls;
 
@@ -58,8 +61,20 @@ impl ControlInfo {
     }
 }
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+enum AlphabetFeature {
+    Font = 0,
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+struct AlphabetKey {
+    feature: AlphabetFeature,
+    id: usize,
+}
+
 pub struct Interface {
     tree: Tree,
+    fonts: Fonts,
     fill: Leaf<controls::Fill>,
     events: Events,
     controls: HashMap<Ix, ControlInfo>,
@@ -67,6 +82,9 @@ pub struct Interface {
     flush_updates_set: BTreeSet<Ix>,
 
     debug_lines: DebugLines,
+    flatlander: Flatlander,
+
+    alphabets: HashMap<AlphabetKey, Alphabet>,
 }
 
 impl Interface {
@@ -76,6 +94,7 @@ impl Interface {
         size: BoxSize,
     ) -> Result<Interface, failure::Error> {
         let tree = Tree::new();
+        let fonts = tree.fonts();
 
         let events = tree.events();
         let fill = tree.create_root(controls::Fill::new());
@@ -84,12 +103,15 @@ impl Interface {
 
         Ok(Interface {
             tree,
+            fonts,
             fill,
             events,
             controls: HashMap::new(),
             event_read_buffer: Vec::new(),
             flush_updates_set: BTreeSet::new(),
             debug_lines: DebugLines::new(gl, resources)?,
+            flatlander: Flatlander::new(gl, resources)?,
+            alphabets: HashMap::new(),
         })
     }
 
@@ -125,6 +147,55 @@ impl Interface {
                         .remove(&id)
                         .expect("process_events: self.controls.remove(&id)");
                 }
+                Effect::TextAdd { buffer } => {
+                    match self.alphabets.entry(AlphabetKey { feature: AlphabetFeature::Font, id: buffer.font_id }) {
+                        collections::hash_map::Entry::Occupied(_) => {},
+                        collections::hash_map::Entry::Vacant(mut e) => {
+                            if let Some(font) = self.fonts.font_from_id(buffer.font_id) {
+                                let alphabet = self.flatlander.create_alphabet();
+
+                                println!("name: {:?}", font.full_name());
+
+                                use lyon_path::default::Path;
+                                use lyon_path::builder::{FlatPathBuilder};
+                                use lyon_tessellation::{BuffersBuilder, FillOptions, FillTessellator, FillVertex, VertexBuffers};
+
+                                let mut builder = Path::builder();
+
+                                for glyph_ix in 0..font.glyph_count() {
+
+                                    font.outline(glyph_ix, ui::HintingOptions::None, &mut builder).expect("outline failed");
+                                    let path = builder.build_and_reset();
+
+                                    // Will contain the result of the tessellation.
+                                    let mut geometry: VertexBuffers<FlatlanderVertex, u16> = VertexBuffers::new();
+                                    let mut tessellator = FillTessellator::new();
+
+                                    {
+                                        // Compute the tessellation.
+                                        tessellator.tessellate_path(
+                                            path.path_iter(),
+                                            &FillOptions::default().with_tolerance(100.0),
+                                            &mut BuffersBuilder::new(&mut geometry, |vertex: FillVertex| {
+                                                FlatlanderVertex {
+                                                    pos: data::f32_f32::new(vertex.position.x, vertex.position.y),
+                                                    normal: data::f32_f32::new(vertex.normal.x, vertex.normal.y),
+                                                }
+                                            }),
+                                        ).unwrap();
+                                    }
+
+                                    alphabet.add_entry(glyph_ix, geometry.vertices, geometry.indices);
+                                }
+
+                                e.insert(alphabet);
+                            }
+                        },
+                    }
+                }
+                Effect::TextRemove { buffer } => {
+
+                }
             }
         }
 
@@ -149,5 +220,6 @@ impl Interface {
 
     pub fn render(&mut self, gl: &gl::Gl, target: &ColorBuffer, vp_matrix: &na::Matrix4<f32>) {
         self.debug_lines.render(gl, target, vp_matrix);
+        self.flatlander.render(gl, target, vp_matrix);
     }
 }

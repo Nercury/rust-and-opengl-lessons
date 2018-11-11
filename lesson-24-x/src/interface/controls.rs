@@ -3,7 +3,9 @@ use ui::*;
 pub struct Text;
 
 impl Element for Text {
-    fn inflate(&mut self, _base: &mut Base) {}
+    fn inflate(&mut self, base: &mut Base) {
+        base.primitives().text("Žiauriai gerai");
+    }
 
     fn resize(&mut self, base: &mut Base) {
         let box_size = base.box_size();

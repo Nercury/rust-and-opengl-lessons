@@ -8,44 +8,9 @@ mod shared {
     use na;
     use std::collections::VecDeque;
     use std::collections::{BTreeMap, BTreeSet};
+    use queues::*;
+    use fonts::Fonts;
     use *;
-
-    struct Queues {
-        next_queue_id: Ix,
-        queues: BTreeMap<Ix, VecDeque<Effect>>,
-    }
-
-    impl Queues {
-        pub fn new() -> Queues {
-            Queues {
-                next_queue_id: Ix(0),
-                queues: BTreeMap::new(),
-            }
-        }
-
-        pub fn create_queue(&mut self) -> Ix {
-            self.queues.insert(self.next_queue_id, VecDeque::new());
-            let id = self.next_queue_id;
-            self.next_queue_id.inc();
-            id
-        }
-
-        pub fn delete_queue(&mut self, id: Ix) {
-            self.queues.remove(&id);
-        }
-
-        fn send(&mut self, e: Effect) {
-            //trace!("event: {:?}", e);
-
-            for (_, q) in self.queues.iter_mut() {
-                q.push_back(e);
-            }
-        }
-
-        pub fn get_queue_mut(&mut self, id: Ix) -> Option<&mut VecDeque<Effect>> {
-            self.queues.get_mut(&id)
-        }
-    }
 
     struct LayoutingOptions {
         force_equal_child_size: bool,
@@ -294,10 +259,13 @@ mod shared {
                     ChildIterItemMut {
                         child,
                         container: self.container,
-                        resize_flow: self.resize_flow,
                     },
                 );
             }
+        }
+
+        pub fn primitives(&mut self) -> primitives::PrimitivesMutator {
+            primitives::PrimitivesMutator::new(&mut self.container.next_primitive_id, &mut self.container._fonts, &mut self.children.primitives, &mut self.container.queues)
         }
     }
 
@@ -319,7 +287,6 @@ mod shared {
     pub struct ChildIterItemMut<'a> {
         child: &'a mut Child,
         container: &'a mut Container,
-        resize_flow: ResizeFlow,
     }
 
     impl<'a> ChildIterItemMut<'a> {
@@ -377,12 +344,14 @@ mod shared {
 
     pub struct Children {
         items: BTreeMap<Ix, Child>,
+        primitives: primitives::Primitives,
     }
 
     impl Children {
         pub fn empty() -> Children {
             Children {
                 items: BTreeMap::new(),
+                primitives: primitives::Primitives::new(),
             }
         }
 
@@ -393,8 +362,10 @@ mod shared {
 
     pub struct Container {
         queues: Queues,
+        _fonts: Fonts,
 
         next_id: Ix,
+        next_primitive_id: Ix,
         _root_id: Option<Ix>,
         nodes: BTreeMap<Ix, NodeSkeleton>,
 
@@ -405,13 +376,19 @@ mod shared {
         pub fn new() -> Container {
             Container {
                 queues: Queues::new(),
+                _fonts: Fonts::new(),
 
                 next_id: Ix(0),
+                next_primitive_id: Ix(0),
                 _root_id: None,
                 nodes: BTreeMap::new(),
 
                 update_set: Some(BTreeSet::new()),
             }
+        }
+
+        pub fn fonts(&self) -> &Fonts {
+            &self._fonts
         }
 
         #[inline(always)]
@@ -834,6 +811,10 @@ impl Tree {
 
     pub fn events(&self) -> Events {
         Events::new(&self.shared)
+    }
+
+    pub fn fonts(&self) -> fonts::Fonts {
+        self.shared.borrow().fonts().clone()
     }
 }
 

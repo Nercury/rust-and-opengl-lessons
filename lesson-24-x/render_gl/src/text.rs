@@ -1,14 +1,11 @@
 use euclid::{Point2D, Size2D};
-//use font_kit::canvas::{Canvas, Format, RasterizationOptions};
 use font_kit::family_name::FamilyName;
 use font_kit::hinting::HintingOptions;
 use font_kit::properties::Properties;
 use font_kit::source::SystemSource;
-use lyon_path::builder::{FlatPathBuilder, SvgPathBuilder};
+use lyon_path::builder::{FlatPathBuilder};
 use lyon_path::default::Path;
 use lyon_tessellation::{BuffersBuilder, FillOptions, FillTessellator, FillVertex, VertexBuffers};
-
-//use image::{DynamicImage, RgbaImage, ImageBuffer};
 
 #[derive(Copy, Clone, Debug)]
 struct MyVertex { position: [f32; 2], normal: [f32; 2] }

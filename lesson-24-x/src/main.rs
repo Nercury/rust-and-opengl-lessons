@@ -9,6 +9,8 @@ extern crate nalgebra as na;
 extern crate resources;
 extern crate sdl2;
 extern crate ui;
+extern crate lyon_path;
+extern crate lyon_tessellation;
 
 pub mod debug;
 pub mod interface;
@@ -36,8 +38,6 @@ fn main() {
 }
 
 fn run() -> Result<(), failure::Error> {
-    render_gl::text::load_font();
-
     let resources = resources::Resources::new().loaded_from(
         "core",
         0,

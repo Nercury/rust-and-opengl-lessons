@@ -1,12 +1,24 @@
 #![forbid(unsafe_code)]
 
 extern crate nalgebra as na;
-#[macro_use]
-extern crate log;
+#[macro_use] extern crate log;
+extern crate slab;
+extern crate metrohash;
+extern crate int_hash;
+extern crate sha1;
+extern crate byteorder;
+extern crate font_kit;
+extern crate harfbuzz_rs;
+extern crate lyon_path;
 
 mod tree;
+mod primitives;
+mod queues;
+mod fonts;
 
+pub use primitives::PrimitivesMutator;
 pub use tree::{Base, Events, LastResolvedSize, Leaf, Tree};
+pub use fonts::{Fonts, BufferRef, Glyph, HintingOptions};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum BoxSize {
@@ -68,6 +80,12 @@ pub enum Effect {
         id: Ix,
         absolute_transform: na::Projective3<f32>,
     },
+    TextAdd {
+        buffer: fonts::BufferRef,
+    },
+    TextRemove {
+        buffer: fonts::BufferRef,
+    }
 }
 
 pub trait Element {

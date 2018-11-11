@@ -6,3 +6,11 @@ authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
 [dependencies]
 nalgebra = "0.16"
 log = "*"
+slab = "0.4"
+metrohash = "1.0.6"
+int_hash = "0.1.1"
+sha-1 = "0.8.0"
+byteorder = "1.2.7"
+harfbuzz_rs = "0.3.0"
+font-kit = { version = "0.1.0", path = "../../patches/font-kit" }
+lyon_path = "0.11.0"
