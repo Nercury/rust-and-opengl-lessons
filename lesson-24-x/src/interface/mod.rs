@@ -123,6 +123,8 @@ impl Interface {
         self.events.drain_into(&mut self.event_read_buffer);
         self.flush_updates_set.clear();
 
+        let mut glyph_buffer = Vec::new();
+
         for event in self.event_read_buffer.drain(..) {
             match event {
                 Effect::Add { id, parent_id } => {
@@ -148,49 +150,21 @@ impl Interface {
                         .expect("process_events: self.controls.remove(&id)");
                 }
                 Effect::TextAdd { buffer } => {
-                    match self.alphabets.entry(AlphabetKey { feature: AlphabetFeature::Font, id: buffer.font_id }) {
-                        collections::hash_map::Entry::Occupied(_) => {},
-                        collections::hash_map::Entry::Vacant(mut e) => {
-                            if let Some(font) = self.fonts.font_from_id(buffer.font_id) {
-                                let alphabet = self.flatlander.create_alphabet();
+                    let alphabet = match self.alphabets.entry(AlphabetKey { feature: AlphabetFeature::Font, id: buffer.font_id }) {
+                        collections::hash_map::Entry::Occupied(e) => e.into_mut(),
+                        collections::hash_map::Entry::Vacant(mut e) => e.insert(self.flatlander.create_alphabet()),
+                    };
 
-                                println!("name: {:?}", font.full_name());
+                    let buffer = self.fonts.buffer_from_id(buffer.id).expect("buffer missing: self.fonts.buffer_from_id(buffer.id)");
 
-                                use lyon_path::default::Path;
-                                use lyon_path::builder::{FlatPathBuilder};
-                                use lyon_tessellation::{BuffersBuilder, FillOptions, FillTessellator, FillVertex, VertexBuffers};
+                    use lyon_path::default::Path;
 
-                                let mut builder = Path::builder();
+                    let mut builder = Path::builder();
+                    glyph_buffer.clear();
+                    buffer.glyph_ids(&mut glyph_buffer);
 
-                                for glyph_ix in 0..font.glyph_count() {
-
-                                    font.outline(glyph_ix, ui::HintingOptions::None, &mut builder).expect("outline failed");
-                                    let path = builder.build_and_reset();
-
-                                    // Will contain the result of the tessellation.
-                                    let mut geometry: VertexBuffers<FlatlanderVertex, u16> = VertexBuffers::new();
-                                    let mut tessellator = FillTessellator::new();
-
-                                    {
-                                        // Compute the tessellation.
-                                        tessellator.tessellate_path(
-                                            path.path_iter(),
-                                            &FillOptions::default().with_tolerance(100.0),
-                                            &mut BuffersBuilder::new(&mut geometry, |vertex: FillVertex| {
-                                                FlatlanderVertex {
-                                                    pos: data::f32_f32::new(vertex.position.x, vertex.position.y),
-                                                    normal: data::f32_f32::new(vertex.normal.x, vertex.normal.y),
-                                                }
-                                            }),
-                                        ).unwrap();
-                                    }
-
-                                    alphabet.add_entry(glyph_ix, geometry.vertices, geometry.indices);
-                                }
-
-                                e.insert(alphabet);
-                            }
-                        },
+                    for &glyph_id in glyph_buffer.iter() {
+                        let _ix = ensure_glyph_is_in_alphabet_and_return_index(&mut builder, alphabet, buffer.font(), glyph_id);
                     }
                 }
                 Effect::TextRemove { buffer } => {
@@ -222,4 +196,38 @@ impl Interface {
         self.debug_lines.render(gl, target, vp_matrix);
         self.flatlander.render(gl, target, vp_matrix);
     }
+}
+
+fn ensure_glyph_is_in_alphabet_and_return_index(builder: &mut lyon_path::default::Builder, alphabet: &mut Alphabet, font: &Font, glyph_id: u32) -> usize {
+    if let Some(index) = alphabet.get_entry_index(glyph_id) {
+        return index;
+    }
+
+    trace!("tessellate glyph {} from {:?} font", glyph_id, font.full_name());
+
+    use lyon_path::builder::{FlatPathBuilder};
+    use lyon_tessellation::{BuffersBuilder, FillOptions, FillTessellator, FillVertex, VertexBuffers};
+
+    font.outline(glyph_id, ui::HintingOptions::None, builder).expect("outline failed");
+    let path = builder.build_and_reset();
+
+    // Will contain the result of the tessellation.
+    let mut geometry: VertexBuffers<FlatlanderVertex, u16> = VertexBuffers::new();
+    let mut tessellator = FillTessellator::new();
+
+    {
+        // Compute the tessellation.
+        tessellator.tessellate_path(
+            path.path_iter(),
+            &FillOptions::default().with_tolerance(100.0),
+            &mut BuffersBuilder::new(&mut geometry, |vertex: FillVertex| {
+                FlatlanderVertex {
+                    pos: data::f32_f32::new(vertex.position.x, vertex.position.y),
+                    normal: data::f32_f32::new(vertex.normal.x, vertex.normal.y),
+                }
+            }),
+        ).unwrap();
+    }
+
+    alphabet.add_entry(glyph_id, geometry.vertices, geometry.indices)
 }

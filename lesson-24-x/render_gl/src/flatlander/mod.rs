@@ -82,23 +82,74 @@ pub struct Alphabet {
     flatland: Rc<RefCell<shared::Flatland>>,
 }
 
-impl Alphabet {
-    pub fn add_entry(&self, id: u32, vertices: Vec<FlatlanderVertex>, indices: Vec<u16>) {
+impl Clone for Alphabet {
+    fn clone(&self) -> Self {
         let mut flatland = self.flatland.borrow_mut();
-        // TODO: flatland.add_alphabet_entry()
+        flatland.inc_alphabet(self.slot);
+        Alphabet {
+            slot: self.slot,
+            flatland: self.flatland.clone(),
+        }
+    }
+}
+
+impl Alphabet {
+    pub fn get_entry_index(&self, id: u32) -> Option<usize> {
+        let mut flatland = self.flatland.borrow();
+        flatland.get_alphabet_entry_index(self.slot, id)
+    }
+
+    pub fn add_entry(&self, id: u32, vertices: Vec<FlatlanderVertex>, indices: Vec<u16>) -> usize {
+        let mut flatland = self.flatland.borrow_mut();
+        flatland.add_alphabet_entry(self.slot, id, vertices, indices)
+    }
+}
+
+impl Drop for Alphabet {
+    fn drop(&mut self) {
+        let mut flatland = self.flatland.borrow_mut();
+        flatland.dec_alphabet(self.slot);
     }
 }
 
 mod shared {
+    use int_hash::IntHashMap;
     use slotmap;
+    use super::FlatlanderVertex;
 
     #[derive(Copy, Clone)]
     pub struct AlphabetSlotData {
-
+        count: isize,
     }
 
     pub struct AlphabetData {
+        pub map: IntHashMap<u32, usize>,
+        pub entries: Vec<AlphabetEntry>,
+    }
 
+    impl AlphabetData {
+        pub fn new() -> AlphabetData {
+            AlphabetData {
+                map: IntHashMap::default(),
+                entries: Vec::with_capacity(4096),
+            }
+        }
+
+        pub fn get_index(&self, id: u32) -> Option<usize> {
+            self.map.get(&id).map(|v| *v)
+        }
+
+        pub fn add(&mut self, id: u32, vertices: Vec<FlatlanderVertex>, indices: Vec<u16>) -> usize {
+            let index = self.entries.len();
+            self.entries.push(AlphabetEntry { vertices, indices });
+            self.map.insert(id, index);
+            index
+        }
+    }
+
+    pub struct AlphabetEntry {
+        pub vertices: Vec<FlatlanderVertex>,
+        pub indices: Vec<u16>,
     }
 
     new_key_type! { pub struct AlphabetSlot; }
@@ -121,10 +172,30 @@ mod shared {
         }
 
         pub fn create_alphabet(&mut self) -> AlphabetSlot {
-            let slot = self.alphabet_slots.insert(AlphabetSlotData { });
-            self.alphabet_data.insert(slot, AlphabetData {});
+            let slot = self.alphabet_slots.insert(AlphabetSlotData { count: 1 });
+            self.alphabet_data.insert(slot, AlphabetData::new());
             self.invalidated = true;
             slot
+        }
+
+        pub fn get_alphabet_entry_index(&self, slot: AlphabetSlot, id: u32) -> Option<usize> {
+            self.alphabet_data[slot].get_index(id)
+        }
+
+        pub fn add_alphabet_entry(&mut self, slot: AlphabetSlot, id: u32, vertices: Vec<FlatlanderVertex>, indices: Vec<u16>) -> usize {
+            self.alphabet_data[slot].add(id, vertices, indices)
+        }
+
+        pub fn inc_alphabet(&mut self, slot: AlphabetSlot) {
+            self.alphabet_slots[slot].count += 1;
+        }
+
+        pub fn dec_alphabet(&mut self, slot: AlphabetSlot) {
+            self.alphabet_slots[slot].count -= 1;
+
+            if self.alphabet_slots[slot].count <= 0 {
+                self.delete_alphabet(slot);
+            }
         }
 
         pub fn delete_alphabet(&mut self, slot: AlphabetSlot) {

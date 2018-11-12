@@ -18,7 +18,7 @@ mod fonts;
 
 pub use primitives::PrimitivesMutator;
 pub use tree::{Base, Events, LastResolvedSize, Leaf, Tree};
-pub use fonts::{Fonts, BufferRef, Glyph, HintingOptions};
+pub use fonts::{Fonts, Font, BufferRef, Glyph, HintingOptions};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum BoxSize {

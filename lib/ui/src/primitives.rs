@@ -22,8 +22,10 @@ impl<'a> PrimitivesMutator<'a> {
 
         if let Some(font) = font {
             let buffer = font.create_buffer(text);
+            let weak_ref = buffer.weak_ref();
+            self.primitives.buffers.push(buffer.clone());
 
-            self.queues.send(Effect::TextAdd { buffer: buffer.weak_ref() });
+            self.queues.send(Effect::TextAdd { buffer: weak_ref });
 
             return Some(Text {
                 id: self.next_primitive_id.inc(),
@@ -41,13 +43,13 @@ pub struct Text {
 }
 
 pub struct Primitives {
-
+    buffers: Vec<Buffer>,
 }
 
 impl Primitives {
     pub fn new() -> Primitives {
         Primitives {
-
+            buffers: Vec::new(),
         }
     }
 }
