@@ -18,7 +18,7 @@ mod fonts;
 
 pub use primitives::PrimitivesMutator;
 pub use tree::{Base, Events, LastResolvedSize, Leaf, Tree};
-pub use fonts::{Fonts, Font, BufferRef, Glyph, HintingOptions};
+pub use fonts::{Fonts, Font, BufferRef, GlyphPosition, HintingOptions};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum BoxSize {
@@ -90,7 +90,9 @@ pub enum Effect {
 
 pub trait Element {
     fn inflate(&mut self, _base: &mut Base) {}
-    fn resize(&mut self, _base: &mut Base);
+    fn resize(&mut self, base: &mut Base) {
+        base.layout_vertical(5)
+    }
     fn update(&mut self, _base: &mut Base, _delta: f32) {}
 }
 

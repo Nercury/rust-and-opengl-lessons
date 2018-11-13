@@ -46,16 +46,17 @@ impl Flatlander {
     fn check_if_invalidated_and_reinitialize(&mut self, gl: &gl::Gl) {
         let mut flatland = self.flatland.borrow_mut();
 
-        if flatland.invalidated {
+        if flatland.alphabets_invalidated {
             if self.buffers.is_none() {
                 self.buffers = Some(buffers::Buffers::new(gl));
             }
 
             if let Some(ref mut buffers) = self.buffers {
-
+                buffers.upload_vertices(flatland.alphabet_vertices_len(), flatland.alphabet_vertices());
+                buffers.upload_indices(flatland.alphabet_indices_len(), flatland.alphabet_indices());
             }
 
-            flatland.invalidated = false;
+            flatland.alphabets_invalidated = false;
         }
     }
 
@@ -112,96 +113,32 @@ impl Drop for Alphabet {
     }
 }
 
-mod shared {
-    use int_hash::IntHashMap;
-    use slotmap;
-    use super::FlatlanderVertex;
+pub struct FlatlandItem {
+    pub alphabet_entry_index: usize,
+    pub x_offset: i32,
+    pub y_offset: i32,
+}
 
-    #[derive(Copy, Clone)]
-    pub struct AlphabetSlotData {
-        count: isize,
-    }
+pub struct FlatlandGroup {
+    alphabet: Alphabet,
+    group_slot: shared::GroupSlot,
+}
 
-    pub struct AlphabetData {
-        pub map: IntHashMap<u32, usize>,
-        pub entries: Vec<AlphabetEntry>,
-    }
+impl FlatlandGroup {
+    pub fn new(alphabet: Alphabet, items: Vec<FlatlandItem>) -> FlatlandGroup {
+        let id = alphabet.flatland.borrow_mut().create_flatland_group_with_items(items);
 
-    impl AlphabetData {
-        pub fn new() -> AlphabetData {
-            AlphabetData {
-                map: IntHashMap::default(),
-                entries: Vec::with_capacity(4096),
-            }
-        }
-
-        pub fn get_index(&self, id: u32) -> Option<usize> {
-            self.map.get(&id).map(|v| *v)
-        }
-
-        pub fn add(&mut self, id: u32, vertices: Vec<FlatlanderVertex>, indices: Vec<u16>) -> usize {
-            let index = self.entries.len();
-            self.entries.push(AlphabetEntry { vertices, indices });
-            self.map.insert(id, index);
-            index
-        }
-    }
-
-    pub struct AlphabetEntry {
-        pub vertices: Vec<FlatlanderVertex>,
-        pub indices: Vec<u16>,
-    }
-
-    new_key_type! { pub struct AlphabetSlot; }
-
-    pub struct Flatland {
-        pub alphabet_slots: slotmap::HopSlotMap<AlphabetSlot, AlphabetSlotData>,
-        pub alphabet_data: slotmap::SparseSecondaryMap<AlphabetSlot, AlphabetData>,
-
-        pub invalidated: bool,
-    }
-
-    impl Flatland {
-        pub fn new() -> Flatland {
-            Flatland {
-                alphabet_slots: slotmap::HopSlotMap::with_key(),
-                alphabet_data: slotmap::SparseSecondaryMap::new(),
-
-                invalidated: true,
-            }
-        }
-
-        pub fn create_alphabet(&mut self) -> AlphabetSlot {
-            let slot = self.alphabet_slots.insert(AlphabetSlotData { count: 1 });
-            self.alphabet_data.insert(slot, AlphabetData::new());
-            self.invalidated = true;
-            slot
-        }
-
-        pub fn get_alphabet_entry_index(&self, slot: AlphabetSlot, id: u32) -> Option<usize> {
-            self.alphabet_data[slot].get_index(id)
-        }
-
-        pub fn add_alphabet_entry(&mut self, slot: AlphabetSlot, id: u32, vertices: Vec<FlatlanderVertex>, indices: Vec<u16>) -> usize {
-            self.alphabet_data[slot].add(id, vertices, indices)
-        }
-
-        pub fn inc_alphabet(&mut self, slot: AlphabetSlot) {
-            self.alphabet_slots[slot].count += 1;
-        }
-
-        pub fn dec_alphabet(&mut self, slot: AlphabetSlot) {
-            self.alphabet_slots[slot].count -= 1;
-
-            if self.alphabet_slots[slot].count <= 0 {
-                self.delete_alphabet(slot);
-            }
-        }
-
-        pub fn delete_alphabet(&mut self, slot: AlphabetSlot) {
-            self.alphabet_slots.remove(slot);
-            self.alphabet_data.remove(slot);
-            self.invalidated = true;
+        FlatlandGroup {
+            alphabet: alphabet.clone(),
+            group_slot: id,
         }
     }
 }
+
+impl Drop for FlatlandGroup {
+    fn drop(&mut self) {
+        self.alphabet.flatland.borrow_mut().delete_flatland_group(self.group_slot);
+    }
+}
+
+mod shared;

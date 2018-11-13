@@ -15,10 +15,6 @@ impl Element for Text {
             BoxSize::Fixed { w, h } => Some(ResolvedSize { w, h }),
         })
     }
-
-    fn update(&mut self, _base: &mut Base, _delta: f32) {
-        trace!("update Text");
-    }
 }
 
 pub struct Button {

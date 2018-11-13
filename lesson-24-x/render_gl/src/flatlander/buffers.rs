@@ -35,7 +35,30 @@ impl Buffers {
         }
     }
 
-    pub fn upload_vertices(&self, items: impl Iterator<Item = FlatlanderVertex>) {
+    pub fn upload_vertices(&self, items_len: usize, items: impl Iterator<Item = FlatlanderVertex>) {
+        let data: Vec<_> = items.collect();
+
+        println!("vertices {:#?}", data);
+
+//        if self.vbo_capacity > 0 {
+//            self.lines_vbo.bind();
+//            if let Some(mut buffer) = unsafe {
+//                self.lines_vbo
+//                    .map_buffer_range_write_invalidate::<Vertex>(0, self.vbo_capacity)
+//            } {
+//                for (index, item) in items.enumerate().take(self.vbo_capacity) {
+//                    *unsafe { buffer.get_unchecked_mut(index) } = item;
+//                }
+//            }
+//            self.lines_vbo.unbind();
+//        }
+    }
+
+    pub fn upload_indices(&self, items_len: usize, items: impl Iterator<Item = u16>) {
+        let data: Vec<_> = items.collect();
+
+        println!("indices {:?}", data);
+
 //        if self.vbo_capacity > 0 {
 //            self.lines_vbo.bind();
 //            if let Some(mut buffer) = unsafe {

@@ -4,6 +4,7 @@ pub use font_kit::family_name::FamilyName;
 pub use font_kit::properties::Properties;
 pub use font_kit::hinting::HintingOptions;
 pub use font_kit::error::GlyphLoadingError;
+pub use self::shared::GlyphPosition;
 use lyon_path::builder::PathBuilder;
 
 #[derive(Clone)]
@@ -24,7 +25,7 @@ impl Fonts {
         shared.find_best_match(family_names, properties)
             .map(|id| Font {
                 id,
-                container: self.container.clone()
+                container: self.container.clone(),
             })
     }
 
@@ -47,18 +48,11 @@ impl Fonts {
                 container: self.container.clone(),
                 id: shared.get_and_inc_font(font_id)?,
             },
-            id: buffer_id,
+            _id: buffer_id,
         })
     }
 
-    pub fn glyphs(&self, buffer: BufferRef) -> () {
-
-    }
-}
-
-#[derive(Clone)]
-pub struct Glyph {
-    id: u32,
+    pub fn glyphs(&self, buffer: BufferRef) -> () {}
 }
 
 pub struct Font {
@@ -115,7 +109,7 @@ impl Drop for Font {
 
 pub struct Buffer {
     _font: Font,
-    id: usize,
+    _id: usize,
 }
 
 impl Buffer {
@@ -127,14 +121,14 @@ impl Buffer {
 
         Buffer {
             _font: font,
-            id,
+            _id: id,
         }
     }
 
     pub fn weak_ref(&self) -> BufferRef {
         BufferRef {
-            font_id: self._font.id,
-            id: self.id,
+            _font_id: self._font.id,
+            _id: self._id,
         }
     }
 
@@ -142,20 +136,24 @@ impl Buffer {
         &self._font
     }
 
-    pub fn glyph_ids(&self, output: &mut Vec<u32>) {
+    pub fn glyphs(&self, output: &mut Vec<GlyphPosition>) {
         let shared = self._font.container.borrow();
-        shared.buffer_glyph_ids(self.id, output)
+        shared.buffer_glyphs(self._id, output)
+    }
+
+    pub fn id(&self) -> usize {
+        self._id
     }
 }
 
 impl Clone for Buffer {
     fn clone(&self) -> Self {
         let mut shared = self._font.container.borrow_mut();
-        shared.inc_buffer(self.id);
+        shared.inc_buffer(self._id);
         shared.inc_font(self._font.id);
 
         Buffer {
-            id: self.id,
+            _id: self._id,
             _font: Font {
                 id: self._font.id,
                 container: self._font.container.clone(),
@@ -167,14 +165,24 @@ impl Clone for Buffer {
 impl Drop for Buffer {
     fn drop(&mut self) {
         let mut shared = self._font.container.borrow_mut();
-        shared.dec_buffer(self.id)
+        shared.dec_buffer(self._id)
     }
 }
 
 #[derive(Debug, Copy, Clone)]
 pub struct BufferRef {
-    pub font_id: usize,
-    pub id: usize,
+    pub _font_id: usize,
+    pub _id: usize,
+}
+
+impl BufferRef {
+    pub fn font_id(&self) -> usize {
+        self._font_id
+    }
+
+    pub fn id(&self) -> usize {
+        self._id
+    }
 }
 
 mod shared {
@@ -191,6 +199,16 @@ mod shared {
     use font_kit::handle::Handle;
     use font_kit::font::Font as FontkitFont;
     use byteorder::{LittleEndian, WriteBytesExt};
+
+    #[derive(Debug, Copy, Clone)]
+    pub struct GlyphPosition {
+        pub id: u32,
+        pub cluster: u32,
+        pub x_advance: i32,
+        pub y_advance: i32,
+        pub x_offset: i32,
+        pub y_offset: i32,
+    }
 
     pub struct BufferData {
         text: String,
@@ -231,28 +249,24 @@ mod shared {
             unicode_buffer = unicode_buffer.add_str(&self.text);
 
             ::std::mem::replace(&mut self.buffer, Some(hb::shape(&font, unicode_buffer, &[])));
-
-//        // The results of the shaping operation are stored in the `output` buffer.
-//
-//        let positions = output.get_glyph_positions();
-//        let infos = output.get_glyph_infos();
-//
-//        // iterate over the shaped glyphs
-//        for (position, info) in positions.iter().zip(infos) {
-//            let gid = info.codepoint;
-//            let cluster = info.cluster;
-//            let x_advance = position.x_advance;
-//            let x_offset = position.x_offset;
-//            let y_offset = position.y_offset;
-//
-//            // Here you would usually draw the glyphs.
-//            println!("gid{:?}={:?}@{:?},{:?}+{:?}", gid, cluster, x_advance, x_offset, y_offset);
-//        }
         }
 
-        fn glyph_ids(&self, output: &mut Vec<u32>) {
-            output.extend(self.buffer.as_ref().unwrap()
-                .get_glyph_infos().iter().map(|i| i.codepoint));
+        fn positions(&self, output: &mut Vec<GlyphPosition>) {
+            let buffer_data = self.buffer.as_ref().expect("expected glyph buffer to always contain glyph output");
+            let positions = buffer_data.get_glyph_positions();
+            let infos = buffer_data.get_glyph_infos();
+
+            output.extend(
+                positions.iter().zip(infos.iter()).map(|(position, info)| {
+                    GlyphPosition {
+                        id: info.codepoint,
+                        cluster: info.cluster,
+                        x_advance: position.x_advance,
+                        y_advance: position.y_advance,
+                        x_offset: position.x_offset,
+                        y_offset: position.y_offset,
+                    }
+                }));
         }
     }
 
@@ -294,9 +308,9 @@ mod shared {
             self.buffers.insert(buffer)
         }
 
-        pub fn buffer_glyph_ids(&self, buffer_id: usize, output: &mut Vec<u32>) {
+        pub fn buffer_glyphs(&self, buffer_id: usize, output: &mut Vec<GlyphPosition>) {
             self.buffers.get(buffer_id).expect("buffer_glyph_ids: self.buffers.get(buffer_id)")
-                .glyph_ids(output)
+                .positions(output)
         }
 
         pub fn get_and_inc_buffer(&mut self, id: usize) -> Option<(usize, usize)> {
@@ -365,7 +379,7 @@ mod shared {
                         Err(e) => {
                             error!("failed to load font: {:?}", e);
                             return None;
-                        },
+                        }
                         Ok(fk_font) => {
                             let face = match font_handle {
                                 Handle::Path { path, font_index } => {
@@ -373,10 +387,10 @@ mod shared {
                                         Err(e) => {
                                             error!("failed to load font face from {:?} - {:?}: {:?}", path, font_index, e);
                                             return None;
-                                        },
+                                        }
                                         Ok(f) => f,
                                     }
-                                },
+                                }
                                 Handle::Memory { .. } => unimplemented!("can not load fonts from memory"),
                             };
 
@@ -439,7 +453,7 @@ mod shared {
                 hasher.input(&bytes);
 
                 hasher.result()
-            },
+            }
             Handle::Memory { ref bytes, font_index } => {
                 let mut hasher = Sha1::new();
                 hasher.input(&**bytes);
@@ -452,7 +466,7 @@ mod shared {
                 hasher.input(&bytes);
 
                 hasher.result()
-            },
+            }
         };
 
         let mut output = [0; 20];

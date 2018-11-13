@@ -4,12 +4,11 @@ use na;
 use render_gl::data;
 use render_gl::ColorBuffer;
 use render_gl::{DebugLines, RectMarker};
-use render_gl::{Flatlander, Alphabet, FlatlanderVertex};
+use render_gl::{Flatlander, Alphabet, FlatlanderVertex, FlatlandGroup, FlatlandItem};
 use resources;
 use std::collections::BTreeSet;
 use std::collections::{HashMap, self};
 use ui::*;
-use lyon_path::default::Path;
 
 mod controls;
 
@@ -84,6 +83,7 @@ pub struct Interface {
     debug_lines: DebugLines,
     flatlander: Flatlander,
 
+    flatland_groups: HashMap<usize, FlatlandGroup>,
     alphabets: HashMap<AlphabetKey, Alphabet>,
 }
 
@@ -111,6 +111,7 @@ impl Interface {
             flush_updates_set: BTreeSet::new(),
             debug_lines: DebugLines::new(gl, resources)?,
             flatlander: Flatlander::new(gl, resources)?,
+            flatland_groups: HashMap::new(),
             alphabets: HashMap::new(),
         })
     }
@@ -150,25 +151,42 @@ impl Interface {
                         .expect("process_events: self.controls.remove(&id)");
                 }
                 Effect::TextAdd { buffer } => {
-                    let alphabet = match self.alphabets.entry(AlphabetKey { feature: AlphabetFeature::Font, id: buffer.font_id }) {
+                    let alphabet = match self.alphabets.entry(AlphabetKey { feature: AlphabetFeature::Font, id: buffer._font_id }) {
                         collections::hash_map::Entry::Occupied(e) => e.into_mut(),
                         collections::hash_map::Entry::Vacant(mut e) => e.insert(self.flatlander.create_alphabet()),
                     };
 
-                    let buffer = self.fonts.buffer_from_id(buffer.id).expect("buffer missing: self.fonts.buffer_from_id(buffer.id)");
+                    let buffer = self.fonts.buffer_from_id(buffer._id).expect("buffer missing: self.fonts.buffer_from_id(buffer.id)");
 
                     use lyon_path::default::Path;
 
                     let mut builder = Path::builder();
                     glyph_buffer.clear();
-                    buffer.glyph_ids(&mut glyph_buffer);
+                    buffer.glyphs(&mut glyph_buffer);
 
-                    for &glyph_id in glyph_buffer.iter() {
-                        let _ix = ensure_glyph_is_in_alphabet_and_return_index(&mut builder, alphabet, buffer.font(), glyph_id);
+                    let mut flatland_group_items = Vec::new();
+
+                    let mut x = 0;
+                    let mut y = 0;
+
+                    for glyph in glyph_buffer.iter() {
+                        let ix = ensure_glyph_is_in_alphabet_and_return_index(&mut builder, alphabet, buffer.font(), glyph.id);
+                        flatland_group_items.push(FlatlandItem {
+                            alphabet_entry_index: ix,
+                            x_offset: x,
+                            y_offset: y,
+                        });
+
+                        x += glyph.x_advance + glyph.x_offset;
+                        y += glyph.y_advance + glyph.y_offset;
                     }
+
+                    self.flatland_groups.insert(buffer.id(), FlatlandGroup::new(alphabet.clone(), flatland_group_items));
                 }
                 Effect::TextRemove { buffer } => {
-
+                    if let None = self.flatland_groups.remove(&buffer.id()) {
+                        warn!("tried to remove nonexisting flatland group {}", buffer.id());
+                    }
                 }
             }
         }
