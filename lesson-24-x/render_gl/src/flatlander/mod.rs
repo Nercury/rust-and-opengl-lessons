@@ -8,15 +8,16 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 mod buffers;
+mod flatland;
 
-pub use self::buffers::FlatlanderVertex;
+pub use self::buffers::{FlatlanderVertex, FlatlanderGroupDrawData};
 
 pub struct Flatlander {
     program: Program,
     program_view_projection_location: Option<i32>,
     program_model_matrix_location: Option<i32>,
     program_color_location: Option<i32>,
-    flatland: Rc<RefCell<shared::Flatland>>,
+    flatland: Rc<RefCell<flatland::Flatland>>,
     buffers: Option<buffers::Buffers>,
     draw_enabled: bool,
 }
@@ -33,7 +34,7 @@ impl Flatlander {
             program_view_projection_location,
             program_model_matrix_location,
             program_color_location,
-            flatland: Rc::new(RefCell::new(shared::Flatland::new())),
+            flatland: Rc::new(RefCell::new(flatland::Flatland::new())),
             buffers: None,
             draw_enabled: true,
         })
@@ -52,8 +53,11 @@ impl Flatlander {
             }
 
             if let Some(ref mut buffers) = self.buffers {
+                info!("{:#?}", flatland.alphabet_vertices().collect::<Vec<_>>());
+
                 buffers.upload_vertices(flatland.alphabet_vertices_len(), flatland.alphabet_vertices());
                 buffers.upload_indices(flatland.alphabet_indices_len(), flatland.alphabet_indices());
+                buffers.upload_groups(flatland.groups_len(), flatland.groups_draw_data());
             }
 
             flatland.alphabets_invalidated = false;
@@ -64,7 +68,7 @@ impl Flatlander {
         let mut flatland = self.flatland.borrow_mut();
         let slot = flatland.create_alphabet();
         Alphabet {
-            slot,
+            slot: slot,
             flatland: self.flatland.clone(),
         }
     }
@@ -73,14 +77,43 @@ impl Flatlander {
         if self.draw_enabled {
             self.check_if_invalidated_and_reinitialize(gl);
 
-            if let Some(ref buffers) = self.buffers {}
+            if let Some(ref buffers) = self.buffers {
+                self.program.set_used();
+                if let Some(loc) = self.program_view_projection_location {
+                    self.program.set_uniform_matrix_4fv(loc, &vp_matrix);
+                }
+
+                let program_model_matrix_location = self
+                    .program_model_matrix_location
+                    .expect("Flatland Model uniform must exist");
+
+                let program_color_location = self
+                    .program_color_location
+                    .expect("Flatland Color uniform must exist");
+
+                self.program.set_uniform_matrix_4fv(program_model_matrix_location, &na::Matrix4::<f32>::new_scaling(0.2));
+                self.program.set_uniform_4f(program_color_location, &na::Vector4::<f32>::new(1.0, 1.0, 1.0, 0.5));
+
+                buffers.lines_vao.bind();
+
+                unsafe {
+                    target.set_default_blend_func(gl);
+                    target.enable_blend(gl);
+
+                    gl.DrawElements(gl::TRIANGLES, buffers.groups_simple[0].count as i32, gl::UNSIGNED_SHORT, ::std::ptr::null());
+
+                    target.disable_blend(gl);
+                }
+
+                buffers.lines_vao.unbind();
+            }
         }
     }
 }
 
 pub struct Alphabet {
-    slot: shared::AlphabetSlot,
-    flatland: Rc<RefCell<shared::Flatland>>,
+    slot: flatland::AlphabetSlot,
+    flatland: Rc<RefCell<flatland::Flatland>>,
 }
 
 impl Clone for Alphabet {
@@ -121,12 +154,12 @@ pub struct FlatlandItem {
 
 pub struct FlatlandGroup {
     alphabet: Alphabet,
-    group_slot: shared::GroupSlot,
+    group_slot: flatland::GroupSlot,
 }
 
 impl FlatlandGroup {
     pub fn new(alphabet: Alphabet, items: Vec<FlatlandItem>) -> FlatlandGroup {
-        let id = alphabet.flatland.borrow_mut().create_flatland_group_with_items(items);
+        let id = alphabet.flatland.borrow_mut().create_flatland_group_with_items(alphabet.slot, items);
 
         FlatlandGroup {
             alphabet: alphabet.clone(),
@@ -140,5 +173,3 @@ impl Drop for FlatlandGroup {
         self.alphabet.flatland.borrow_mut().delete_flatland_group(self.group_slot);
     }
 }
-
-mod shared;

@@ -1,6 +1,6 @@
 use int_hash::IntHashMap;
 use slotmap;
-use super::{FlatlanderVertex, FlatlandItem};
+use super::{FlatlanderVertex, FlatlanderGroupDrawData, FlatlandItem};
 
 #[derive(Copy, Clone)]
 pub struct AlphabetSlotData {
@@ -31,19 +31,39 @@ impl AlphabetData {
     pub fn add(&mut self, id: u32, vertices: Vec<FlatlanderVertex>, indices: Vec<u16>) -> usize {
         let index = self.entries.len();
 
+        let previous_indices = self.total_indices;
+
         self.total_vertices += vertices.len();
         self.total_indices += indices.len();
 
-        self.entries.push(AlphabetEntry { vertices, indices });
+        self.entries.push(AlphabetEntry { vertices, indices, previous_indices });
         self.map.insert(id, index);
 
         index
+    }
+
+    pub fn draw_data<'r>(&'r self) -> impl Iterator<Item = FlatlanderGroupDrawData> + 'r {
+        self.entries
+            .iter()
+            .scan(0, |base_index, AlphabetEntry { ref indices, .. }| {
+                let previous_base_index = *base_index;
+                *base_index += indices.len() as u32;
+                Some((previous_base_index, indices))
+            })
+            .map(|(first_index, indices)| FlatlanderGroupDrawData {
+                count: indices.len() as u32,
+                prim_count: 1,
+                first_index,
+                base_vertex: 0,
+                base_instance: 0
+            })
     }
 }
 
 pub struct AlphabetEntry {
     pub vertices: Vec<FlatlanderVertex>,
     pub indices: Vec<u16>,
+    pub previous_indices: usize,
 }
 
 #[derive(Copy, Clone)]
@@ -51,6 +71,7 @@ pub struct GroupSlotData {
 }
 
 pub struct GroupData {
+    pub alphabet_slot: AlphabetSlot,
     pub items: Vec<FlatlandItem>,
 }
 
@@ -58,11 +79,12 @@ new_key_type! { pub struct AlphabetSlot; }
 new_key_type! { pub struct GroupSlot; }
 
 pub struct Flatland {
-    pub alphabet_slots: slotmap::HopSlotMap<AlphabetSlot, AlphabetSlotData>,
-    pub alphabet_data: slotmap::SparseSecondaryMap<AlphabetSlot, AlphabetData>,
+    pub alphabet_slots: slotmap::SlotMap<AlphabetSlot, AlphabetSlotData>,
+    pub alphabet_data: slotmap::SecondaryMap<AlphabetSlot, AlphabetData>,
+    alphabet_sequence: Vec<AlphabetSlot>,
 
-    pub group_slots: slotmap::HopSlotMap<GroupSlot, GroupSlotData>,
-    pub group_data: slotmap::SparseSecondaryMap<GroupSlot, GroupData>,
+    pub group_slots: slotmap::SlotMap<GroupSlot, GroupSlotData>,
+    pub group_data: slotmap::SecondaryMap<GroupSlot, GroupData>,
 
     pub alphabets_invalidated: bool,
     pub groups_invalidated: bool,
@@ -74,11 +96,12 @@ pub struct Flatland {
 impl Flatland {
     pub fn new() -> Flatland {
         Flatland {
-            alphabet_slots: slotmap::HopSlotMap::with_key(),
-            alphabet_data: slotmap::SparseSecondaryMap::new(),
+            alphabet_slots: slotmap::SlotMap::with_key(),
+            alphabet_data: slotmap::SecondaryMap::new(),
+            alphabet_sequence: Vec::new(),
 
-            group_slots: slotmap::HopSlotMap::with_key(),
-            group_data: slotmap::SparseSecondaryMap::new(),
+            group_slots: slotmap::SlotMap::with_key(),
+            group_data: slotmap::SecondaryMap::new(),
 
             alphabets_invalidated: false,
             groups_invalidated: false,
@@ -123,9 +146,31 @@ impl Flatland {
             )
     }
 
-    pub fn create_flatland_group_with_items(&mut self, items: Vec<FlatlandItem>) -> GroupSlot {
+    pub fn groups_len(&self) -> usize {
+        self.group_data.len()
+    }
+
+    pub fn groups_draw_data<'r>(&'r self) -> impl Iterator<Item = FlatlanderGroupDrawData> + 'r {
+        self.group_data
+            .values()
+            .flat_map(|group| group.items.iter().map(move |i| {
+                let alphabet_slot = group.alphabet_slot;
+                //self.alphabet_data[alphabet_slot].entries
+
+                FlatlanderGroupDrawData {
+                    count: 45,
+                    prim_count: 1,
+                    first_index: 0,
+                    base_vertex: 0,
+                    base_instance: 0
+                }
+            }))
+    }
+
+    pub fn create_flatland_group_with_items(&mut self, alphabet_slot: AlphabetSlot, items: Vec<FlatlandItem>) -> GroupSlot {
         let slot = self.group_slots.insert(GroupSlotData {});
         self.group_data.insert(slot, GroupData {
+            alphabet_slot,
             items,
         });
 
