@@ -99,28 +99,36 @@ impl Flatlander {
                 self.program.set_uniform_4f(program_color_location, &na::Vector4::<f32>::new(1.0, 1.0, 1.0, 1.0));
 
                 buffers.lines_vao.bind();
+                buffers.indirect.buffer.bind();
 
                 unsafe {
                     target.set_default_blend_func(gl);
                     target.enable_blend(gl);
                     target.front_face_cw(gl);
 
-                    let cmd = buffers.groups_simple[2];
-
-                    gl.DrawElementsInstancedBaseVertexBaseInstance(
-                        gl::TRIANGLES,
-                        cmd.count as i32,
-                        gl::UNSIGNED_SHORT,
-                        (cmd.first_index * ::std::mem::size_of::<u16>() as u32) as *const ::std::ffi::c_void,
-                        cmd.prim_count as i32,
-                        cmd.base_vertex as i32,
-                        cmd.base_instance
-                    );
+                    if gl.MultiDrawElementsIndirect.is_loaded() {
+                        // open gl 4.3
+                        gl.MultiDrawElementsIndirect(
+                            gl::TRIANGLES,
+                            gl::UNSIGNED_SHORT,
+                            0 as *const ::std::ffi::c_void,
+                            buffers.indirect.len as i32,
+                            ::std::mem::size_of::<FlatlanderGroupDrawData>() as i32
+                        );
+                    } else {
+                        // open gl 4.1
+                        gl.DrawElementsIndirect(
+                            gl::TRIANGLES,
+                            gl::UNSIGNED_SHORT,
+                            (1 * ::std::mem::size_of::<FlatlanderGroupDrawData>() as u32) as *const ::std::ffi::c_void
+                        );
+                    }
 
                     target.front_face_ccw(gl);
                     target.disable_blend(gl);
                 }
 
+                buffers.indirect.buffer.unbind();
                 buffers.lines_vao.unbind();
             }
         }

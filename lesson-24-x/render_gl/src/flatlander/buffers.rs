@@ -24,15 +24,16 @@ pub struct FlatlanderGroupDrawData {
 pub struct Buffers {
     vertices: Storage,
     indices: Storage,
+    pub indirect: Storage,
 
     pub groups_simple: Vec<FlatlanderGroupDrawData>,
 
     pub lines_vao: VertexArray,
 }
 
-struct Storage {
-    buffer: Buffer,
-    len: usize,
+pub struct Storage {
+    pub buffer: Buffer,
+    pub len: usize,
 }
 
 impl Storage {
@@ -75,6 +76,8 @@ impl Buffers {
     pub fn new(gl: &gl::Gl) -> Buffers {
         let vertices = Buffer::new_array(&gl);
         let indices = Buffer::new_element_array(&gl);
+        let indirect = Buffer::new_draw_indirect(&gl);
+
         let lines_vao = VertexArray::new(gl);
 
         lines_vao.bind();
@@ -92,6 +95,7 @@ impl Buffers {
         Buffers {
             vertices: Storage::new(vertices, 0),
             indices: Storage::new(indices, 0),
+            indirect: Storage::new(indirect, 0),
             lines_vao,
             groups_simple: Vec::new(),
         }
@@ -107,11 +111,13 @@ impl Buffers {
     }
 
     pub fn upload_groups(&mut self, items_len: usize, items: impl Iterator<Item = FlatlanderGroupDrawData>) {
-        let items = items.collect::<Vec<_>>();
-
-        trace!("upload_groups {:#?}", items);
-
-        self.groups_simple.clear();
-        self.groups_simple.extend(items.into_iter())
+//        let items = items.collect::<Vec<_>>();
+//
+//        trace!("upload_groups {:#?}", items);
+//
+//        self.groups_simple.clear();
+//        self.groups_simple.extend(items.into_iter())
+//
+        self.indirect.upload(items_len, items);
     }
 }

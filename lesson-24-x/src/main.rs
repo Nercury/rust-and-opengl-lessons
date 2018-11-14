@@ -55,7 +55,7 @@ fn run() -> Result<(), failure::Error> {
     gl_attr.set_accelerated_visual(true);
     gl_attr.set_double_buffer(true);
     gl_attr.set_multisample_buffers(1);
-    gl_attr.set_multisample_samples(2);
+    gl_attr.set_multisample_samples(16);
 
     let mut window_size = render::WindowSize {
         width: 960,
