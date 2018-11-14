@@ -99,18 +99,19 @@ impl Buffers {
 
 
     pub fn upload_vertices(&mut self, items_len: usize, items: impl Iterator<Item = FlatlanderVertex>) {
-        trace!("upload_vertices {}", items_len);
         self.vertices.upload(items_len, items);
     }
 
     pub fn upload_indices(&mut self, items_len: usize, items: impl Iterator<Item = u16>) {
-        trace!("upload_indices {}", items_len);
         self.indices.upload(items_len, items);
     }
 
     pub fn upload_groups(&mut self, items_len: usize, items: impl Iterator<Item = FlatlanderGroupDrawData>) {
-        trace!("upload_groups {}", items_len);
+        let items = items.collect::<Vec<_>>();
+
+        trace!("upload_groups {:#?}", items);
+
         self.groups_simple.clear();
-        self.groups_simple.extend(items)
+        self.groups_simple.extend(items.into_iter())
     }
 }

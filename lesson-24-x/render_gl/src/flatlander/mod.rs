@@ -53,8 +53,6 @@ impl Flatlander {
             }
 
             if let Some(ref mut buffers) = self.buffers {
-                info!("{:#?}", flatland.alphabet_vertices().collect::<Vec<_>>());
-
                 buffers.upload_vertices(flatland.alphabet_vertices_len(), flatland.alphabet_vertices());
                 buffers.upload_indices(flatland.alphabet_indices_len(), flatland.alphabet_indices());
                 buffers.upload_groups(flatland.groups_len(), flatland.groups_draw_data());
@@ -68,7 +66,7 @@ impl Flatlander {
         let mut flatland = self.flatland.borrow_mut();
         let slot = flatland.create_alphabet();
         Alphabet {
-            slot: slot,
+            slot,
             flatland: self.flatland.clone(),
         }
     }
@@ -91,17 +89,35 @@ impl Flatlander {
                     .program_color_location
                     .expect("Flatland Color uniform must exist");
 
-                self.program.set_uniform_matrix_4fv(program_model_matrix_location, &na::Matrix4::<f32>::new_scaling(0.2));
-                self.program.set_uniform_4f(program_color_location, &na::Vector4::<f32>::new(1.0, 1.0, 1.0, 0.5));
+                self.program.set_uniform_matrix_4fv(program_model_matrix_location,
+                                                    &(
+                                                        na::Matrix4::<f32>::new_translation(&na::Vector3::new(100.0, 400.0, 0.0)) *
+                                                        na::Matrix4::<f32>::new_scaling(0.2) *
+                                                        na::Matrix4::<f32>::new_nonuniform_scaling(&na::Vector3::new(1.0, -1.0, 1.0))
+                                                    )
+                );
+                self.program.set_uniform_4f(program_color_location, &na::Vector4::<f32>::new(1.0, 1.0, 1.0, 1.0));
 
                 buffers.lines_vao.bind();
 
                 unsafe {
                     target.set_default_blend_func(gl);
                     target.enable_blend(gl);
+                    target.front_face_cw(gl);
 
-                    gl.DrawElements(gl::TRIANGLES, buffers.groups_simple[0].count as i32, gl::UNSIGNED_SHORT, ::std::ptr::null());
+                    let cmd = buffers.groups_simple[2];
 
+                    gl.DrawElementsInstancedBaseVertexBaseInstance(
+                        gl::TRIANGLES,
+                        cmd.count as i32,
+                        gl::UNSIGNED_SHORT,
+                        (cmd.first_index * ::std::mem::size_of::<u16>() as u32) as *const ::std::ffi::c_void,
+                        cmd.prim_count as i32,
+                        cmd.base_vertex as i32,
+                        cmd.base_instance
+                    );
+
+                    target.front_face_ccw(gl);
                     target.disable_blend(gl);
                 }
 

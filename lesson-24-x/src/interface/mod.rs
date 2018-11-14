@@ -237,7 +237,7 @@ fn ensure_glyph_is_in_alphabet_and_return_index(builder: &mut lyon_path::default
         // Compute the tessellation.
         tessellator.tessellate_path(
             path.path_iter(),
-            &FillOptions::default().with_tolerance(100.0),
+            &FillOptions::default().with_tolerance(5.0),
             &mut BuffersBuilder::new(&mut geometry, |vertex: FillVertex| {
                 FlatlanderVertex {
                     pos: data::f32_f32::new(vertex.position.x, vertex.position.y),

@@ -41,29 +41,17 @@ impl AlphabetData {
 
         index
     }
-
-    pub fn draw_data<'r>(&'r self) -> impl Iterator<Item = FlatlanderGroupDrawData> + 'r {
-        self.entries
-            .iter()
-            .scan(0, |base_index, AlphabetEntry { ref indices, .. }| {
-                let previous_base_index = *base_index;
-                *base_index += indices.len() as u32;
-                Some((previous_base_index, indices))
-            })
-            .map(|(first_index, indices)| FlatlanderGroupDrawData {
-                count: indices.len() as u32,
-                prim_count: 1,
-                first_index,
-                base_vertex: 0,
-                base_instance: 0
-            })
-    }
 }
 
 pub struct AlphabetEntry {
     pub vertices: Vec<FlatlanderVertex>,
     pub indices: Vec<u16>,
     pub previous_indices: usize,
+}
+
+#[derive(Debug)]
+struct AlphabetDataIndexOffset {
+    first_index: usize,
 }
 
 #[derive(Copy, Clone)]
@@ -81,7 +69,9 @@ new_key_type! { pub struct GroupSlot; }
 pub struct Flatland {
     pub alphabet_slots: slotmap::SlotMap<AlphabetSlot, AlphabetSlotData>,
     pub alphabet_data: slotmap::SecondaryMap<AlphabetSlot, AlphabetData>,
-    alphabet_sequence: Vec<AlphabetSlot>,
+
+    alphabet_data_index_offsets: slotmap::SecondaryMap<AlphabetSlot, AlphabetDataIndexOffset>,
+    alphabet_data_index_offsets_invalidated: bool,
 
     pub group_slots: slotmap::SlotMap<GroupSlot, GroupSlotData>,
     pub group_data: slotmap::SecondaryMap<GroupSlot, GroupData>,
@@ -98,7 +88,9 @@ impl Flatland {
         Flatland {
             alphabet_slots: slotmap::SlotMap::with_key(),
             alphabet_data: slotmap::SecondaryMap::new(),
-            alphabet_sequence: Vec::new(),
+
+            alphabet_data_index_offsets: slotmap::SecondaryMap::new(),
+            alphabet_data_index_offsets_invalidated: false,
 
             group_slots: slotmap::SlotMap::with_key(),
             group_data: slotmap::SecondaryMap::new(),
@@ -146,25 +138,59 @@ impl Flatland {
             )
     }
 
-    pub fn groups_len(&self) -> usize {
-        self.group_data.len()
+    fn ensure_alphabet_data_index_offsets(&mut self) {
+        if self.alphabet_data_index_offsets_invalidated {
+
+            self.alphabet_data_index_offsets.clear();
+            self.alphabet_data_index_offsets.extend(self.alphabet_data
+                .iter()
+                .scan(0, |previous_indices, (slot, AlphabetData { ref total_indices, .. })| {
+                    let first_index = *previous_indices;
+                    *previous_indices += total_indices;
+                    Some((slot, first_index))
+                })
+                .map(|(slot, first_index)|
+                    (slot, AlphabetDataIndexOffset {
+                        first_index,
+                    })
+                ));
+
+            self.alphabet_data_index_offsets_invalidated = false;
+        }
     }
 
-    pub fn groups_draw_data<'r>(&'r self) -> impl Iterator<Item = FlatlanderGroupDrawData> + 'r {
-        self.group_data
-            .values()
-            .flat_map(|group| group.items.iter().map(move |i| {
-                let alphabet_slot = group.alphabet_slot;
-                //self.alphabet_data[alphabet_slot].entries
+    pub fn groups_len(&self) -> usize {
+        self.group_data.values().map(|g| g.items.len()).sum()
+    }
 
-                FlatlanderGroupDrawData {
-                    count: 45,
-                    prim_count: 1,
-                    first_index: 0,
-                    base_vertex: 0,
-                    base_instance: 0
-                }
-            }))
+    pub fn groups_draw_data<'r>(&'r mut self) -> impl Iterator<Item = FlatlanderGroupDrawData> + 'r {
+        self.ensure_alphabet_data_index_offsets();
+
+        fn unpack<'p>(
+            group_data: &'p slotmap::SecondaryMap<GroupSlot, GroupData>,
+            alphabet_data: &'p slotmap::SecondaryMap<AlphabetSlot, AlphabetData>,
+            alphabet_data_index_offsets: &'p slotmap::SecondaryMap<AlphabetSlot, AlphabetDataIndexOffset>
+        ) -> impl Iterator<Item = FlatlanderGroupDrawData> + 'p {
+            group_data
+                .values()
+                .flat_map(move |group| group.items.iter().map(move |i| {
+                    let alphabet_slot = group.alphabet_slot;
+                    let (previous_indices, num_indices) = alphabet_data[alphabet_slot].entries.get(i.alphabet_entry_index)
+                        .map(|e| (e.previous_indices as u32, e.indices.len() as u32))
+                        .expect("expected alphabet entry to exist");
+                    let first_alphabet_index = alphabet_data_index_offsets[alphabet_slot].first_index as u32;
+
+                    FlatlanderGroupDrawData {
+                        count: num_indices,
+                        prim_count: 1,
+                        first_index: first_alphabet_index + previous_indices,
+                        base_vertex: 0,
+                        base_instance: 0
+                    }
+                }))
+        }
+
+        unpack(&self.group_data, &self.alphabet_data, &self.alphabet_data_index_offsets)
     }
 
     pub fn create_flatland_group_with_items(&mut self, alphabet_slot: AlphabetSlot, items: Vec<FlatlandItem>) -> GroupSlot {
@@ -198,6 +224,7 @@ impl Flatland {
 
     pub fn add_alphabet_entry(&mut self, slot: AlphabetSlot, id: u32, vertices: Vec<FlatlanderVertex>, indices: Vec<u16>) -> usize {
         self.alphabets_invalidated = true;
+        self.alphabet_data_index_offsets_invalidated = true;
         self.groups_invalidated = true;
 
         self.total_alphabet_vertices += vertices.len();
@@ -224,6 +251,7 @@ impl Flatland {
         self.total_alphabet_indices -= data.total_indices;
 
         self.alphabets_invalidated = true;
+        self.alphabet_data_index_offsets_invalidated = true;
         self.groups_invalidated = true;
     }
 }

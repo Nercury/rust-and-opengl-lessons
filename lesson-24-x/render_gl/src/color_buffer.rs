@@ -14,6 +14,12 @@ impl ColorBuffer {
         }
     }
 
+    pub fn enable_multisample(&self, gl: &gl::Gl) {
+        unsafe {
+            gl.Enable(gl::MULTISAMPLE);
+        }
+    }
+
     pub fn set_default_blend_func(&self, gl: &gl::Gl) {
         unsafe {
             gl.BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
@@ -35,6 +41,18 @@ impl ColorBuffer {
     pub fn disable_blend(&self, gl: &gl::Gl) {
         unsafe {
             gl.Disable(gl::BLEND);
+        }
+    }
+
+    pub fn front_face_cw(&self, gl: &gl::Gl) {
+        unsafe {
+            gl.FrontFace(gl::CW);
+        }
+    }
+
+    pub fn front_face_ccw(&self, gl: &gl::Gl) {
+        unsafe {
+            gl.FrontFace(gl::CCW);
         }
     }
 }

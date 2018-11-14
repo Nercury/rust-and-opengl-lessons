@@ -23,7 +23,6 @@ pub mod buffer;
 pub mod data;
 pub mod viewport;
 pub mod color_buffer;
-pub mod text;
 
 pub use self::viewport::Viewport;
 pub use self::color_buffer::ColorBuffer;
