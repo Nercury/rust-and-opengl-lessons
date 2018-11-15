@@ -10,7 +10,7 @@ use std::cell::RefCell;
 mod buffers;
 mod flatland;
 
-pub use self::buffers::{FlatlanderVertex, FlatlanderGroupDrawData};
+pub use self::buffers::{FlatlanderVertex, FlatlanderGroupDrawData, DrawIndirectCmd};
 
 pub struct Flatlander {
     program: Program,
@@ -91,8 +91,8 @@ impl Flatlander {
 
                 self.program.set_uniform_matrix_4fv(program_model_matrix_location,
                                                     &(
-                                                        na::Matrix4::<f32>::new_translation(&na::Vector3::new(100.0, 400.0, 0.0)) *
-                                                        na::Matrix4::<f32>::new_scaling(0.2) *
+                                                        na::Matrix4::<f32>::new_translation(&na::Vector3::new(100.0, 200.0, 0.0)) *
+                                                        na::Matrix4::<f32>::new_scaling(0.05) *
                                                         na::Matrix4::<f32>::new_nonuniform_scaling(&na::Vector3::new(1.0, -1.0, 1.0))
                                                     )
                 );
@@ -113,15 +113,19 @@ impl Flatlander {
                             gl::UNSIGNED_SHORT,
                             0 as *const ::std::ffi::c_void,
                             buffers.indirect.len as i32,
-                            ::std::mem::size_of::<FlatlanderGroupDrawData>() as i32
+                            ::std::mem::size_of::<DrawIndirectCmd>() as i32
                         );
                     } else {
                         // open gl 4.1
-                        gl.DrawElementsIndirect(
-                            gl::TRIANGLES,
-                            gl::UNSIGNED_SHORT,
-                            (1 * ::std::mem::size_of::<FlatlanderGroupDrawData>() as u32) as *const ::std::ffi::c_void
-                        );
+                        // manual implementation of MultiDrawElementsIndirect
+
+                        for i in 0..buffers.indirect.len {
+                            gl.DrawElementsIndirect(
+                                gl::TRIANGLES,
+                                gl::UNSIGNED_SHORT,
+                                (i as u32 * ::std::mem::size_of::<DrawIndirectCmd>() as u32) as *const ::std::ffi::c_void
+                            );
+                        }
                     }
 
                     target.front_face_ccw(gl);

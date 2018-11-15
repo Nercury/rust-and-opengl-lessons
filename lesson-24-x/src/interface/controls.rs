@@ -4,7 +4,7 @@ pub struct Text;
 
 impl Element for Text {
     fn inflate(&mut self, base: &mut Base) {
-        base.primitives().text("Žiauriai gerai");
+        base.primitives().text("Žiauriai vėlu ");
     }
 
     fn resize(&mut self, base: &mut Base) {
@@ -35,7 +35,6 @@ impl Button {
 
 impl Element for Button {
     fn inflate(&mut self, base: &mut Base) {
-        base.add(Text);
         base.add(Text);
         base.enable_update(true);
     }
@@ -68,10 +67,6 @@ impl Fill {
 
 impl Element for Fill {
     fn inflate(&mut self, base: &mut Base) {
-        base.add(Button::new());
-        base.add(Text);
-        base.add(Text);
-        base.add(Button::new());
         base.add(Button::new());
     }
 

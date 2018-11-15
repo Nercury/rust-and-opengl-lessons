@@ -11,9 +11,20 @@ pub struct FlatlanderVertex {
     pub normal: data::f32_f32,
 }
 
+#[derive(VertexAttribPointers, Copy, Clone, Debug)]
+#[repr(C, packed)]
+pub struct FlatlanderVertexDrawId {
+    #[location = "2"]
+    #[divisor = "1"]
+    pub x_offset: data::f32_,
+    #[location = "3"]
+    #[divisor = "1"]
+    pub y_offset: data::f32_,
+}
+
 #[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
-pub struct FlatlanderGroupDrawData {
+pub struct DrawIndirectCmd {
     pub count: u32,
     pub prim_count: u32,
     pub first_index: u32,
@@ -21,9 +32,18 @@ pub struct FlatlanderGroupDrawData {
     pub base_instance: u32,
 }
 
+#[derive(Copy, Clone, Debug)]
+#[repr(C, packed)]
+pub struct FlatlanderGroupDrawData {
+    pub cmd: DrawIndirectCmd,
+    pub x_offset: f32,
+    pub y_offset: f32,
+}
+
 pub struct Buffers {
     vertices: Storage,
     indices: Storage,
+    draw_id: Storage,
     pub indirect: Storage,
 
     pub groups_simple: Vec<FlatlanderGroupDrawData>,
@@ -77,25 +97,28 @@ impl Buffers {
         let vertices = Buffer::new_array(&gl);
         let indices = Buffer::new_element_array(&gl);
         let indirect = Buffer::new_draw_indirect(&gl);
+        let draw_id = Buffer::new_array(&gl);
 
         let lines_vao = VertexArray::new(gl);
 
         lines_vao.bind();
 
         vertices.bind();
-        indices.bind();
-
         FlatlanderVertex::vertex_attrib_pointers(gl);
+        draw_id.bind();
+        FlatlanderVertexDrawId::vertex_attrib_pointers(gl);
+        draw_id.unbind();
 
+        indices.bind();
         lines_vao.unbind();
 
-        vertices.unbind();
         indices.unbind();
 
         Buffers {
             vertices: Storage::new(vertices, 0),
             indices: Storage::new(indices, 0),
             indirect: Storage::new(indirect, 0),
+            draw_id: Storage::new(draw_id, 0),
             lines_vao,
             groups_simple: Vec::new(),
         }
@@ -111,13 +134,15 @@ impl Buffers {
     }
 
     pub fn upload_groups(&mut self, items_len: usize, items: impl Iterator<Item = FlatlanderGroupDrawData>) {
-//        let items = items.collect::<Vec<_>>();
-//
-//        trace!("upload_groups {:#?}", items);
-//
-//        self.groups_simple.clear();
-//        self.groups_simple.extend(items.into_iter())
-//
-        self.indirect.upload(items_len, items);
+        let items = items.collect::<Vec<_>>();
+
+        self.draw_id.upload(items_len, items.iter()
+            .map(|i| FlatlanderVertexDrawId {
+                x_offset: i.x_offset.into(),
+                y_offset: i.y_offset.into()
+            }));
+
+        self.indirect.upload(items_len, items.into_iter()
+            .map(|i| i.cmd));
     }
 }

@@ -1,6 +1,6 @@
 use int_hash::IntHashMap;
 use slotmap;
-use super::{FlatlanderVertex, FlatlanderGroupDrawData, FlatlandItem};
+use super::{FlatlanderVertex, FlatlanderGroupDrawData, DrawIndirectCmd, FlatlandItem};
 
 #[derive(Copy, Clone)]
 pub struct AlphabetSlotData {
@@ -180,14 +180,20 @@ impl Flatland {
                         .expect("expected alphabet entry to exist");
                     let first_alphabet_index = alphabet_data_index_offsets[alphabet_slot].first_index as u32;
 
-                    FlatlanderGroupDrawData {
+                    (num_indices, first_alphabet_index + previous_indices, i.x_offset, i.y_offset)
+                }))
+                .enumerate()
+                .map(|(i, (num_indices, first_index, x_offset, y_offset))| FlatlanderGroupDrawData {
+                    cmd: DrawIndirectCmd {
                         count: num_indices,
                         prim_count: 1,
-                        first_index: first_alphabet_index + previous_indices,
+                        first_index,
                         base_vertex: 0,
-                        base_instance: 0
-                    }
-                }))
+                        base_instance: i as u32
+                    },
+                    x_offset: x_offset as f32,
+                    y_offset: y_offset as f32,
+                })
         }
 
         unpack(&self.group_data, &self.alphabet_data, &self.alphabet_data_index_offsets)

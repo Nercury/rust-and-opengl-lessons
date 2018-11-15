@@ -17,7 +17,7 @@ impl<'a> PrimitivesMutator<'a> {
     }
 
     pub fn text<P: ToString>(&mut self, text: P) -> Option<Text> {
-        let font = self.fonts.find_best_match(&[FamilyName::SansSerif],
+        let font = self.fonts.find_best_match(&[FamilyName::Serif],
                                    &Properties::new());
 
         if let Some(font) = font {
