@@ -159,6 +159,12 @@ fn run() -> Result<(), failure::Error> {
                         });
                     }
                 }
+                Event::KeyDown {
+                    scancode: Some(Scancode::T),
+                    ..
+                } => {
+                    iface.toggle_wireframe()
+                }
                 _ => (),
             };
         }

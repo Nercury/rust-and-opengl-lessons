@@ -17,8 +17,8 @@ impl<'a> PrimitivesMutator<'a> {
     }
 
     pub fn text<P: ToString>(&mut self, text: P) -> Option<Text> {
-        let font = self.fonts.find_best_match(&[FamilyName::Serif],
-                                   &Properties::new());
+        let font = self.fonts.find_best_match(&[FamilyName::Title("Snell Roundhand".into()), FamilyName::SansSerif],
+                                   &{ let mut p = Properties::new(); p.weight(Weight::BOLD); p });
 
         if let Some(font) = font {
             let buffer = font.create_buffer(text);

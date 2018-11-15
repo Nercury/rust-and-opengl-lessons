@@ -4,7 +4,7 @@ pub struct Text;
 
 impl Element for Text {
     fn inflate(&mut self, base: &mut Base) {
-        base.primitives().text("Žiauriai vėlu ");
+        base.primitives().text("Kaip faina");
     }
 
     fn resize(&mut self, base: &mut Base) {

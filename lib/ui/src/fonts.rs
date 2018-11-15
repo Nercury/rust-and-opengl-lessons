@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 pub use font_kit::family_name::FamilyName;
-pub use font_kit::properties::Properties;
+pub use font_kit::properties::{Properties, Weight, Style, Stretch};
 pub use font_kit::hinting::HintingOptions;
 pub use font_kit::error::GlyphLoadingError;
 pub use self::shared::GlyphPosition;

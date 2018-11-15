@@ -55,4 +55,16 @@ impl ColorBuffer {
             gl.FrontFace(gl::CCW);
         }
     }
+
+    pub fn polygon_mode_line(&self, gl: &gl::Gl) {
+        unsafe {
+            gl.PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+        }
+    }
+
+    pub fn polygon_mode_fill(&self, gl: &gl::Gl) {
+        unsafe {
+            gl.PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+        }
+    }
 }

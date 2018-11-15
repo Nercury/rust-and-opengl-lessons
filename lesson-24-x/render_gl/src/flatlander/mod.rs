@@ -20,6 +20,7 @@ pub struct Flatlander {
     flatland: Rc<RefCell<flatland::Flatland>>,
     buffers: Option<buffers::Buffers>,
     draw_enabled: bool,
+    wireframe: bool,
 }
 
 impl Flatlander {
@@ -37,11 +38,15 @@ impl Flatlander {
             flatland: Rc::new(RefCell::new(flatland::Flatland::new())),
             buffers: None,
             draw_enabled: true,
+            wireframe: false,
         })
     }
 
     pub fn toggle(&mut self) {
         self.draw_enabled = !self.draw_enabled;
+    }
+    pub fn toggle_wireframe(&mut self) {
+        self.wireframe = !self.wireframe;
     }
 
     fn check_if_invalidated_and_reinitialize(&mut self, gl: &gl::Gl) {
@@ -92,7 +97,7 @@ impl Flatlander {
                 self.program.set_uniform_matrix_4fv(program_model_matrix_location,
                                                     &(
                                                         na::Matrix4::<f32>::new_translation(&na::Vector3::new(100.0, 200.0, 0.0)) *
-                                                        na::Matrix4::<f32>::new_scaling(0.05) *
+                                                        na::Matrix4::<f32>::new_scaling(0.2) *
                                                         na::Matrix4::<f32>::new_nonuniform_scaling(&na::Vector3::new(1.0, -1.0, 1.0))
                                                     )
                 );
@@ -105,6 +110,9 @@ impl Flatlander {
                     target.set_default_blend_func(gl);
                     target.enable_blend(gl);
                     target.front_face_cw(gl);
+                    if self.wireframe {
+                        target.polygon_mode_line(gl);
+                    }
 
                     if gl.MultiDrawElementsIndirect.is_loaded() {
                         // open gl 4.3
@@ -128,6 +136,9 @@ impl Flatlander {
                         }
                     }
 
+                    if self.wireframe {
+                        target.polygon_mode_fill(gl);
+                    }
                     target.front_face_ccw(gl);
                     target.disable_blend(gl);
                 }

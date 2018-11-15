@@ -214,6 +214,10 @@ impl Interface {
         self.debug_lines.render(gl, target, vp_matrix);
         self.flatlander.render(gl, target, vp_matrix);
     }
+
+    pub fn toggle_wireframe(&mut self) {
+        self.flatlander.toggle_wireframe()
+    }
 }
 
 fn ensure_glyph_is_in_alphabet_and_return_index(builder: &mut lyon_path::default::Builder, alphabet: &mut Alphabet, font: &Font, glyph_id: u32) -> usize {
