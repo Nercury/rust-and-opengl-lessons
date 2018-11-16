@@ -36,6 +36,7 @@ impl Button {
 impl Element for Button {
     fn inflate(&mut self, base: &mut Base) {
         base.add(Text);
+        base.add(Text);
         base.enable_update(true);
     }
 
@@ -47,7 +48,7 @@ impl Element for Button {
         self.delta_acc += delta;
         if self.delta_acc > 0.05 {
             self.margin += self.step;
-            if self.margin > 20 || self.margin < 1 {
+            if self.margin > 50 || self.margin < 1 {
                 self.step = -self.step;
             }
             base.invalidate_size();
@@ -68,9 +69,10 @@ impl Fill {
 impl Element for Fill {
     fn inflate(&mut self, base: &mut Base) {
         base.add(Button::new());
+        base.add(Text);
     }
 
     fn resize(&mut self, base: &mut Base) {
-        base.layout_horizontal(5)
+        base.layout_horizontal(20)
     }
 }

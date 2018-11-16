@@ -43,7 +43,7 @@ pub struct Text {
 }
 
 pub struct Primitives {
-    buffers: Vec<Buffer>,
+    pub buffers: Vec<Buffer>,
 }
 
 impl Primitives {

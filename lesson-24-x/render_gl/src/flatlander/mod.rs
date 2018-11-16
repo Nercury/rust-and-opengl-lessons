@@ -15,7 +15,6 @@ pub use self::buffers::{FlatlanderVertex, FlatlanderGroupDrawData, DrawIndirectC
 pub struct Flatlander {
     program: Program,
     program_view_projection_location: Option<i32>,
-    program_model_matrix_location: Option<i32>,
     program_color_location: Option<i32>,
     flatland: Rc<RefCell<flatland::Flatland>>,
     buffers: Option<buffers::Buffers>,
@@ -27,13 +26,11 @@ impl Flatlander {
     pub fn new(gl: &gl::Gl, res: &Resources) -> Result<Flatlander, failure::Error> {
         let program = Program::from_res(gl, res, "shaders/render_gl/flatland")?;
         let program_view_projection_location = program.get_uniform_location("ViewProjection");
-        let program_model_matrix_location = program.get_uniform_location("Model");
         let program_color_location = program.get_uniform_location("Color");
 
         Ok(Flatlander {
             program,
             program_view_projection_location,
-            program_model_matrix_location,
             program_color_location,
             flatland: Rc::new(RefCell::new(flatland::Flatland::new())),
             buffers: None,
@@ -60,10 +57,21 @@ impl Flatlander {
             if let Some(ref mut buffers) = self.buffers {
                 buffers.upload_vertices(flatland.alphabet_vertices_len(), flatland.alphabet_vertices());
                 buffers.upload_indices(flatland.alphabet_indices_len(), flatland.alphabet_indices());
-                buffers.upload_groups(flatland.groups_len(), flatland.groups_draw_data());
             }
 
             flatland.alphabets_invalidated = false;
+        }
+
+        if flatland.groups_invalidated {
+            if self.buffers.is_none() {
+                return;
+            }
+
+            if let Some(ref mut buffers) = self.buffers {
+                buffers.upload_groups(flatland.groups_len(), flatland.groups_draw_data());
+            }
+
+            flatland.groups_invalidated = false;
         }
     }
 
@@ -86,21 +94,10 @@ impl Flatlander {
                     self.program.set_uniform_matrix_4fv(loc, &vp_matrix);
                 }
 
-                let program_model_matrix_location = self
-                    .program_model_matrix_location
-                    .expect("Flatland Model uniform must exist");
-
                 let program_color_location = self
                     .program_color_location
                     .expect("Flatland Color uniform must exist");
 
-                self.program.set_uniform_matrix_4fv(program_model_matrix_location,
-                                                    &(
-                                                        na::Matrix4::<f32>::new_translation(&na::Vector3::new(100.0, 200.0, 0.0)) *
-                                                        na::Matrix4::<f32>::new_scaling(0.2) *
-                                                        na::Matrix4::<f32>::new_nonuniform_scaling(&na::Vector3::new(1.0, -1.0, 1.0))
-                                                    )
-                );
                 self.program.set_uniform_4f(program_color_location, &na::Vector4::<f32>::new(1.0, 1.0, 1.0, 1.0));
 
                 buffers.lines_vao.bind();
@@ -185,6 +182,7 @@ impl Drop for Alphabet {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct FlatlandItem {
     pub alphabet_entry_index: usize,
     pub x_offset: i32,
@@ -197,13 +195,21 @@ pub struct FlatlandGroup {
 }
 
 impl FlatlandGroup {
-    pub fn new(alphabet: Alphabet, items: Vec<FlatlandItem>) -> FlatlandGroup {
-        let id = alphabet.flatland.borrow_mut().create_flatland_group_with_items(alphabet.slot, items);
+    pub fn new(transform: &na::Projective3<f32>, alphabet: Alphabet, items: Vec<FlatlandItem>) -> FlatlandGroup {
+        let id = alphabet.flatland.borrow_mut().create_flatland_group_with_items(transform, alphabet.slot, items);
 
         FlatlandGroup {
             alphabet: alphabet.clone(),
             group_slot: id,
         }
+    }
+
+    pub fn update_items<'p, I: Iterator<Item = &'p FlatlandItem>>(&self, items: I) {
+        self.alphabet.flatland.borrow_mut().update_items(self.group_slot, items);
+    }
+
+    pub fn update_transform(&self, transform: &na::Projective3<f32>) {
+        self.alphabet.flatland.borrow_mut().update_transform(self.group_slot, transform);
     }
 }
 

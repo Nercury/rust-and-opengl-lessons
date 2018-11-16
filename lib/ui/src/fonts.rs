@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use na;
 pub use font_kit::family_name::FamilyName;
 pub use font_kit::properties::{Properties, Weight, Style, Stretch};
 pub use font_kit::hinting::HintingOptions;
@@ -144,6 +145,11 @@ impl Buffer {
     pub fn id(&self) -> usize {
         self._id
     }
+
+    pub fn get_buffer_transform(&self, parent_absolute_transform: &na::Projective3<f32>) -> na::Projective3<f32> {
+        let shared = self._font.container.borrow();
+        shared.get_buffer_transform(self._id, parent_absolute_transform)
+    }
 }
 
 impl Clone for Buffer {
@@ -186,6 +192,7 @@ impl BufferRef {
 }
 
 mod shared {
+    use na;
     use harfbuzz_rs as hb;
 
     use slab::Slab;
@@ -212,6 +219,7 @@ mod shared {
 
     pub struct BufferData {
         text: String,
+        transform: na::Projective3<f32>,
         buffer: Option<hb::GlyphBuffer>,
         font_id: usize,
         count: usize,
@@ -230,6 +238,7 @@ mod shared {
 
             BufferData {
                 text,
+                transform: na::Projective3::<f32>::identity(),
                 buffer,
                 font_id,
                 count: 1,
@@ -311,6 +320,10 @@ mod shared {
         pub fn buffer_glyphs(&self, buffer_id: usize, output: &mut Vec<GlyphPosition>) {
             self.buffers.get(buffer_id).expect("buffer_glyph_ids: self.buffers.get(buffer_id)")
                 .positions(output)
+        }
+
+        pub fn get_buffer_transform(&self, buffer_id: usize, parent_absolute_transform: &na::Projective3<f32>) -> na::Projective3<f32> {
+            self.buffers[buffer_id].transform * parent_absolute_transform
         }
 
         pub fn get_and_inc_buffer(&mut self, id: usize) -> Option<(usize, usize)> {

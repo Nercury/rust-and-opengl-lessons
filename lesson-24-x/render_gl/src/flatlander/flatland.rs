@@ -1,5 +1,6 @@
 use int_hash::IntHashMap;
 use slotmap;
+use na;
 use super::{FlatlanderVertex, FlatlanderGroupDrawData, DrawIndirectCmd, FlatlandItem};
 
 #[derive(Copy, Clone)]
@@ -59,6 +60,7 @@ pub struct GroupSlotData {
 }
 
 pub struct GroupData {
+    pub transform: na::Projective3<f32>,
     pub alphabet_slot: AlphabetSlot,
     pub items: Vec<FlatlandItem>,
 }
@@ -180,10 +182,10 @@ impl Flatland {
                         .expect("expected alphabet entry to exist");
                     let first_alphabet_index = alphabet_data_index_offsets[alphabet_slot].first_index as u32;
 
-                    (num_indices, first_alphabet_index + previous_indices, i.x_offset, i.y_offset)
+                    (num_indices, first_alphabet_index + previous_indices, i.x_offset, i.y_offset, group.transform)
                 }))
                 .enumerate()
-                .map(|(i, (num_indices, first_index, x_offset, y_offset))| FlatlanderGroupDrawData {
+                .map(|(i, (num_indices, first_index, x_offset, y_offset, transform))| FlatlanderGroupDrawData {
                     cmd: DrawIndirectCmd {
                         count: num_indices,
                         prim_count: 1,
@@ -193,15 +195,17 @@ impl Flatland {
                     },
                     x_offset: x_offset as f32,
                     y_offset: y_offset as f32,
+                    transform,
                 })
         }
 
         unpack(&self.group_data, &self.alphabet_data, &self.alphabet_data_index_offsets)
     }
 
-    pub fn create_flatland_group_with_items(&mut self, alphabet_slot: AlphabetSlot, items: Vec<FlatlandItem>) -> GroupSlot {
+    pub fn create_flatland_group_with_items(&mut self, &transform: &na::Projective3<f32>, alphabet_slot: AlphabetSlot, items: Vec<FlatlandItem>) -> GroupSlot {
         let slot = self.group_slots.insert(GroupSlotData {});
         self.group_data.insert(slot, GroupData {
+            transform,
             alphabet_slot,
             items,
         });
@@ -209,6 +213,19 @@ impl Flatland {
         self.groups_invalidated = true;
 
         slot
+    }
+
+    pub fn update_items<'p>(&mut self, slot: GroupSlot, items: impl Iterator<Item = &'p FlatlandItem>) {
+        self.group_data[slot].items.clear();
+        self.group_data[slot].items.extend(items);
+
+        self.groups_invalidated = true;
+    }
+
+    pub fn update_transform(&mut self, slot: GroupSlot, &transform: &na::Projective3<f32>) {
+        self.group_data[slot].transform = transform;
+
+        self.groups_invalidated = true;
     }
 
     pub fn delete_flatland_group(&mut self, slot: GroupSlot) {

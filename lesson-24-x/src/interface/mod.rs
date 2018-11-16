@@ -12,20 +12,41 @@ use ui::*;
 
 mod controls;
 
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+enum ControlId {
+    Node(Ix),
+    Text(usize),
+}
+
 struct ControlInfo {
-    _id: Ix,
+    _id: ControlId,
     size: Option<(i32, i32)>,
     absolute_transform: Option<na::Projective3<f32>>,
     marker: Option<RectMarker>,
+    flatland_group_data: Option<(Alphabet, Vec<FlatlandItem>)>,
+    flatland_group: Option<FlatlandGroup>,
 }
 
 impl ControlInfo {
-    pub fn new(id: Ix, _parent_id: Option<Ix>) -> ControlInfo {
+    pub fn new(id: ControlId) -> ControlInfo {
         ControlInfo {
             _id: id,
             size: None,
             absolute_transform: None,
             marker: None,
+            flatland_group_data: None,
+            flatland_group: None,
+        }
+    }
+
+    pub fn new_flatlander(id: ControlId, alphabet: Alphabet, items: Vec<FlatlandItem>) -> ControlInfo {
+        ControlInfo {
+            _id: id,
+            size: None,
+            absolute_transform: None,
+            marker: None,
+            flatland_group_data: Some((alphabet, items)),
+            flatland_group: None,
         }
     }
 
@@ -57,6 +78,21 @@ impl ControlInfo {
             (false, _, _) => {}
             (true, _, _) => self.marker = None,
         }
+
+        match (self.flatland_group.is_some(), &self.flatland_group_data, self.absolute_transform) {
+            (false, &Some((ref alphabet, ref items)), Some(t)) => {
+                self.flatland_group = Some(
+                    FlatlandGroup::new(&t, alphabet.clone(), items.clone())
+                );
+            }
+            (true, Some((ref alphabet, ref items)), Some(t)) => {
+                let g = self.flatland_group.as_mut().unwrap();
+                g.update_items(items.iter());
+                g.update_transform(&t);
+            },
+            (false, _, _) => {},
+            (true, _, _) => self.flatland_group = None,
+        }
     }
 }
 
@@ -76,14 +112,13 @@ pub struct Interface {
     fonts: Fonts,
     fill: Leaf<controls::Fill>,
     events: Events,
-    controls: HashMap<Ix, ControlInfo>,
+    controls: HashMap<ControlId, ControlInfo>,
     event_read_buffer: Vec<Effect>,
-    flush_updates_set: BTreeSet<Ix>,
+    flush_updates_set: BTreeSet<ControlId>,
 
     debug_lines: DebugLines,
     flatlander: Flatlander,
 
-    flatland_groups: HashMap<usize, FlatlandGroup>,
     alphabets: HashMap<AlphabetKey, Alphabet>,
 }
 
@@ -111,7 +146,6 @@ impl Interface {
             flush_updates_set: BTreeSet::new(),
             debug_lines: DebugLines::new(gl, resources)?,
             flatlander: Flatlander::new(gl, resources)?,
-            flatland_groups: HashMap::new(),
             alphabets: HashMap::new(),
         })
     }
@@ -129,25 +163,25 @@ impl Interface {
         for event in self.event_read_buffer.drain(..) {
             match event {
                 Effect::Add { id, parent_id } => {
-                    self.controls.insert(id, ControlInfo::new(id, parent_id));
-                    self.flush_updates_set.insert(id);
+                    self.controls.insert(ControlId::Node(id), ControlInfo::new(ControlId::Node(id)));
+                    self.flush_updates_set.insert(ControlId::Node(id));
                 }
                 Effect::Resize { id, size } => {
-                    self.controls.get_mut(&id).map(|c| c.update_size(size));
-                    self.flush_updates_set.insert(id);
+                    self.controls.get_mut(&ControlId::Node(id)).map(|c| c.update_size(size));
+                    self.flush_updates_set.insert(ControlId::Node(id));
                 }
                 Effect::Transform {
                     id,
                     absolute_transform,
                 } => {
                     self.controls
-                        .get_mut(&id)
+                        .get_mut(&ControlId::Node(id))
                         .map(|c| c.update_transform(&absolute_transform));
-                    self.flush_updates_set.insert(id);
+                    self.flush_updates_set.insert(ControlId::Node(id));
                 }
                 Effect::Remove { id } => {
                     self.controls
-                        .remove(&id)
+                        .remove(&ControlId::Node(id))
                         .expect("process_events: self.controls.remove(&id)");
                 }
                 Effect::TextAdd { buffer } => {
@@ -181,11 +215,20 @@ impl Interface {
                         y += glyph.y_advance + glyph.y_offset;
                     }
 
-                    self.flatland_groups.insert(buffer.id(), FlatlandGroup::new(alphabet.clone(), flatland_group_items));
+                    self.controls.insert(ControlId::Text(buffer.id()), ControlInfo::new_flatlander(
+                        ControlId::Text(buffer.id()), alphabet.clone(), flatland_group_items
+                    ));
+                    self.flush_updates_set.insert(ControlId::Text(buffer.id()));
                 }
-                Effect::TextRemove { buffer } => {
-                    if let None = self.flatland_groups.remove(&buffer.id()) {
-                        warn!("tried to remove nonexisting flatland group {}", buffer.id());
+                Effect::TextTransform { buffer_id, absolute_transform } => {
+                    self.controls
+                        .get_mut(&ControlId::Text(buffer_id))
+                        .map(|c| c.update_transform(&absolute_transform));
+                    self.flush_updates_set.insert(ControlId::Text(buffer_id));
+                }
+                Effect::TextRemove { buffer_id } => {
+                    if let None = self.controls.remove(&ControlId::Text(buffer_id)) {
+                        warn!("tried to remove nonexisting flatland group {}", buffer_id);
                     }
                 }
             }

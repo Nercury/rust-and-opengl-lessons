@@ -587,9 +587,15 @@ mod shared {
                     for (child_id, _) in &body.children.items {
                         container.parent_transform(*child_id, &absolute_transform);
                     }
+                    for buffer in body.children.primitives.buffers.iter() {
+                        container.queues.send(Effect::TextTransform {
+                            buffer_id: buffer.id(),
+                            absolute_transform: buffer.get_buffer_transform(&absolute_transform),
+                        });
+                    }
                     absolute_transform
                 },
-                |_skeleton, q, absolute_transform| {
+                |skeleton, q, absolute_transform| {
                     q.send(Effect::Transform {
                         id,
                         absolute_transform,

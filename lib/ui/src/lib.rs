@@ -83,8 +83,12 @@ pub enum Effect {
     TextAdd {
         buffer: fonts::BufferRef,
     },
+    TextTransform {
+        buffer_id: usize,
+        absolute_transform: na::Projective3<f32>,
+    },
     TextRemove {
-        buffer: fonts::BufferRef,
+        buffer_id: usize,
     }
 }
 

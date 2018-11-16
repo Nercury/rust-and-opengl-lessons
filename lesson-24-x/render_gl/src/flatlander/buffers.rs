@@ -1,3 +1,4 @@
+use na;
 use data;
 use buffer::Buffer;
 use buffer::VertexArray;
@@ -20,6 +21,18 @@ pub struct FlatlanderVertexDrawId {
     #[location = "3"]
     #[divisor = "1"]
     pub y_offset: data::f32_,
+    #[location = "4"]
+    #[divisor = "1"]
+    pub model_col0: data::f32_f32_f32_f32,
+    #[location = "5"]
+    #[divisor = "1"]
+    pub model_col1: data::f32_f32_f32_f32,
+    #[location = "6"]
+    #[divisor = "1"]
+    pub model_col2: data::f32_f32_f32_f32,
+    #[location = "7"]
+    #[divisor = "1"]
+    pub model_col3: data::f32_f32_f32_f32,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -38,6 +51,7 @@ pub struct FlatlanderGroupDrawData {
     pub cmd: DrawIndirectCmd,
     pub x_offset: f32,
     pub y_offset: f32,
+    pub transform: na::Projective3<f32>,
 }
 
 pub struct Buffers {
@@ -71,7 +85,6 @@ impl Storage {
             self.buffer.bind();
 
             if should_recreate_buffer {
-                trace!("stream_draw_data_null {}", items_len);
                 self.buffer.stream_draw_data_null::<T>(items_len);
             }
 
@@ -79,7 +92,6 @@ impl Storage {
                 self.buffer
                     .map_buffer_range_write_invalidate::<T>(0, items_len)
             } {
-                trace!("write buffer");
                 for (index, item) in items.enumerate().take(items_len) {
                     *unsafe { buffer.get_unchecked_mut(index) } = item;
                 }
@@ -137,9 +149,25 @@ impl Buffers {
         let items = items.collect::<Vec<_>>();
 
         self.draw_id.upload(items_len, items.iter()
-            .map(|i| FlatlanderVertexDrawId {
-                x_offset: i.x_offset.into(),
-                y_offset: i.y_offset.into()
+            .map(|i| {
+                let mat: na::Matrix4<f32> = na::convert::<_, na::Matrix4<f32>>(i.transform) * (
+                    na::Matrix4::<f32>::new_translation(&na::Vector3::new(100.0, 200.0, 0.0)) *
+                        na::Matrix4::<f32>::new_scaling(0.2) *
+                        na::Matrix4::<f32>::new_nonuniform_scaling(&na::Vector3::new(1.0, -1.0, 1.0))
+                );
+                let col0 = mat.column(0);
+                let col1 = mat.column(1);
+                let col2 = mat.column(2);
+                let col3 = mat.column(3);
+
+                FlatlanderVertexDrawId {
+                    x_offset: i.x_offset.into(),
+                    y_offset: i.y_offset.into(),
+                    model_col0: data::f32_f32_f32_f32::new(col0[0], col0[1], col0[2], col0[3]),
+                    model_col1: data::f32_f32_f32_f32::new(col1[0], col1[1], col1[2], col1[3]),
+                    model_col2: data::f32_f32_f32_f32::new(col2[0], col2[1], col2[2], col2[3]),
+                    model_col3: data::f32_f32_f32_f32::new(col3[0], col3[1], col3[2], col3[3]),
+                }
             }));
 
         self.indirect.upload(items_len, items.into_iter()
