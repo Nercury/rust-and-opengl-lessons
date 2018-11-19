@@ -65,6 +65,9 @@ fn run() -> Result<(), failure::Error> {
         high_dpi: true,
     };
 
+    let scale = window_size.width as f32 / window_size.highdpi_width as f32;
+    let mut scale_modifier = 1.0;
+
     let mut window = video_subsystem
         .window("Demo", window_size.width as u32, window_size.height as u32);
     let builder = window
@@ -116,6 +119,7 @@ fn run() -> Result<(), failure::Error> {
             w: viewport.w,
             h: viewport.h,
         },
+        scale * scale_modifier
     )?;
 
     // main loop
@@ -139,42 +143,56 @@ fn run() -> Result<(), failure::Error> {
             use sdl2::event::Event;
             use sdl2::keyboard::Scancode;
 
-            match event {
+            let iface_resize = match event {
                 Event::Window {
                     win_event: sdl2::event::WindowEvent::Resized(_w, _h),
                     ..
                 } => {
-                    if iface_auto_size {
-                        iface.resize(ui::BoxSize::Auto);
-                    } else {
-                        iface.resize(ui::BoxSize::Fixed {
-                            w: viewport.w,
-                            h: viewport.h,
-                        });
-                    }
+                    true
                 }
                 Event::KeyDown {
                     scancode: Some(Scancode::L),
                     ..
                 } => {
                     iface_auto_size = !iface_auto_size;
-                    if iface_auto_size {
-                        iface.resize(ui::BoxSize::Auto);
-                    } else {
-                        iface.resize(ui::BoxSize::Fixed {
-                            w: viewport.w,
-                            h: viewport.h,
-                        });
-                    }
+                    true
                 }
                 Event::KeyDown {
                     scancode: Some(Scancode::T),
                     ..
                 } => {
-                    iface.toggle_wireframe()
+                    iface.toggle_wireframe();
+                    false
                 }
-                _ => (),
+                Event::KeyDown {
+                    scancode: Some(Scancode::LeftBracket),
+                    ..
+                } => {
+                    scale_modifier /= 1.5;
+                    true
+                }
+                Event::KeyDown {
+                    scancode: Some(Scancode::RightBracket),
+                    ..
+                } => {
+                    scale_modifier *= 1.5;
+                    true
+                }
+                _ => false,
             };
+
+            if iface_resize {
+                println!("scale: {}", scale * scale_modifier);
+
+                if iface_auto_size {
+                    iface.resize(ui::BoxSize::Auto, scale * scale_modifier);
+                } else {
+                    iface.resize(ui::BoxSize::Fixed {
+                        w: viewport.w,
+                        h: viewport.h,
+                    }, scale * scale_modifier);
+                }
+            }
         }
 
         let delta = time.elapsed().as_fractional_secs() as f32;

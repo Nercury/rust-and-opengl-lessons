@@ -65,7 +65,8 @@ impl Element for TextSlide {
         let mut text = base.primitives().text(self.text_string.clone()).expect("failed to create text");
         text.set_transform(
             &(na::convert::<_, na::Projective3<_>>(na::Translation3::new(0.0, 80.0, 0.0)) // translation
-                * na::convert::<_, na::Projective3<_>>(na::Similarity3::new(na::zero(), na::zero(), 0.05 * 1.0))) // scale
+//                * na::convert::<_, na::Projective3<_>>(na::Similarity3::new(na::zero(), na::zero(), 0.05 * 1.0))  // scale
+            )
         );
         self.text = Some(text);
     }

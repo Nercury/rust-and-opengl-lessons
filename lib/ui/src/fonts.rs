@@ -5,6 +5,7 @@ pub use font_kit::family_name::FamilyName;
 pub use font_kit::properties::{Properties, Weight, Style, Stretch};
 pub use font_kit::hinting::HintingOptions;
 pub use font_kit::error::GlyphLoadingError;
+pub use font_kit::metrics::Metrics;
 pub use self::shared::GlyphPosition;
 use lyon_path::builder::PathBuilder;
 
@@ -85,8 +86,15 @@ impl Font {
             .fk_font.outline(glyph_id, hinting, path_builder)
     }
 
-    pub fn create_buffer<P: ToString>(&self, text: P) -> Buffer {
-        Buffer::new(self.clone(), text)
+    pub fn metrics(&self) -> Metrics {
+        let shared = self.container.borrow();
+        shared.get(self.id)
+            .expect("metrics: loaded font should exist")
+            .fk_font.metrics()
+    }
+
+    pub fn create_buffer<P: ToString>(&self, text: P, transform: &na::Projective3<f32>) -> Buffer {
+        Buffer::new(self.clone(), text, transform)
     }
 }
 
@@ -114,10 +122,10 @@ pub struct Buffer {
 }
 
 impl Buffer {
-    fn new<P: ToString>(font: Font, text: P) -> Buffer {
+    fn new<P: ToString>(font: Font, text: P, transform: &na::Projective3<f32>) -> Buffer {
         let id = {
             let mut shared = font.container.borrow_mut();
-            shared.create_buffer(font.id, text)
+            shared.create_buffer(font.id, text, transform)
         };
 
         Buffer {
@@ -235,7 +243,7 @@ mod shared {
     }
 
     impl BufferData {
-        fn new<P: ToString>(font_id: usize, font_data: &FontData, text: P) -> BufferData {
+        fn new<P: ToString>(font_id: usize, font_data: &FontData, text: P, transform: &na::Projective3<f32>) -> BufferData {
             let text = text.to_string();
             let unicode_buffer = hb::UnicodeBuffer::new().add_str(&text);
 
@@ -247,7 +255,7 @@ mod shared {
 
             BufferData {
                 text,
-                transform: na::Projective3::<f32>::identity(),
+                transform: *transform,
                 buffer,
                 font_id,
                 count: 1,
@@ -317,10 +325,10 @@ mod shared {
             }
         }
 
-        pub fn create_buffer<P: ToString>(&mut self, font_id: usize, text: P) -> usize {
+        pub fn create_buffer<P: ToString>(&mut self, font_id: usize, text: P, transform: &na::Projective3<f32>) -> usize {
             let buffer = {
                 let font_data = self.get(font_id).expect("FontsContainer::create_buffer - self.get(font_id)");
-                BufferData::new(font_id, font_data, text)
+                BufferData::new(font_id, font_data, text, transform)
             };
 
             self.buffers.insert(buffer)

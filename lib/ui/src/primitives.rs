@@ -4,15 +4,16 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 pub struct Text {
+    height: f32,
+    font_scale: f32,
     slot: shared::PrimitiveSlot,
-    buffer: Buffer,
     shared: Rc<RefCell<shared::InnerPrimitives>>,
 }
 
 impl Text {
     pub fn set_transform(&mut self, transform: &na::Projective3<f32>) {
-        self.buffer.set_transform(transform);
-        self.shared.borrow_mut().invalidate_text_buffer(self.slot);
+        let mut shared =  self.shared.borrow_mut();
+        shared.set_text_transform(self.slot, transform);
     }
 }
 
@@ -29,28 +30,38 @@ pub struct Primitives {
 }
 
 impl Primitives {
-    pub (crate) fn new(fonts: &Fonts) -> Primitives {
+    pub (crate) fn new(fonts: &Fonts, window_scale: f32) -> Primitives {
         Primitives {
             fonts: fonts.clone(),
-            shared: Rc::new(RefCell::new(shared::InnerPrimitives::new())),
+            shared: Rc::new(RefCell::new(shared::InnerPrimitives::new(window_scale))),
         }
     }
 
     pub fn text<P: ToString>(&mut self, text: P) -> Option<Text> {
+
         let font = self.fonts.find_best_match(&[FamilyName::SansSerif],
                                    &{ let mut p = Properties::new(); p.weight(Weight::BOLD); p });
 
         if let Some(font) = font {
-            let (slot, buffer) = {
-                let buffer = font.create_buffer(text);
+            let height = 48.0;
+            let metrics = font.metrics();
+
+            let font_scale = 1.0 / metrics.units_per_em as f32;
+
+            let window_scale = self.shared.borrow_mut().get_window_scale();
+            let scale = font_scale * height * window_scale;
+
+            let slot = {
+                let buffer = font.create_buffer(text, &na::Projective3::<f32>::identity());
                 let mut shared = self.shared.borrow_mut();
 
-                (shared.create_text_buffer(buffer.clone()), buffer)
+                shared.create_text_buffer(buffer)
             };
 
             return Some(Text {
+                height,
+                font_scale,
                 slot,
-                buffer,
                 shared: self.shared.clone(),
             });
         }
@@ -60,6 +71,7 @@ impl Primitives {
 }
 
 mod shared {
+    use na;
     use fonts::*;
     use slotmap;
 
@@ -72,6 +84,20 @@ mod shared {
     pub struct PrimitiveSlotData {
         kind: PrimitiveKind,
         invalidated: bool,
+        transform: na::Projective3<f32>,
+    }
+
+    impl PrimitiveSlotData {
+        pub fn update_buffer(&mut self, window_scale: f32) {
+            match self.kind {
+                PrimitiveKind::TextBuffer(ref mut b) => b.set_transform(
+                    &(
+                        self.transform
+                        * na::convert::<_, na::Projective3<_>>(na::Similarity3::new(na::zero(), na::zero(), window_scale))
+                    )
+                ),
+            }
+        }
     }
 
     pub enum PrimitiveKind {
@@ -86,10 +112,11 @@ mod shared {
         pub removed_buffer_ids: Vec<usize>,
 
         pub invalidated: bool,
+        pub window_scale: f32,
     }
 
     impl InnerPrimitives {
-        pub fn new() -> InnerPrimitives {
+        pub fn new(window_scale: f32) -> InnerPrimitives {
             InnerPrimitives {
                 primitive_slots: slotmap::HopSlotMap::with_key(),
                 primitive_data: slotmap::SparseSecondaryMap::new(),
@@ -98,6 +125,30 @@ mod shared {
                 removed_buffer_ids: Vec::with_capacity(32),
 
                 invalidated: false,
+                window_scale,
+            }
+        }
+
+        pub fn get_window_scale(&self) -> f32 {
+            self.window_scale
+        }
+
+        pub fn set_window_scale(&mut self, window_scale: f32) {
+            self.window_scale = window_scale;
+            self.invalidated = true;
+
+            for (_, v) in self.primitive_data.iter_mut() {
+                v.invalidated = true;
+                v.update_buffer(window_scale);
+            }
+        }
+
+        pub fn set_text_transform(&mut self, slot: PrimitiveSlot, transform: &na::Projective3<f32>) {
+            if let Some(data) = self.primitive_data.get_mut(slot) {
+                self.invalidated = true;
+                data.invalidated = true;
+                data.transform = transform.clone();
+                data.update_buffer(self.window_scale);
             }
         }
 
@@ -107,6 +158,7 @@ mod shared {
             self.primitive_data.insert(slot, PrimitiveSlotData {
                 invalidated: true,
                 kind: PrimitiveKind::TextBuffer(buffer),
+                transform: na::Projective3::<f32>::identity(),
             });
             self.invalidated = true;
 

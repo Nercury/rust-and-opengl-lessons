@@ -54,6 +54,8 @@ mod shared {
         resize_flow: ResizeFlow,
         resize_flow_output: ResizeFlowOutput,
         _box_size: BoxSize,
+
+        window_scale: f32,
     }
 
     impl<'a> Base<'a> {
@@ -63,6 +65,7 @@ mod shared {
             children: &'x mut Children,
             resize_flow: ResizeFlow,
             box_size: BoxSize,
+            window_scale: f32
         ) -> Base<'x> {
             Base {
                 id,
@@ -78,6 +81,8 @@ mod shared {
                         ResizeFlowOutput::ParentIsNotResizingNoSizeUpdate
                     }
                 },
+
+                window_scale,
             }
         }
 
@@ -264,6 +269,7 @@ mod shared {
                     ChildIterItemMut {
                         child,
                         container: self.container,
+                        window_scale: self.window_scale,
                     },
                 );
             }
@@ -271,7 +277,8 @@ mod shared {
 
         pub fn primitives(&mut self) -> &mut Primitives {
             if self.children.primitives.is_none() {
-                let primitives = Primitives::new(self.container.fonts());
+                let window_scale = self.window_scale;
+                let primitives = Primitives::new(self.container.fonts(), window_scale);
                 self.children.primitives = Some(primitives.clone());
             }
 
@@ -297,11 +304,12 @@ mod shared {
     pub struct ChildIterItemMut<'a> {
         child: &'a mut Child,
         container: &'a mut Container,
+        window_scale: f32,
     }
 
     impl<'a> ChildIterItemMut<'a> {
         pub fn element_resize(&mut self, size: BoxSize) -> Option<ResolvedSize> {
-            self.container.resize(self.child.id, size)
+            self.container.resize(self.child.id, size, self.window_scale)
         }
 
         pub fn set_translation(&mut self, size: ResolvedSize) {
@@ -323,7 +331,7 @@ mod shared {
         }
 
         pub fn hide(&mut self) {
-            self.container.hide(self.child.id);
+            self.container.hide(self.child.id, self.window_scale);
         }
     }
 
@@ -455,7 +463,7 @@ mod shared {
             }
         }
 
-        pub fn new_root(&mut self, element: Box<Element>) -> Ix {
+        pub fn new_root(&mut self, element: Box<Element>, window_scale: f32) -> Ix {
             let root_id = self.next_id.inc();
 
             self.queues.borrow_mut().send(Effect::Add {
@@ -464,7 +472,7 @@ mod shared {
             });
 
             let mut skeleton =
-                NodeSkeleton::new(None,Children::empty(), &na::Projective3::identity(), element);
+                NodeSkeleton::new(None,Children::empty(), &na::Projective3::identity(), element, window_scale);
             let mut body = skeleton.steal_body();
 
             self.nodes.clear();
@@ -478,6 +486,7 @@ mod shared {
                     &mut body.children,
                     ResizeFlow::ParentIsNotResizing,
                     BoxSize::Hidden,
+                    window_scale
                 );
                 body.el.inflate(&mut base);
             }
@@ -504,13 +513,16 @@ mod shared {
                 parent_id: Some(parent_id),
             });
 
-            let parent_absolute_transform = self
-                .nodes
-                .get(&parent_id)
-                .expect("add_node 1: self.nodes.get(&parent_id)")
-                .absolute_transform();
+            let (parent_absolute_transform, window_scale) = {
+                let parent = self
+                    .nodes
+                    .get(&parent_id)
+                    .expect("add_node 1: self.nodes.get(&parent_id)");
+                (parent.absolute_transform(), parent.window_scale)
+            };
+
             let mut skeleton =
-                NodeSkeleton::new(Some(parent_id), Children::empty(), &parent_absolute_transform, element);
+                NodeSkeleton::new(Some(parent_id), Children::empty(), &parent_absolute_transform, element, window_scale);
             let mut body = skeleton.steal_body();
 
             self.nodes.insert(id, skeleton);
@@ -522,6 +534,7 @@ mod shared {
                     &mut body.children,
                     ResizeFlow::ParentIsNotResizing,
                     BoxSize::Hidden,
+                    window_scale
                 );
                 body.el.inflate(&mut base);
             }
@@ -543,18 +556,19 @@ mod shared {
             self.nodes.get_mut(&id).map(|node| node.element_mut())
         }
 
-        pub fn resize(&mut self, id: Ix, box_size: BoxSize) -> Option<ResolvedSize> {
+        pub fn resize(&mut self, id: Ix, box_size: BoxSize, window_scale: f32) -> Option<ResolvedSize> {
             self.mutate(
                 id,
                 box_size,
-                |skeleton, _q, size| (skeleton.last_resolved_size, size),
-                |body, container, (last_resolved_size, box_size)| {
-                    match (last_resolved_size, box_size) {
-                        (Some(LastResolvedSize::ElementSizeHidden), BoxSize::Hidden) => (LastResolvedSize::ElementSizeHidden, None, true),
-                        (Some(LastResolvedSize::ElementSizeAuto(resolved_size)), BoxSize::Auto) => (LastResolvedSize::ElementSizeAuto(resolved_size), resolved_size, true),
-                        (Some(LastResolvedSize::ElementSizeFixed { w, h, size }), BoxSize::Fixed { w: new_w, h: new_h }) if w == new_w && h == new_h => (LastResolvedSize::ElementSizeFixed { w, h, size }, size, true),
-                        (_, box_size) => {
-                            let mut base = Base::new(id, container, &mut body.children, ResizeFlow::ParentIsResizing, box_size);
+                |skeleton, _q, size| (skeleton.last_resolved_size, skeleton.window_scale, size),
+                |body, container, (last_resolved_size, last_window_scale, box_size)| {
+                    let window_scale_changed = !approx_equal(last_window_scale, window_scale, 4);
+                    match (window_scale_changed, last_resolved_size, box_size) {
+                        (false, Some(LastResolvedSize::ElementSizeHidden), BoxSize::Hidden) => (LastResolvedSize::ElementSizeHidden, None, true, None),
+                        (false, Some(LastResolvedSize::ElementSizeAuto(resolved_size)), BoxSize::Auto) => (LastResolvedSize::ElementSizeAuto(resolved_size), resolved_size, true, None),
+                        (false, Some(LastResolvedSize::ElementSizeFixed { w, h, size }), BoxSize::Fixed { w: new_w, h: new_h }) if w == new_w && h == new_h => (LastResolvedSize::ElementSizeFixed { w, h, size }, size, true, None),
+                        (_, _, box_size) => {
+                            let mut base = Base::new(id, container, &mut body.children, ResizeFlow::ParentIsResizing, box_size, window_scale);
                             body.el.resize(&mut base);
 
                             let resolved_size = match base.resize_flow_output {
@@ -569,21 +583,34 @@ mod shared {
                                 BoxSize::Hidden => LastResolvedSize::ElementSizeHidden,
                                 BoxSize::Auto => LastResolvedSize::ElementSizeAuto(resolved_size),
                                 BoxSize::Fixed { w, h } => LastResolvedSize::ElementSizeFixed { w, h, size: resolved_size },
-                            }, resolved_size, false)
+                            }, resolved_size, false, if window_scale_changed {
+                                Some(window_scale)
+                            } else {
+                                None
+                            })
                         }
                     }
                 },
-                |skeleton, q, (last_resolved_size, resolved_size, skip_update)| {
-                    if !skip_update {
+                |skeleton, q, (last_resolved_size, resolved_size, skip_update, new_window_scale)| {
+                    if !skip_update || new_window_scale.is_some() {
                         if let None = resolved_size {
                             skeleton.body.as_mut().map(|b| b.hide_primitives(&mut q.borrow_mut()));
                         } else {
                             let absolute_transform = skeleton.absolute_transform();
-                            skeleton.body.as_mut().map(|b| b.sync_primitives(&absolute_transform, &mut q.borrow_mut()));
+                            skeleton.body.as_mut().map(|b| {
+                                if let Some(window_scale) = new_window_scale {
+                                    b.update_window_scale_for_primitives(window_scale);
+                                }
+                                b.sync_primitives(&absolute_transform, &mut q.borrow_mut())
+                            });
                         }
                         q.borrow_mut().send(Effect::Resize { id, size: resolved_size.map(|s| (s.w, s.h)) });
                         skeleton.last_resolved_size = Some(last_resolved_size);
+                        if let Some(window_scale) = new_window_scale {
+                            skeleton.window_scale = window_scale;
+                        }
                     }
+
                     resolved_size
                 },
             )
@@ -645,8 +672,8 @@ mod shared {
             )
         }
 
-        pub fn hide(&mut self, id: Ix) {
-            self.resize(id, BoxSize::Hidden);
+        pub fn hide(&mut self, id: Ix, window_scale: f32) {
+            self.resize(id, BoxSize::Hidden, window_scale);
         }
 
         pub fn create_queue(&mut self) -> Ix {
@@ -682,8 +709,8 @@ mod shared {
                 let (parent_id, post_mutate_resize) = self.mutate(
                     *id,
                     delta,
-                    |skeleton, _q, delta| (skeleton.last_resolved_size, delta),
-                    |body, container, (last_resolved_size, delta)| {
+                    |skeleton, _q, delta| (skeleton.last_resolved_size, skeleton.window_scale, delta),
+                    |body, container, (last_resolved_size, window_scale, delta)| {
                         let box_size = match last_resolved_size {
                             None => BoxSize::Hidden,
                             Some(last_resolved_size) => last_resolved_size.to_box_size(),
@@ -694,6 +721,7 @@ mod shared {
                                 *id, container, &mut body.children,
                                 ResizeFlow::ParentIsNotResizing,
                                 box_size,
+                                window_scale
                             );
                             body.el.update(&mut base, delta);
                             base.resize_flow_output
@@ -741,7 +769,7 @@ mod shared {
                         if let Some(_) = node.parent_id {
                             node.last_resolved_size = None;
                         } else {
-                            root = Some((id, node.last_resolved_size.map(|s| s.to_box_size())));
+                            root = Some((id, node.last_resolved_size.map(|s| s.to_box_size()), node.window_scale));
                             node.last_resolved_size = None;
                         };
 
@@ -750,8 +778,8 @@ mod shared {
 
                     // reflow from root
 
-                    if let Some((root_id, Some(box_size))) = root {
-                        self.resize(root_id, box_size);
+                    if let Some((root_id, Some(box_size), window_scale)) = root {
+                        self.resize(root_id, box_size, window_scale);
                     }
                 }
             }
@@ -768,6 +796,13 @@ mod shared {
     use std::cell::RefMut;
 
     impl NodeBody {
+        pub fn update_window_scale_for_primitives(&mut self, window_scale: f32) {
+            if let Some(ref mut primitives) = self.children.primitives {
+                let mut shared = primitives.shared.borrow_mut();
+                shared.set_window_scale(window_scale);
+            }
+        }
+
         pub fn hide_primitives(&mut self, queues: &mut RefMut<Queues>) {
             if let Some(ref mut primitives) = self.children.primitives {
                 let mut shared = primitives.shared.borrow_mut();
@@ -848,6 +883,7 @@ mod shared {
         relative_transform: na::Projective3<f32>,
         parent_id: Option<Ix>,
         body: Option<NodeBody>,
+        window_scale: f32,
     }
 
     impl NodeSkeleton {
@@ -856,6 +892,7 @@ mod shared {
             children: Children,
             parent_transform: &na::Projective3<f32>,
             element: Box<Element>,
+            window_scale: f32,
         ) -> NodeSkeleton {
             NodeSkeleton {
                 last_resolved_size: None,
@@ -866,6 +903,7 @@ mod shared {
                     children,
                     el: element,
                 }),
+                window_scale
             }
         }
 
@@ -905,13 +943,13 @@ impl Tree {
         Tree { shared }
     }
 
-    pub fn create_root<T: Element + 'static>(&self, element: T) -> Leaf<T> {
+    pub fn create_root<T: Element + 'static>(&self, element: T, window_scale: f32) -> Leaf<T> {
         Leaf {
             _marker: PhantomData,
             id: self
                 .shared
                 .borrow_mut()
-                .new_root(Box::new(element) as Box<Element>),
+                .new_root(Box::new(element) as Box<Element>, window_scale),
             shared: self.shared.clone(),
         }
     }
@@ -961,8 +999,8 @@ pub struct Leaf<T> {
 }
 
 impl<T> Leaf<T> {
-    pub fn resize(&self, size: BoxSize) -> Option<ResolvedSize> {
-        self.shared.borrow_mut().resize(self.id, size)
+    pub fn resize(&self, size: BoxSize, window_scale: f32) -> Option<ResolvedSize> {
+        self.shared.borrow_mut().resize(self.id, size, window_scale)
     }
 }
 

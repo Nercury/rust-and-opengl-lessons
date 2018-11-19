@@ -21,6 +21,13 @@ pub use primitives::Primitives;
 pub use tree::{Base, Events, LastResolvedSize, Leaf, Tree};
 pub use fonts::{Fonts, Font, BufferRef, GlyphPosition, HintingOptions};
 
+fn approx_equal(a: f32, b: f32, decimal_places: u8) -> bool {
+    let factor = 10.0f32.powi(decimal_places as i32);
+    let a = (a * factor).trunc();
+    let b = (b * factor).trunc();
+    a == b
+}
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum BoxSize {
     Hidden,

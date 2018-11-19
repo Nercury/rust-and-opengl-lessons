@@ -132,14 +132,15 @@ impl Interface {
         gl: &gl::Gl,
         resources: &resources::Resources,
         size: BoxSize,
+        window_scale: f32
     ) -> Result<Interface, failure::Error> {
         let tree = Tree::new();
         let fonts = tree.fonts();
 
         let events = tree.events();
-        let fill = tree.create_root(controls::presentation::RustFest::new());
+        let fill = tree.create_root(controls::presentation::RustFest::new(), window_scale);
 
-        fill.resize(size);
+        fill.resize(size, window_scale);
 
         Ok(Interface {
             tree,
@@ -155,8 +156,8 @@ impl Interface {
         })
     }
 
-    pub fn resize(&mut self, size: BoxSize) {
-        self.fill.resize(size);
+    pub fn resize(&mut self, size: BoxSize, window_scale: f32) {
+        self.fill.resize(size, window_scale);
     }
 
     fn process_events(&mut self) {
