@@ -90,7 +90,7 @@ impl Font {
         let shared = self.container.borrow();
         shared.get(self.id)
             .expect("metrics: loaded font should exist")
-            .fk_font.metrics()
+            .metrics
     }
 
     pub fn create_buffer<P: ToString>(&self, text: P, transform: &na::Projective3<f32>) -> Buffer {
@@ -168,7 +168,7 @@ impl Buffer {
         self._font.container.borrow_mut().set_buffer_transform(self._id, transform);
     }
 
-    pub fn size(&self) -> Option<na::Vector2<f32>> {
+    pub fn size(&self) -> Option<Measurement> {
         self._font.container.borrow().get_buffer_size(self._id)
     }
 }
@@ -212,6 +212,16 @@ impl BufferRef {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
+pub struct Measurement {
+    pub ascent: f32,
+    pub descent: f32,
+    pub width: f32,
+    pub height: f32,
+    pub cap_height: f32,
+    pub x_height: f32,
+}
+
 mod shared {
     use na;
     use harfbuzz_rs as hb;
@@ -228,6 +238,7 @@ mod shared {
     use font_kit::metrics::Metrics;
     use font_kit::font::Font as FontkitFont;
     use byteorder::{LittleEndian, WriteBytesExt};
+    use super::Measurement;
 
     #[derive(Debug, Copy, Clone)]
     pub struct GlyphPosition {
@@ -359,11 +370,18 @@ mod shared {
                 .positions(output)
         }
 
-        pub fn get_buffer_size(&self, buffer_id: usize) -> Option<na::Vector2<f32>> {
+        pub fn get_buffer_size(&self, buffer_id: usize) -> Option<Measurement> {
             let buffer = self.buffers.get(buffer_id).expect("get_buffer_size: self.buffers.get(buffer_id)");
             let font = self.fonts_id_prop.get(&buffer.font_id).expect("get_buffer_size: self.fonts_id_prop.get(&buffer.font_id)");
             if let Some((last_glyph_pos, id)) = buffer.last_horizontal_glyph_position() {
-                Some([last_glyph_pos.0 as f32, font.metrics.cap_height].into())
+                Some(Measurement {
+                    ascent: font.metrics.ascent,
+                    descent: font.metrics.descent,
+                    width: last_glyph_pos.0 as f32,
+                    height: font.metrics.ascent + font.metrics.descent,
+                    cap_height: font.metrics.cap_height,
+                    x_height: font.metrics.x_height,
+                })
             } else {
                 None
             }

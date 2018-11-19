@@ -15,10 +15,20 @@ pub struct Text {
 }
 
 impl Text {
-    pub fn measure(&self) -> na::Vector2<f32> {
+    pub fn measure(&self) -> Option<Measurement> {
         let shared =  self.shared.borrow();
         let ws = shared.get_window_scale();
-        shared.get_size(self.slot).map(|s| s * (self.font_scale * self.size * ws)).unwrap_or([0.0, 0.0].into())
+        shared.get_size(self.slot).map(|m| {
+            let s = self.font_scale * self.size * ws;
+            Measurement {
+                ascent: m.ascent * s,
+                descent: m.descent * s,
+                width: m.width * s,
+                height: m.height * s,
+                cap_height: m.cap_height * s,
+                x_height: m.x_height * s,
+            }
+        })
     }
 
     pub fn set_transform(&mut self, transform: &na::Projective3<f32>) {
@@ -186,7 +196,7 @@ mod shared {
             }
         }
 
-        pub fn get_size(&self, slot: PrimitiveSlot) -> Option<na::Vector2<f32>> {
+        pub fn get_size(&self, slot: PrimitiveSlot) -> Option<Measurement> {
             let data = self.primitive_data.get(slot).unwrap();
             match data.kind {
                 PrimitiveKind::TextBuffer(ref b) => b.size(),

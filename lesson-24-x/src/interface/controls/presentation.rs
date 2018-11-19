@@ -71,13 +71,21 @@ impl Element for TextSlide {
         let text_size = self.text.as_ref().unwrap().measure();
 
         let box_size = base.box_size();
-        base.resolve_size(match box_size {
+        let resolved_size = match box_size {
             BoxSize::Hidden => None,
-            BoxSize::Auto => Some(ResolvedSize { w: text_size.x.round() as i32, h: text_size.y.round() as i32 }),
+            BoxSize::Auto => Some(ResolvedSize {
+                w: text_size.map(|m| m.width).unwrap_or(0.0).round() as i32,
+                h: text_size.map(|m| m.height).unwrap_or(0.0).round() as i32
+            }),
             BoxSize::Fixed { w, h, .. } => Some(ResolvedSize { w, h }),
-        });
+        };
 
-        self.text.as_mut().unwrap().set_position(0.0, text_size.y);
+        if let (Some(size), Some(text_size)) = (resolved_size, text_size) {
+            let text = self.text.as_mut().unwrap();
+            text.set_position(size.w as f32 / 2.0 - text_size.width / 2.0, size.h as f32 / 2.0 + text_size.x_height / 2.0);
+        }
+
+        base.resolve_size(resolved_size);
     }
 }
 
