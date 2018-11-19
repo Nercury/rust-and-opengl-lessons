@@ -150,11 +150,8 @@ impl Buffers {
 
         self.draw_id.upload(items_len, items.iter()
             .map(|i| {
-                let mat: na::Matrix4<f32> = na::convert::<_, na::Matrix4<f32>>(i.transform) * (
-                    na::Matrix4::<f32>::new_translation(&na::Vector3::new(100.0, 200.0, 0.0)) *
-                        na::Matrix4::<f32>::new_scaling(0.2) *
-                        na::Matrix4::<f32>::new_nonuniform_scaling(&na::Vector3::new(1.0, -1.0, 1.0))
-                );
+                let mat: na::Matrix4<f32> = na::convert::<_, na::Matrix4<f32>>(i.transform) *
+                    na::Matrix4::<f32>::new_nonuniform_scaling(&na::Vector3::new(1.0, -1.0, 1.0));
                 let col0 = mat.column(0);
                 let col1 = mat.column(1);
                 let col2 = mat.column(2);

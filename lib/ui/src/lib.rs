@@ -2,6 +2,7 @@
 
 extern crate nalgebra as na;
 #[macro_use] extern crate log;
+#[macro_use] extern crate slotmap;
 extern crate slab;
 extern crate metrohash;
 extern crate int_hash;
@@ -12,11 +13,11 @@ extern crate harfbuzz_rs;
 extern crate lyon_path;
 
 mod tree;
-mod primitives;
+pub mod primitives;
 mod queues;
 mod fonts;
 
-pub use primitives::PrimitivesMutator;
+pub use primitives::Primitives;
 pub use tree::{Base, Events, LastResolvedSize, Leaf, Tree};
 pub use fonts::{Fonts, Font, BufferRef, GlyphPosition, HintingOptions};
 
@@ -78,14 +79,14 @@ pub enum Effect {
     },
     Transform {
         id: Ix,
-        absolute_transform: na::Projective3<f32>,
+        absolute_transform: Option<na::Projective3<f32>>,
     },
     TextAdd {
         buffer: fonts::BufferRef,
     },
     TextTransform {
         buffer_id: usize,
-        absolute_transform: na::Projective3<f32>,
+        absolute_transform: Option<na::Projective3<f32>>,
     },
     TextRemove {
         buffer_id: usize,

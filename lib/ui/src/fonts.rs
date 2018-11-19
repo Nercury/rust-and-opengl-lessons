@@ -53,7 +53,7 @@ impl Fonts {
         })
     }
 
-    pub fn glyphs(&self, buffer: BufferRef) -> () {}
+    pub fn glyphs(&self, _buffer: BufferRef) -> () {}
 }
 
 pub struct Font {
@@ -146,9 +146,18 @@ impl Buffer {
         self._id
     }
 
-    pub fn get_buffer_transform(&self, parent_absolute_transform: &na::Projective3<f32>) -> na::Projective3<f32> {
+    pub fn absolute_transform(&self, parent_absolute_transform: &na::Projective3<f32>) -> na::Projective3<f32> {
         let shared = self._font.container.borrow();
-        shared.get_buffer_transform(self._id, parent_absolute_transform)
+        parent_absolute_transform * shared.get_buffer_transform(self._id)
+    }
+
+    pub fn transform(&self) -> na::Projective3<f32> {
+        let shared = self._font.container.borrow();
+        shared.get_buffer_transform(self._id)
+    }
+
+    pub fn set_transform(&self, transform: &na::Projective3<f32>) {
+        self._font.container.borrow_mut().set_buffer_transform(self._id, transform);
     }
 }
 
@@ -322,8 +331,12 @@ mod shared {
                 .positions(output)
         }
 
-        pub fn get_buffer_transform(&self, buffer_id: usize, parent_absolute_transform: &na::Projective3<f32>) -> na::Projective3<f32> {
-            self.buffers[buffer_id].transform * parent_absolute_transform
+        pub fn get_buffer_transform(&self, buffer_id: usize) -> na::Projective3<f32> {
+            self.buffers[buffer_id].transform
+        }
+
+        pub fn set_buffer_transform(&mut self, buffer_id: usize, transform: &na::Projective3<f32>) {
+            self.buffers[buffer_id].transform = *transform;
         }
 
         pub fn get_and_inc_buffer(&mut self, id: usize) -> Option<(usize, usize)> {

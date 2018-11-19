@@ -6,10 +6,11 @@ use *;
 
 mod shared {
     use na;
-    use std::collections::VecDeque;
     use std::collections::{BTreeMap, BTreeSet};
     use queues::*;
     use fonts::Fonts;
+    use std::cell::RefCell;
+    use std::rc::Rc;
     use *;
 
     struct LayoutingOptions {
@@ -53,6 +54,8 @@ mod shared {
         resize_flow: ResizeFlow,
         resize_flow_output: ResizeFlowOutput,
         _box_size: BoxSize,
+
+        recalc_primitive_transforms: bool,
     }
 
     impl<'a> Base<'a> {
@@ -77,11 +80,17 @@ mod shared {
                         ResizeFlowOutput::ParentIsNotResizingNoSizeUpdate
                     }
                 },
+
+                recalc_primitive_transforms: false,
             }
         }
 
         pub fn box_size(&self) -> BoxSize {
             self._box_size
+        }
+
+        pub fn invalidate_transforms(&mut self) {
+            self.recalc_primitive_transforms = true;
         }
 
         /// Forces a resize after any update action (excluding the resize).
@@ -264,8 +273,13 @@ mod shared {
             }
         }
 
-        pub fn primitives(&mut self) -> primitives::PrimitivesMutator {
-            primitives::PrimitivesMutator::new(&mut self.container.next_primitive_id, &mut self.container._fonts, &mut self.children.primitives, &mut self.container.queues)
+        pub fn primitives(&mut self) -> &mut Primitives {
+            if self.children.primitives.is_none() {
+                let primitives = Primitives::new(self.container.fonts());
+                self.children.primitives = Some(primitives.clone());
+            }
+
+            self.children.primitives.as_mut().unwrap()
         }
     }
 
@@ -344,14 +358,14 @@ mod shared {
 
     pub struct Children {
         items: BTreeMap<Ix, Child>,
-        primitives: primitives::Primitives,
+        primitives: Option<primitives::Primitives>,
     }
 
     impl Children {
         pub fn empty() -> Children {
             Children {
                 items: BTreeMap::new(),
-                primitives: primitives::Primitives::new(),
+                primitives: None,
             }
         }
 
@@ -361,11 +375,10 @@ mod shared {
     }
 
     pub struct Container {
-        queues: Queues,
+        queues: Rc<RefCell<Queues>>,
         _fonts: Fonts,
 
         next_id: Ix,
-        next_primitive_id: Ix,
         _root_id: Option<Ix>,
         nodes: BTreeMap<Ix, NodeSkeleton>,
 
@@ -375,11 +388,10 @@ mod shared {
     impl Container {
         pub fn new() -> Container {
             Container {
-                queues: Queues::new(),
+                queues: Rc::new(RefCell::new(Queues::new())),
                 _fonts: Fonts::new(),
 
                 next_id: Ix(0),
-                next_primitive_id: Ix(0),
                 _root_id: None,
                 nodes: BTreeMap::new(),
 
@@ -401,16 +413,16 @@ mod shared {
             mut output_fun: OutputFunT, // O comes in, OA is returned (access to NodeSkeleton and Queues)
         ) -> OA
         where
-            InputFunT: FnMut(&mut NodeSkeleton, &mut Queues, IA) -> I,
+            InputFunT: FnMut(&mut NodeSkeleton, &Rc<RefCell<Queues>>, IA) -> I,
             MutFunT: FnMut(&mut NodeBody, &mut Container, I) -> O,
-            OutputFunT: FnMut(&mut NodeSkeleton, &mut Queues, O) -> OA,
+            OutputFunT: FnMut(&mut NodeSkeleton, &Rc<RefCell<Queues>>, O) -> OA,
         {
             let (mut body, input) = {
                 let skeleton = self
                     .nodes
                     .get_mut(&id)
                     .expect("mutate 1: self.nodes.get_mut(&id)");
-                let input = input_fun(skeleton, &mut self.queues, input_arg);
+                let input = input_fun(skeleton, &self.queues, input_arg);
                 let body = skeleton.steal_body();
                 (body, input)
             };
@@ -423,7 +435,7 @@ mod shared {
                 .expect("mutate 2: self.nodes.get_mut(&id)");
             skeleton.restore_body(body);
 
-            output_fun(skeleton, &mut self.queues, output)
+            output_fun(skeleton, &self.queues, output)
         }
 
         pub fn delete_node(&mut self, id: Ix) {
@@ -443,14 +455,14 @@ mod shared {
                     }
                 }
 
-                self.queues.send(Effect::Remove { id })
+                self.queues.borrow_mut().send(Effect::Remove { id })
             }
         }
 
         pub fn new_root(&mut self, element: Box<Element>) -> Ix {
             let root_id = self.next_id.inc();
 
-            self.queues.send(Effect::Add {
+            self.queues.borrow_mut().send(Effect::Add {
                 id: root_id,
                 parent_id: None,
             });
@@ -480,9 +492,9 @@ mod shared {
                 .expect("new_root: self.nodes.get_mut(&root_id)");
             skeleton.restore_body(body);
 
-            self.queues.send(Effect::Transform {
+            self.queues.borrow_mut().send(Effect::Transform {
                 id: root_id,
-                absolute_transform: na::Projective3::identity(),
+                absolute_transform: Some(na::Projective3::identity()),
             });
 
             root_id
@@ -491,7 +503,7 @@ mod shared {
         pub fn add_node(&mut self, parent_id: Ix, element: Box<Element>) -> Ix {
             let id = self.next_id.inc();
 
-            self.queues.send(Effect::Add {
+            self.queues.borrow_mut().send(Effect::Add {
                 id,
                 parent_id: Some(parent_id),
             });
@@ -567,7 +579,13 @@ mod shared {
                 },
                 |skeleton, q, (last_resolved_size, resolved_size, skip_update)| {
                     if !skip_update {
-                        q.send(Effect::Resize { id, size: resolved_size.map(|s| (s.w, s.h)) });
+                        if let None = resolved_size {
+                            skeleton.body.as_mut().map(|b| b.hide_primitives(&mut q.borrow_mut()));
+                        } else {
+                            let absolute_transform = skeleton.absolute_transform();
+                            skeleton.body.as_mut().map(|b| b.sync_primitives(&absolute_transform, &mut q.borrow_mut()));
+                        }
+                        q.borrow_mut().send(Effect::Resize { id, size: resolved_size.map(|s| (s.w, s.h)) });
                         skeleton.last_resolved_size = Some(last_resolved_size);
                     }
                     resolved_size
@@ -581,22 +599,21 @@ mod shared {
                 relative_transform,
                 |skeleton, _q, relative_transform| {
                     skeleton.relative_transform = relative_transform.clone();
-                    skeleton.absolute_transform()
+                    (skeleton.last_resolved_size.is_none(), skeleton.absolute_transform())
                 },
-                |body, container, absolute_transform| {
-                    for (child_id, _) in &body.children.items {
-                        container.parent_transform(*child_id, &absolute_transform);
+                |body, container, (has_no_resolved_size, absolute_transform)| {
+                    if !has_no_resolved_size {
+                        for (child_id, _) in &body.children.items {
+                            container.parent_transform(*child_id, &absolute_transform);
+                        }
+                        body.sync_primitives(&absolute_transform, &mut container.queues.borrow_mut());
+                        Some(absolute_transform)
+                    } else {
+                        None
                     }
-                    for buffer in body.children.primitives.buffers.iter() {
-                        container.queues.send(Effect::TextTransform {
-                            buffer_id: buffer.id(),
-                            absolute_transform: buffer.get_buffer_transform(&absolute_transform),
-                        });
-                    }
-                    absolute_transform
                 },
-                |skeleton, q, absolute_transform| {
-                    q.send(Effect::Transform {
+                |_skeleton, q, absolute_transform| {
+                    q.borrow_mut().send(Effect::Transform {
                         id,
                         absolute_transform,
                     });
@@ -610,16 +627,21 @@ mod shared {
                 parent_transform,
                 |skeleton, _q, parent_transform| {
                     skeleton.parent_transform = parent_transform.clone();
-                    skeleton.absolute_transform()
+                    (skeleton.last_resolved_size.is_none(), skeleton.absolute_transform())
                 },
-                |body, container, absolute_transform| {
-                    for (child_id, _) in &body.children.items {
-                        container.parent_transform(*child_id, &absolute_transform);
+                |body, container, (has_no_resolved_size, absolute_transform)| {
+                    if !has_no_resolved_size {
+                        for (child_id, _) in &body.children.items {
+                            container.parent_transform(*child_id, &absolute_transform);
+                        }
+                        body.sync_primitives(&absolute_transform, &mut container.queues.borrow_mut());
+                        Some(absolute_transform)
+                    } else {
+                        None
                     }
-                    absolute_transform
                 },
                 |_skeleton, q, absolute_transform| {
-                    q.send(Effect::Transform {
+                    q.borrow_mut().send(Effect::Transform {
                         id,
                         absolute_transform,
                     });
@@ -632,15 +654,17 @@ mod shared {
         }
 
         pub fn create_queue(&mut self) -> Ix {
-            self.queues.create_queue()
+            self.queues.borrow_mut().create_queue()
         }
 
         pub fn delete_queue(&mut self, id: Ix) {
-            self.queues.delete_queue(id);
+            self.queues.borrow_mut().delete_queue(id);
         }
 
-        pub fn get_queue_mut(&mut self, id: Ix) -> Option<&mut VecDeque<Effect>> {
-            self.queues.get_queue_mut(id)
+        pub fn drain_queue_into(&self, id: Ix, output: &mut Vec<Effect>) {
+            if let Some(queue) = self.queues.borrow_mut().get_queue_mut(id) {
+                output.extend(queue.drain(..))
+            }
         }
 
         pub fn update(&mut self, delta: f32) {
@@ -679,7 +703,7 @@ mod shared {
                             base.resize_flow_output
                         };
 
-                        match resize_flow_output {
+                        (box_size, match resize_flow_output {
                             ResizeFlowOutput::ParentIsNotResizingNoSizeUpdate =>
                                 ResizeAction::None,
                             ResizeFlowOutput::ParentIsNotResizingSizeInvalidated =>
@@ -687,9 +711,17 @@ mod shared {
                             ResizeFlowOutput::ParentIsResizingResolved(_) => unreachable!("non resize should not receive ParentIsResizing[..] from resize_flow_output"),
                             ResizeFlowOutput::ParentIsResizingResolvedNone => unreachable!("non resize should not receive ParentIsResizing[..] from resize_flow_output"),
                             ResizeFlowOutput::ParentIsResizingNoResolve => unreachable!("non resize should not receive ParentIsResizing[..] from resize_flow_output"),
-                        }
+                        })
                     },
-                    |skeleton, _q, action| {
+                    |skeleton, q, (box_size, action)| {
+                        match box_size {
+                            BoxSize::Hidden => (),
+                            _ => {
+                                let absolute_transform = skeleton.absolute_transform();
+                                skeleton.body.as_mut().map(|b| b.sync_invalidated_primitives(&absolute_transform, &mut q.borrow_mut()));
+                            }
+                        }
+
                         (skeleton.parent_id, match action {
                             ResizeAction::None => ResizeParentsAction::None,
                             ResizeAction::InvalidateSize => {
@@ -735,6 +767,83 @@ mod shared {
     pub struct NodeBody {
         children: Children,
         el: Box<Element>,
+    }
+
+    use std::cell::RefMut;
+
+    impl NodeBody {
+        pub fn hide_primitives(&mut self, queues: &mut RefMut<Queues>) {
+            if let Some(ref mut primitives) = self.children.primitives {
+                let mut shared = primitives.shared.borrow_mut();
+
+                for buffer in shared.added_text_buffers() {
+                    queues.send(Effect::TextAdd {
+                        buffer: buffer.weak_ref()
+                    });
+                }
+
+                for buffer in shared.buffers_keep_invalidated() {
+                    queues.send(Effect::TextTransform {
+                        buffer_id: buffer.id(),
+                        absolute_transform: None,
+                    });
+                }
+
+                for buffer_id in shared.removed_text_buffers() {
+                    queues.send(Effect::TextRemove {
+                        buffer_id
+                    });
+                }
+            }
+        }
+
+        pub fn sync_primitives(&mut self, absolute_transform: &na::Projective3<f32>, queues: &mut RefMut<Queues>) {
+            if let Some(ref mut primitives) = self.children.primitives {
+                let mut shared = primitives.shared.borrow_mut();
+                for buffer in shared.added_text_buffers() {
+                    queues.send(Effect::TextAdd {
+                        buffer: buffer.weak_ref()
+                    });
+                }
+
+                for buffer in shared.buffers() {
+                    queues.send(Effect::TextTransform {
+                        buffer_id: buffer.id(),
+                        absolute_transform: Some(buffer.absolute_transform(absolute_transform)),
+                    });
+                }
+
+                for buffer_id in shared.removed_text_buffers() {
+                    queues.send(Effect::TextRemove {
+                        buffer_id
+                    });
+                }
+            }
+        }
+
+        pub fn sync_invalidated_primitives(&mut self, absolute_transform: &na::Projective3<f32>, queues: &mut RefMut<Queues>) {
+            if let Some(ref mut primitives) = self.children.primitives {
+                let mut shared = primitives.shared.borrow_mut();
+                for buffer in shared.added_text_buffers() {
+                    queues.send(Effect::TextAdd {
+                        buffer: buffer.weak_ref()
+                    });
+                }
+
+                for buffer in shared.only_invalidated_buffers() {
+                    queues.send(Effect::TextTransform {
+                        buffer_id: buffer.id(),
+                        absolute_transform: Some(buffer.absolute_transform(absolute_transform)),
+                    });
+                }
+
+                for buffer_id in shared.removed_text_buffers() {
+                    queues.send(Effect::TextRemove {
+                        buffer_id
+                    });
+                }
+            }
+        }
     }
 
     pub struct NodeSkeleton {
@@ -838,10 +947,8 @@ impl Events {
     }
 
     pub fn drain_into(&self, output: &mut Vec<Effect>) {
-        let mut shared = self.shared.borrow_mut();
-        if let Some(queue) = shared.get_queue_mut(self.queue_id) {
-            output.extend(queue.drain(..))
-        }
+        let shared = self.shared.borrow_mut();
+        shared.drain_queue_into(self.queue_id, output);
     }
 }
 

@@ -54,8 +54,8 @@ impl ControlInfo {
         self.size = size;
     }
 
-    pub fn update_transform(&mut self, absolute_transform: &na::Projective3<f32>) {
-        self.absolute_transform = Some(absolute_transform.clone());
+    pub fn update_transform(&mut self, absolute_transform: Option<na::Projective3<f32>>) {
+        self.absolute_transform = absolute_transform;
     }
 
     pub fn flush_updates(&mut self, debug_lines: &DebugLines) {
@@ -176,7 +176,7 @@ impl Interface {
                 } => {
                     self.controls
                         .get_mut(&ControlId::Node(id))
-                        .map(|c| c.update_transform(&absolute_transform));
+                        .map(|c| c.update_transform(absolute_transform));
                     self.flush_updates_set.insert(ControlId::Node(id));
                 }
                 Effect::Remove { id } => {
@@ -223,7 +223,7 @@ impl Interface {
                 Effect::TextTransform { buffer_id, absolute_transform } => {
                     self.controls
                         .get_mut(&ControlId::Text(buffer_id))
-                        .map(|c| c.update_transform(&absolute_transform));
+                        .map(|c| c.update_transform(absolute_transform));
                     self.flush_updates_set.insert(ControlId::Text(buffer_id));
                 }
                 Effect::TextRemove { buffer_id } => {

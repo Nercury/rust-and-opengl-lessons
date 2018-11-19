@@ -165,7 +165,7 @@ impl Clone for Alphabet {
 
 impl Alphabet {
     pub fn get_entry_index(&self, id: u32) -> Option<usize> {
-        let mut flatland = self.flatland.borrow();
+        let flatland = self.flatland.borrow();
         flatland.get_alphabet_entry_index(self.slot, id)
     }
 

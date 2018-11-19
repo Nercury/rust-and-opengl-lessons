@@ -199,9 +199,9 @@ fn run() -> Result<(), failure::Error> {
 
         iface.render(&gl, &color_buffer, &ui_matrix);
 
-        while time.elapsed() < Duration::from_millis(12) {
-            ::std::thread::yield_now()
-        }
+//        while time.elapsed() < Duration::from_millis(12) {
+//            ::std::thread::yield_now()
+//        }
 
         window.gl_swap_window();
     }
