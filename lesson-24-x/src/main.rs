@@ -65,9 +65,6 @@ fn run() -> Result<(), failure::Error> {
         high_dpi: true,
     };
 
-    let scale = window_size.width as f32 / window_size.highdpi_width as f32;
-    let mut scale_modifier = 1.0;
-
     let mut window = video_subsystem
         .window("Demo", window_size.width as u32, window_size.height as u32);
     let builder = window
@@ -88,6 +85,9 @@ fn run() -> Result<(), failure::Error> {
         window_size.highdpi_width = window_size.width;
         window_size.highdpi_height = window_size.height;
     }
+
+    let mut scale = window_size.highdpi_width as f32 / window_size.width as f32;
+    let mut scale_modifier = 1.0;
 
     let _gl_context = window.gl_create_context().map_err(err_msg)?;
     let gl = gl::Gl::load_with(|s| {
@@ -148,6 +148,7 @@ fn run() -> Result<(), failure::Error> {
                     win_event: sdl2::event::WindowEvent::Resized(_w, _h),
                     ..
                 } => {
+                    scale = window_size.highdpi_width as f32 / window_size.width as f32;
                     true
                 }
                 Event::KeyDown {
