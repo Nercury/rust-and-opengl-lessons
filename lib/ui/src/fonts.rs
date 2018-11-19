@@ -217,9 +217,10 @@ pub struct Measurement {
     pub ascent: f32,
     pub descent: f32,
     pub width: f32,
-    pub height: f32,
     pub cap_height: f32,
     pub x_height: f32,
+    pub line_gap: f32,
+    pub height: f32,
 }
 
 mod shared {
@@ -378,9 +379,10 @@ mod shared {
                     ascent: font.metrics.ascent,
                     descent: font.metrics.descent,
                     width: last_glyph_pos.0 as f32,
-                    height: font.metrics.ascent + font.metrics.descent,
                     cap_height: font.metrics.cap_height,
                     x_height: font.metrics.x_height,
+                    line_gap: font.metrics.line_gap,
+                    height: font.metrics.line_gap + font.metrics.ascent - font.metrics.descent,
                 })
             } else {
                 None

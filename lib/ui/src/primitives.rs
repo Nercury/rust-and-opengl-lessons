@@ -24,9 +24,10 @@ impl Text {
                 ascent: m.ascent * s,
                 descent: m.descent * s,
                 width: m.width * s,
-                height: m.height * s,
                 cap_height: m.cap_height * s,
                 x_height: m.x_height * s,
+                line_gap: m.line_gap * s,
+                height: m.height * s,
             }
         })
     }
