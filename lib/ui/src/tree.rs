@@ -54,8 +54,6 @@ mod shared {
         resize_flow: ResizeFlow,
         resize_flow_output: ResizeFlowOutput,
         _box_size: BoxSize,
-
-        recalc_primitive_transforms: bool,
     }
 
     impl<'a> Base<'a> {
@@ -80,17 +78,11 @@ mod shared {
                         ResizeFlowOutput::ParentIsNotResizingNoSizeUpdate
                     }
                 },
-
-                recalc_primitive_transforms: false,
             }
         }
 
         pub fn box_size(&self) -> BoxSize {
             self._box_size
-        }
-
-        pub fn invalidate_transforms(&mut self) {
-            self.recalc_primitive_transforms = true;
         }
 
         /// Forces a resize after any update action (excluding the resize).
@@ -135,9 +127,13 @@ mod shared {
         }
 
         pub fn add<E: Element + 'static>(&mut self, element: E) -> Ix {
+            self.add_boxed(Box::new(element) as Box<Element>)
+        }
+
+        pub fn add_boxed(&mut self, element: Box<Element>) -> Ix {
             let id = self
                 .container
-                .add_node(self.id, Box::new(element) as Box<Element>);
+                .add_node(self.id, element);
             self.children.items.insert(id, Child::new(id));
             self.invalidate_size();
             id

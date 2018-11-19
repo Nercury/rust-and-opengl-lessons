@@ -55,14 +55,14 @@ fn run() -> Result<(), failure::Error> {
     gl_attr.set_accelerated_visual(true);
     gl_attr.set_double_buffer(true);
     gl_attr.set_multisample_buffers(1);
-    gl_attr.set_multisample_samples(4);
+    gl_attr.set_multisample_samples(8);
 
     let mut window_size = render::WindowSize {
         width: 960,
         height: 600,
         highdpi_width: 960,
         highdpi_height: 600,
-        high_dpi: false,
+        high_dpi: true,
     };
 
     let mut window = video_subsystem
@@ -105,7 +105,7 @@ fn run() -> Result<(), failure::Error> {
     // set up shared state for window
 
     viewport.set_used(&gl);
-    color_buffer.set_clear_color(&gl, na::Vector3::new(0.3, 0.3, 0.5));
+    color_buffer.set_clear_color(&gl, na::Vector3::new(1.0, 1.0, 1.0));
     color_buffer.enable_multisample(&gl);
 
     let mut iface_auto_size = false;

@@ -81,17 +81,22 @@ impl ControlInfo {
 
         match (self.flatland_group.is_some(), &self.flatland_group_data, self.absolute_transform) {
             (false, &Some((ref alphabet, ref items)), Some(t)) => {
+                println!("Create");
                 self.flatland_group = Some(
                     FlatlandGroup::new(&t, alphabet.clone(), items.clone())
                 );
             }
             (true, Some((ref alphabet, ref items)), Some(t)) => {
+                println!("Update");
                 let g = self.flatland_group.as_mut().unwrap();
                 g.update_items(items.iter());
                 g.update_transform(&t);
             },
             (false, _, _) => {},
-            (true, _, _) => self.flatland_group = None,
+            (true, _, _) => {
+                println!("None");
+                self.flatland_group = None
+            },
         }
     }
 }
@@ -110,7 +115,7 @@ struct AlphabetKey {
 pub struct Interface {
     tree: Tree,
     fonts: Fonts,
-    fill: Leaf<controls::Fill>,
+    fill: Leaf<controls::presentation::RustFest>,
     events: Events,
     controls: HashMap<ControlId, ControlInfo>,
     event_read_buffer: Vec<Effect>,
@@ -132,7 +137,7 @@ impl Interface {
         let fonts = tree.fonts();
 
         let events = tree.events();
-        let fill = tree.create_root(controls::Fill::new());
+        let fill = tree.create_root(controls::presentation::RustFest::new());
 
         fill.resize(size);
 
@@ -221,6 +226,7 @@ impl Interface {
                     self.flush_updates_set.insert(ControlId::Text(buffer.id()));
                 }
                 Effect::TextTransform { buffer_id, absolute_transform } => {
+                    println!("transform {:?}", absolute_transform);
                     self.controls
                         .get_mut(&ControlId::Text(buffer_id))
                         .map(|c| c.update_transform(absolute_transform));

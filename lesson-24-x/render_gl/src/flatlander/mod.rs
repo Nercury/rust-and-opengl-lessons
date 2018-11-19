@@ -98,7 +98,7 @@ impl Flatlander {
                     .program_color_location
                     .expect("Flatland Color uniform must exist");
 
-                self.program.set_uniform_4f(program_color_location, &na::Vector4::<f32>::new(1.0, 1.0, 1.0, 1.0));
+                self.program.set_uniform_4f(program_color_location, &na::Vector4::<f32>::new(0.1, 0.1, 0.1, 1.0));
 
                 buffers.lines_vao.bind();
                 buffers.indirect.buffer.bind();

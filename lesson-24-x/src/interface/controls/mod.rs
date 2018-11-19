@@ -1,8 +1,10 @@
 use ui::*;
 use na;
 
+pub mod presentation;
+
 pub struct Label {
-    text: Option<primitives::Text>,
+    text: Vec<primitives::Text>,
     delta_acc: f32,
     delta: i32,
     size: i32,
@@ -12,7 +14,7 @@ pub struct Label {
 impl Label {
     pub fn new() -> Label {
         Label {
-            text: None,
+            text: Vec::new(),
             delta_acc: 0.0,
             delta: 50,
             size: 0,
@@ -23,9 +25,9 @@ impl Label {
 
 impl Label {
     fn update_text_size(&mut self) {
-        if let Some(text) = self.text.as_mut() {
+        for (i, text) in self.text.iter_mut().enumerate() {
             text.set_transform(
-                &(na::convert::<_, na::Projective3<_>>(na::Translation3::new(0.0, self.size as f32, 0.0)) // translation
+                &(na::convert::<_, na::Projective3<_>>(na::Translation3::new(i as f32 * 10.0, i as f32 * 10.0 + self.size as f32, 0.0)) // translation
                     * na::convert::<_, na::Projective3<_>>(na::Rotation3::from_axis_angle(&na::Vector3::z_axis(), self.rotation)) // rot
                     * na::convert::<_, na::Projective3<_>>(na::Similarity3::new(na::zero(), na::zero(), 0.05))) // scale
             );
@@ -35,8 +37,15 @@ impl Label {
 
 impl Element for Label {
     fn inflate(&mut self, base: &mut Base) {
-        self.text = base.primitives().text("Kaip faina");
-        self.update_text_size();
+        {
+            let primitives = base.primitives();
+            for i in 0..100 {
+                if let Some(t) = primitives.text("Kaip faina") {
+                    self.text.push(t);
+                }
+            }
+            self.update_text_size();
+        }
         base.enable_update(true);
     }
 
