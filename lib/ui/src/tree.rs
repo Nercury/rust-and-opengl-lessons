@@ -90,6 +90,10 @@ mod shared {
             self._box_size
         }
 
+        pub fn scale(&self) -> f32 {
+            self.window_scale
+        }
+
         /// Forces a resize after any update action (excluding the resize).
         pub fn invalidate_size(&mut self) {
             match self.resize_flow {

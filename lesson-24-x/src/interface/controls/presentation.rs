@@ -15,7 +15,9 @@ impl Element for RustFest {
     fn inflate(&mut self, base: &mut Base) {
         base.add(
             Presentation::new()
-                .with_slide(TextSlide::new("The lazy fox jumps over a quick dog"))
+                .with_slide(TextSlide::new("First slide"))
+                .with_slide(TextSlide::new("Second slide"))
+                .with_slide(TextSlide::new("Yet another slide"))
         );
     }
 }
@@ -70,12 +72,15 @@ impl Element for TextSlide {
     fn resize(&mut self, base: &mut Base) {
         let text_size = self.text.as_ref().unwrap().measure();
 
+        let gap_x = 4.0 * base.scale();
+        let gap_y = 16.0 * base.scale();
+
         let box_size = base.box_size();
         let resolved_size = match box_size {
             BoxSize::Hidden => None,
             BoxSize::Auto => Some(ResolvedSize {
-                w: text_size.map(|m| m.width).unwrap_or(0.0).round() as i32,
-                h: text_size.map(|m| m.height).unwrap_or(0.0).round() as i32
+                w: text_size.map(|m| m.width + gap_x).unwrap_or(0.0).round() as i32,
+                h: text_size.map(|m| m.height + gap_y).unwrap_or(0.0).round() as i32
             }),
             BoxSize::Fixed { w, h, .. } => Some(ResolvedSize { w, h }),
         };
