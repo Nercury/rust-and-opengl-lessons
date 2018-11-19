@@ -63,19 +63,21 @@ impl TextSlide {
 impl Element for TextSlide {
     fn inflate(&mut self, base: &mut Base) {
         let mut text = base.primitives().text(self.text_string.clone()).expect("failed to create text");
-        text.set_transform(
-            &(na::convert::<_, na::Projective3<_>>(na::Translation3::new(0.0, 80.0, 0.0)))
-        );
+        text.set_size(60.0);
         self.text = Some(text);
     }
 
     fn resize(&mut self, base: &mut Base) {
+        let text_size = self.text.as_ref().unwrap().measure();
+
         let box_size = base.box_size();
         base.resolve_size(match box_size {
             BoxSize::Hidden => None,
-            BoxSize::Auto => Some(ResolvedSize { w: 500, h: 30 }),
+            BoxSize::Auto => Some(ResolvedSize { w: text_size.x.round() as i32, h: text_size.y.round() as i32 }),
             BoxSize::Fixed { w, h, .. } => Some(ResolvedSize { w, h }),
         });
+
+        self.text.as_mut().unwrap().set_position(0.0, text_size.y);
     }
 }
 

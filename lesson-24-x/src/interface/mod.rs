@@ -81,20 +81,17 @@ impl ControlInfo {
 
         match (self.flatland_group.is_some(), &self.flatland_group_data, self.absolute_transform) {
             (false, &Some((ref alphabet, ref items)), Some(t)) => {
-                println!("Create");
                 self.flatland_group = Some(
                     FlatlandGroup::new(&t, alphabet.clone(), items.clone())
                 );
             }
             (true, Some((ref alphabet, ref items)), Some(t)) => {
-                println!("Update");
                 let g = self.flatland_group.as_mut().unwrap();
                 g.update_items(items.iter());
                 g.update_transform(&t);
             },
             (false, _, _) => {},
             (true, _, _) => {
-                println!("None");
                 self.flatland_group = None
             },
         }
@@ -227,7 +224,6 @@ impl Interface {
                     self.flush_updates_set.insert(ControlId::Text(buffer.id()));
                 }
                 Effect::TextTransform { buffer_id, absolute_transform } => {
-                    println!("transform {:?}", absolute_transform);
                     self.controls
                         .get_mut(&ControlId::Text(buffer_id))
                         .map(|c| c.update_transform(absolute_transform));

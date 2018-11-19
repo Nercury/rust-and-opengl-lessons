@@ -568,6 +568,10 @@ mod shared {
                         (false, Some(LastResolvedSize::ElementSizeAuto(resolved_size)), BoxSize::Auto) => (LastResolvedSize::ElementSizeAuto(resolved_size), resolved_size, true, None),
                         (false, Some(LastResolvedSize::ElementSizeFixed { w, h, size }), BoxSize::Fixed { w: new_w, h: new_h }) if w == new_w && h == new_h => (LastResolvedSize::ElementSizeFixed { w, h, size }, size, true, None),
                         (_, _, box_size) => {
+                            if window_scale_changed {
+                                body.update_window_scale_for_primitives(window_scale);
+                            }
+
                             let mut base = Base::new(id, container, &mut body.children, ResizeFlow::ParentIsResizing, box_size, window_scale);
                             body.el.resize(&mut base);
 
@@ -598,9 +602,6 @@ mod shared {
                         } else {
                             let absolute_transform = skeleton.absolute_transform();
                             skeleton.body.as_mut().map(|b| {
-                                if let Some(window_scale) = new_window_scale {
-                                    b.update_window_scale_for_primitives(window_scale);
-                                }
                                 b.sync_primitives(&absolute_transform, &mut q.borrow_mut())
                             });
                         }

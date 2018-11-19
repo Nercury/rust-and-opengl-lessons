@@ -167,6 +167,10 @@ impl Buffer {
     pub fn set_transform(&self, transform: &na::Projective3<f32>) {
         self._font.container.borrow_mut().set_buffer_transform(self._id, transform);
     }
+
+    pub fn size(&self) -> Option<na::Vector2<f32>> {
+        self._font.container.borrow().get_buffer_size(self._id)
+    }
 }
 
 impl Clone for Buffer {
@@ -221,6 +225,7 @@ mod shared {
     use font_kit::family_name::FamilyName;
     use font_kit::properties::Properties;
     use font_kit::handle::Handle;
+    use font_kit::metrics::Metrics;
     use font_kit::font::Font as FontkitFont;
     use byteorder::{LittleEndian, WriteBytesExt};
 
@@ -277,6 +282,20 @@ mod shared {
             ::std::mem::replace(&mut self.buffer, Some(hb::shape(&font, unicode_buffer, &[])));
         }
 
+        fn last_horizontal_glyph_position(&self) -> Option<((i32, i32), u32)> {
+            let buffer_data = self.buffer.as_ref().expect("expected glyph buffer to always contain glyph output");
+            let positions = buffer_data.get_glyph_positions();
+            let infos = buffer_data.get_glyph_infos();
+
+            positions.iter().zip(infos.iter())
+                .fold(None, |a, (p, i)| {
+                     match a {
+                         None => Some(((p.x_offset + p.x_advance, p.y_offset + p.y_advance), i.codepoint)),
+                         Some(((x, y), _)) => Some(((p.x_offset + p.x_advance + x, p.y_offset + p.y_advance + y), i.codepoint))
+                     }
+                })
+        }
+
         fn positions(&self, output: &mut Vec<GlyphPosition>) {
             let buffer_data = self.buffer.as_ref().expect("expected glyph buffer to always contain glyph output");
             let positions = buffer_data.get_glyph_positions();
@@ -299,6 +318,7 @@ mod shared {
     pub struct FontData {
         pub fk_font: FontkitFont,
         pub hb_font: hb::Owned<hb::Font<'static>>,
+        pub metrics: Metrics,
         pub count: usize,
     }
 
@@ -337,6 +357,16 @@ mod shared {
         pub fn buffer_glyphs(&self, buffer_id: usize, output: &mut Vec<GlyphPosition>) {
             self.buffers.get(buffer_id).expect("buffer_glyph_ids: self.buffers.get(buffer_id)")
                 .positions(output)
+        }
+
+        pub fn get_buffer_size(&self, buffer_id: usize) -> Option<na::Vector2<f32>> {
+            let buffer = self.buffers.get(buffer_id).expect("get_buffer_size: self.buffers.get(buffer_id)");
+            let font = self.fonts_id_prop.get(&buffer.font_id).expect("get_buffer_size: self.fonts_id_prop.get(&buffer.font_id)");
+            if let Some((last_glyph_pos, id)) = buffer.last_horizontal_glyph_position() {
+                Some([last_glyph_pos.0 as f32, font.metrics.cap_height].into())
+            } else {
+                None
+            }
         }
 
         pub fn get_buffer_transform(&self, buffer_id: usize) -> na::Projective3<f32> {
@@ -441,10 +471,13 @@ mod shared {
 
                             debug!("load font {:?}", fk_font.full_name());
 
+                            let metrics = fk_font.metrics();
+
                             let data = FontData {
                                 fk_font,
                                 hb_font,
                                 count: 1,
+                                metrics,
                             };
 
                             self.fonts_fingerprint_id.insert(fingerprint, new_id);
