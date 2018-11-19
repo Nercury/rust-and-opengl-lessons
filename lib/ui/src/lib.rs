@@ -42,6 +42,13 @@ pub struct ResolvedSize {
 }
 
 impl ResolvedSize {
+    pub fn zero() -> ResolvedSize {
+        ResolvedSize {
+            w: 0,
+            h: 0,
+        }
+    }
+
     pub fn from_flow(flow: FlowDirection, width: i32, forward_val: i32) -> ResolvedSize {
         match flow {
             FlowDirection::Horizontal => ResolvedSize { w: forward_val, h: width },
@@ -100,12 +107,20 @@ pub enum Effect {
     }
 }
 
+/// This is a hack - the ui does not yet have input events
+#[derive(Copy, Clone, Debug)]
+pub enum UiAction {
+    NextSlide,
+    PreviousSlide,
+}
+
 pub trait Element {
     fn inflate(&mut self, _base: &mut Base) {}
     fn resize(&mut self, base: &mut Base) {
         base.layout_vertical(5)
     }
-    fn update(&mut self, _base: &mut Base, _delta: f32) {}
+    fn update(&mut self, base: &mut Base, _delta: f32) {}
+    fn action(&mut self, base: &mut Base, _action: UiAction) {}
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]

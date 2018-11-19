@@ -250,6 +250,10 @@ impl Interface {
         self.process_events()
     }
 
+    pub fn send_action(&mut self, action: UiAction) {
+        self.tree.send_action(action);
+    }
+
     pub fn mouse_move(&mut self, _x: i32, _y: i32) {}
 
     pub fn mouse_down(&mut self, _x: i32, _y: i32) {}

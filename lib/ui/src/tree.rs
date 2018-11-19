@@ -135,6 +135,22 @@ mod shared {
             }
         }
 
+        pub fn enable_actions(&mut self, state: bool) {
+            if state {
+                self.container
+                    .action_set
+                    .as_mut()
+                    .expect("enable_actions (true): self.container.action_set")
+                    .insert(self.id);
+            } else {
+                self.container
+                    .action_set
+                    .as_mut()
+                    .expect("enable_actions (false): self.container.action_set")
+                    .remove(&self.id);
+            }
+        }
+
         pub fn add<E: Element + 'static>(&mut self, element: E) -> Ix {
             self.add_boxed(Box::new(element) as Box<Element>)
         }
@@ -391,6 +407,7 @@ mod shared {
         nodes: BTreeMap<Ix, NodeSkeleton>,
 
         update_set: Option<BTreeSet<Ix>>,
+        action_set: Option<BTreeSet<Ix>>,
     }
 
     impl Container {
@@ -404,6 +421,7 @@ mod shared {
                 nodes: BTreeMap::new(),
 
                 update_set: Some(BTreeSet::new()),
+                action_set: Some(BTreeSet::new()),
             }
         }
 
@@ -601,13 +619,16 @@ mod shared {
                 },
                 |skeleton, q, (last_resolved_size, resolved_size, skip_update, new_window_scale)| {
                     if !skip_update || new_window_scale.is_some() {
-                        if let None = resolved_size {
-                            skeleton.body.as_mut().map(|b| b.hide_primitives(&mut q.borrow_mut()));
-                        } else {
-                            let absolute_transform = skeleton.absolute_transform();
-                            skeleton.body.as_mut().map(|b| {
-                                b.sync_primitives(&absolute_transform, &mut q.borrow_mut())
-                            });
+                        match resolved_size {
+                            None => {
+                                skeleton.body.as_mut().map(|b| b.hide_primitives(&mut q.borrow_mut()));
+                            }
+                            _ => {
+                                let absolute_transform = skeleton.absolute_transform();
+                                skeleton.body.as_mut().map(|b| {
+                                    b.sync_primitives(&absolute_transform, &mut q.borrow_mut())
+                                });
+                            }
                         }
                         q.borrow_mut().send(Effect::Resize { id, size: resolved_size.map(|s| (s.w, s.h)) });
                         skeleton.last_resolved_size = Some(last_resolved_size);
@@ -627,7 +648,7 @@ mod shared {
                 relative_transform,
                 |skeleton, _q, relative_transform| {
                     skeleton.relative_transform = relative_transform.clone();
-                    (skeleton.last_resolved_size.is_none(), skeleton.absolute_transform())
+                    (skeleton.resolved_size_is_invisible(), skeleton.absolute_transform())
                 },
                 |body, container, (has_no_resolved_size, absolute_transform)| {
                     if !has_no_resolved_size {
@@ -655,7 +676,7 @@ mod shared {
                 parent_transform,
                 |skeleton, _q, parent_transform| {
                     skeleton.parent_transform = parent_transform.clone();
-                    (skeleton.last_resolved_size.is_none(), skeleton.absolute_transform())
+                    (skeleton.resolved_size_is_invisible(), skeleton.absolute_transform())
                 },
                 |body, container, (has_no_resolved_size, absolute_transform)| {
                     if !has_no_resolved_size {
@@ -695,10 +716,31 @@ mod shared {
             }
         }
 
+        pub fn send_action(&mut self, action: UiAction) {
+            let update_list = ::std::mem::replace(&mut self.action_set, None)
+                .expect("update: iteration reentry error");
+
+            self.update_template(&update_list, |el, base, arg| {
+                el.action(base, arg)
+            }, action);
+
+            ::std::mem::replace(&mut self.action_set, Some(update_list));
+        }
+
         pub fn update(&mut self, delta: f32) {
             let update_list = ::std::mem::replace(&mut self.update_set, None)
                 .expect("update: iteration reentry error");
 
+            self.update_template(&update_list, |el, base, arg| {
+                el.update(base, arg)
+            }, delta);
+
+            ::std::mem::replace(&mut self.update_set, Some(update_list));
+        }
+
+        pub fn update_template<A, F>(&mut self, update_list: &BTreeSet<Ix>, mut fun: F, arg: A)
+            where F: FnMut(&mut Element, &mut Base, A), A: Copy
+        {
             enum ResizeAction {
                 None,
                 InvalidateSize,
@@ -710,12 +752,12 @@ mod shared {
                 ResizeParents,
             }
 
-            for id in &update_list {
+            for id in update_list {
                 let (parent_id, post_mutate_resize) = self.mutate(
                     *id,
-                    delta,
-                    |skeleton, _q, delta| (skeleton.last_resolved_size, skeleton.window_scale, delta),
-                    |body, container, (last_resolved_size, window_scale, delta)| {
+                    (&mut fun),
+                    |skeleton, _q, fun| (skeleton.last_resolved_size, skeleton.window_scale, fun),
+                    |body, container, (last_resolved_size, window_scale, fun)| {
                         let box_size = match last_resolved_size {
                             None => BoxSize::Hidden,
                             Some(last_resolved_size) => last_resolved_size.to_box_size(),
@@ -728,7 +770,7 @@ mod shared {
                                 box_size,
                                 window_scale
                             );
-                            body.el.update(&mut base, delta);
+                            fun(&mut *body.el, &mut base, arg);
                             base.resize_flow_output
                         };
 
@@ -788,8 +830,6 @@ mod shared {
                     }
                 }
             }
-
-            ::std::mem::replace(&mut self.update_set, Some(update_list));
         }
     }
 
@@ -912,6 +952,14 @@ mod shared {
             }
         }
 
+        pub fn resolved_size_is_invisible(&self) -> bool {
+            match self.last_resolved_size {
+                None => true,
+                Some(LastResolvedSize::ElementSizeHidden) => true,
+                _ => false,
+            }
+        }
+
         pub fn absolute_transform(&self) -> na::Projective3<f32> {
             &self.parent_transform * &self.relative_transform
         }
@@ -963,6 +1011,10 @@ impl Tree {
         self.shared.borrow_mut().update(delta)
     }
 
+    pub fn send_action(&self, action: UiAction) {
+        self.shared.borrow_mut().send_action(action)
+    }
+
     pub fn events(&self) -> Events {
         Events::new(&self.shared)
     }
@@ -1006,6 +1058,10 @@ pub struct Leaf<T> {
 impl<T> Leaf<T> {
     pub fn resize(&self, size: BoxSize, window_scale: f32) -> Option<ResolvedSize> {
         self.shared.borrow_mut().resize(self.id, size, window_scale)
+    }
+
+    pub fn send_action(&self, action: UiAction) {
+        self.shared.borrow_mut().send_action(action)
     }
 }
 

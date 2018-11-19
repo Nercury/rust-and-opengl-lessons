@@ -18,24 +18,38 @@ impl Element for RustFest {
                 .with_slide(TextSlide::new("First slide"))
                 .with_slide(TextSlide::new("Second slide"))
                 .with_slide(TextSlide::new("Yet another slide"))
+                .with_slide(CombinedSlide)
         );
     }
 }
 
+pub struct CombinedSlide;
+
+impl Element for CombinedSlide {
+    fn inflate(&mut self, base: &mut Base) {
+        base.add(TextSlide::new("Combined"));
+        base.add(TextSlide::new("Slide"));
+    }
+}
 
 pub struct Presentation {
     slides: Vec<Box<Element>>,
+    num_elements: usize,
+    slide_index: usize,
 }
 
 impl Presentation {
     pub fn new() -> Presentation {
         Presentation {
             slides: vec![],
+            num_elements: 0,
+            slide_index: 0,
         }
     }
 
     pub fn with_slide<E: Element + 'static>(mut self, slide: E) -> Self {
         self.slides.push(Box::new(slide) as Box<Element>);
+        self.num_elements += 1;
         self
     }
 }
@@ -44,6 +58,65 @@ impl Element for Presentation {
     fn inflate(&mut self, base: &mut Base) {
         for slide in self.slides.drain(..) {
             base.add_boxed(slide);
+        }
+        base.enable_actions(true);
+    }
+
+    fn resize(&mut self, base: &mut Base) {
+        if self.num_elements == 0 {
+            return base.layout_empty();
+        }
+
+        let current_slide_index = self.slide_index;
+        let size = match base.box_size() {
+            BoxSize::Hidden => return base.layout_empty(),
+            BoxSize::Auto => {
+                let mut resolved_child_size = None;
+
+                base.children_mut(|i, mut child| {
+                    if i == current_slide_index {
+                        resolved_child_size = child.element_resize(BoxSize::Auto);
+                    } else {
+                        child.element_resize(BoxSize::Hidden);
+                    }
+                });
+
+                resolved_child_size
+            },
+            BoxSize::Fixed { w, h } => {
+                let mut resolved_child_size = None;
+
+                base.children_mut(|i, mut child| {
+                    if i == current_slide_index {
+                        resolved_child_size = child.element_resize(BoxSize::Fixed { w, h });
+                    } else {
+                        child.element_resize(BoxSize::Hidden);
+                    }
+                });
+
+                resolved_child_size
+            },
+        };
+
+        base.resolve_size(size);
+    }
+
+    fn action(&mut self, base: &mut Base, action: UiAction) {
+        match action {
+            UiAction::NextSlide => {
+                debug!("next slide");
+                if self.slide_index < self.num_elements - 1 {
+                    self.slide_index += 1;
+                    base.invalidate_size();
+                }
+            },
+            UiAction::PreviousSlide => {
+                debug!("previous slide");
+                if self.slide_index > 0 {
+                    self.slide_index -= 1;
+                    base.invalidate_size();
+                }
+            },
         }
     }
 }

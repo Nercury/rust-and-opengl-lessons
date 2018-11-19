@@ -179,6 +179,20 @@ fn run() -> Result<(), failure::Error> {
                     scale_modifier *= 1.5;
                     true
                 }
+                Event::KeyDown {
+                    scancode: Some(Scancode::Left),
+                    ..
+                } => {
+                    iface.send_action(ui::UiAction::PreviousSlide);
+                    false
+                }
+                Event::KeyDown {
+                    scancode: Some(Scancode::Right),
+                    ..
+                } => {
+                    iface.send_action(ui::UiAction::NextSlide);
+                    false
+                }
                 _ => false,
             };
 
