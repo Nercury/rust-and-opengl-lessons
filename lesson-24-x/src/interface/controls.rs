@@ -27,7 +27,7 @@ impl Label {
             text.set_transform(
                 &(na::convert::<_, na::Projective3<_>>(na::Translation3::new(0.0, self.size as f32, 0.0)) // translation
                     * na::convert::<_, na::Projective3<_>>(na::Rotation3::from_axis_angle(&na::Vector3::z_axis(), self.rotation)) // rot
-                    * na::convert::<_, na::Projective3<_>>(na::Similarity3::new(na::zero(), na::zero(), 0.02))) // scale
+                    * na::convert::<_, na::Projective3<_>>(na::Similarity3::new(na::zero(), na::zero(), 0.05))) // scale
             );
         }
     }

@@ -55,25 +55,36 @@ fn run() -> Result<(), failure::Error> {
     gl_attr.set_accelerated_visual(true);
     gl_attr.set_double_buffer(true);
     gl_attr.set_multisample_buffers(1);
-    gl_attr.set_multisample_samples(16);
+    gl_attr.set_multisample_samples(4);
 
     let mut window_size = render::WindowSize {
         width: 960,
         height: 600,
         highdpi_width: 960,
         highdpi_height: 600,
+        high_dpi: false,
     };
 
-    let window = video_subsystem
-        .window("Demo", window_size.width as u32, window_size.height as u32)
+    let mut window = video_subsystem
+        .window("Demo", window_size.width as u32, window_size.height as u32);
+    let builder = window
         .opengl()
-        .resizable()
-        .allow_highdpi()
-        .build()?;
+        .resizable();
 
-    let drawable_size = window.drawable_size();
-    window_size.highdpi_width = drawable_size.0 as i32;
-    window_size.highdpi_height = drawable_size.1 as i32;
+    if window_size.high_dpi {
+        builder.allow_highdpi();
+    }
+
+    let window = builder.build()?;
+
+    if window_size.high_dpi {
+        let drawable_size = window.drawable_size();
+        window_size.highdpi_width = drawable_size.0 as i32;
+        window_size.highdpi_height = drawable_size.1 as i32;
+    } else {
+        window_size.highdpi_width = window_size.width;
+        window_size.highdpi_height = window_size.height;
+    }
 
     let _gl_context = window.gl_create_context().map_err(err_msg)?;
     let gl = gl::Gl::load_with(|s| {
@@ -119,7 +130,7 @@ fn run() -> Result<(), failure::Error> {
                 &gl,
                 &window,
                 &mut window_size,
-                &mut viewport,
+                &mut viewport
             ) == system::input::window::HandleResult::Quit
             {
                 break 'main;
@@ -133,9 +144,6 @@ fn run() -> Result<(), failure::Error> {
                     win_event: sdl2::event::WindowEvent::Resized(_w, _h),
                     ..
                 } => {
-                    let (hdpi_w, hdpi_h) = window.drawable_size();
-                    viewport.update_size(hdpi_w as i32, hdpi_h as i32);
-                    viewport.set_used(&gl);
                     if iface_auto_size {
                         iface.resize(ui::BoxSize::Auto);
                     } else {

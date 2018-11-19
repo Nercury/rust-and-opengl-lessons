@@ -8,4 +8,5 @@ pub struct WindowSize {
     pub height: i32,
     pub highdpi_width: i32,
     pub highdpi_height: i32,
+    pub high_dpi: bool,
 }
