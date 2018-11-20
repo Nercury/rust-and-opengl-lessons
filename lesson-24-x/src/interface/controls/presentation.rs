@@ -75,6 +75,19 @@ impl ElementInfo {
         });
         self.position = *source_pos;
     }
+
+    pub fn transition_to(&mut self, target_pos: &na::Vector3<f32>) {
+        self.target = Some(InterpolationTarget {
+            rotation: na::UnitQuaternion::<f32>::identity(),
+            position: *target_pos,
+            t: 0.0,
+        });
+        self.position = [0.0, 0.0, 0.0].into();
+    }
+
+    pub fn is_transitioning(&self) -> bool {
+        self.target.is_some()
+    }
 }
 
 fn smootherstep(edge0: f32, edge1: f32, x: f32) -> f32 {
@@ -132,7 +145,9 @@ impl Element for Presentation {
                     if i == current_slide_index {
                         resolved_child_size = child.element_resize(BoxSize::Auto);
                     } else {
-                        child.element_resize(BoxSize::Hidden);
+                        if !self.element_info[i].is_transitioning() {
+                            child.element_resize(BoxSize::Hidden);
+                        }
                     }
                 });
 
@@ -145,7 +160,9 @@ impl Element for Presentation {
                     if i == current_slide_index {
                         resolved_child_size = child.element_resize(BoxSize::Fixed { w, h });
                     } else {
-                        child.element_resize(BoxSize::Hidden);
+                        if !self.element_info[i].is_transitioning() {
+                            child.element_resize(BoxSize::Hidden);
+                        }
                     }
 
                     child.element_transform(&self.element_info[i].transform());
@@ -196,10 +213,14 @@ impl Element for Presentation {
             UiAction::NextSlide => {
                 debug!("next slide");
                 if self.slide_index < self.num_elements - 1 {
+                    let previous_index = self.slide_index;
                     self.slide_index += 1;
 
                     self.element_info[self.slide_index].transition_from(
                         &[self.last_size.w as f32, 0.0, 0.0].into()
+                    );
+                    self.element_info[previous_index].transition_to(
+                        &[-self.last_size.w as f32, 0.0, 0.0].into()
                     );
                     base.enable_update(true);
                     base.invalidate_size();
@@ -208,10 +229,14 @@ impl Element for Presentation {
             UiAction::PreviousSlide => {
                 debug!("previous slide");
                 if self.slide_index > 0 {
+                    let previous_index = self.slide_index;
                     self.slide_index -= 1;
 
                     self.element_info[self.slide_index].transition_from(
                         &[-self.last_size.w as f32, 0.0, 0.0].into()
+                    );
+                    self.element_info[previous_index].transition_to(
+                        &[self.last_size.w as f32, 0.0, 0.0].into()
                     );
                     base.enable_update(true);
                     base.invalidate_size();

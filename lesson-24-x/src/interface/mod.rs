@@ -268,6 +268,10 @@ impl Interface {
     pub fn toggle_wireframe(&mut self) {
         self.flatlander.toggle_wireframe()
     }
+
+    pub fn toggle_bounds(&mut self) {
+        self.debug_lines.toggle()
+    }
 }
 
 fn ensure_glyph_is_in_alphabet_and_return_index(builder: &mut lyon_path::default::Builder, alphabet: &mut Alphabet, font: &Font, glyph_id: u32) -> usize {

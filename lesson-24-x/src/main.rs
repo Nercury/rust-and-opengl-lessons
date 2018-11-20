@@ -101,7 +101,7 @@ fn run() -> Result<(), failure::Error> {
     // 1 for updates synchronized with the vertical retrace,
     // -1 for late swap tearing
 
-    let vsync = false;
+    let vsync = true;
     video_subsystem.gl_set_swap_interval(if vsync { 1 } else { 0 });
 
     let mut frame_profiler = render_gl::FrameProfiler::new(&gl, &resources, 80)?;
@@ -177,6 +177,13 @@ fn run() -> Result<(), failure::Error> {
                     ..
                 } => {
                     iface.toggle_wireframe();
+                    false
+                }
+                Event::KeyDown {
+                    scancode: Some(Scancode::B),
+                    ..
+                } => {
+                    iface.toggle_bounds();
                     false
                 }
                 Event::KeyDown {
