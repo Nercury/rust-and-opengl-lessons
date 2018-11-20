@@ -7,6 +7,7 @@ extern crate resources;
 extern crate font_kit;
 extern crate euclid;
 extern crate image;
+extern crate floating_duration;
 extern crate lyon_tessellation;
 extern crate lyon_path;
 extern crate int_hash;
@@ -18,6 +19,7 @@ extern crate int_hash;
 mod flatlander;
 mod debug_lines;
 mod shader;
+mod profiler;
 
 pub mod buffer;
 pub mod data;
@@ -29,4 +31,5 @@ pub use self::color_buffer::ColorBuffer;
 pub use self::debug_lines::{DebugLines, RayMarkers, AabbMarker, RectMarker};
 pub use self::flatlander::{Flatlander, FlatlandGroup, FlatlandItem, Alphabet, FlatlanderVertex};
 pub use self::shader::{Shader, Program, Error};
+pub use self::profiler::{EventCountProfiler, FrameProfiler};
 

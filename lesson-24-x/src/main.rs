@@ -22,6 +22,8 @@ use failure::err_msg;
 use floating_duration::TimeAsFloat;
 use interface::Interface;
 use std::time::{Duration, Instant};
+use profiling::alloc;
+use profiling::gl_calls;
 
 fn main() {
     let mut builder = env_logger::Builder::new();
@@ -102,6 +104,10 @@ fn run() -> Result<(), failure::Error> {
     let vsync = false;
     video_subsystem.gl_set_swap_interval(if vsync { 1 } else { 0 });
 
+    let mut frame_profiler = render_gl::FrameProfiler::new(&gl, &resources, 80)?;
+    let mut allocation_profiler = render_gl::EventCountProfiler::new(&gl, &resources, 3, 0)?;
+    let mut gl_call_profiler = render_gl::EventCountProfiler::new(&gl, &resources, 1, 20)?;
+
     let mut viewport =
         render_gl::Viewport::for_window(window_size.highdpi_width, window_size.highdpi_height);
     let color_buffer = render_gl::ColorBuffer::new();
@@ -129,6 +135,13 @@ fn run() -> Result<(), failure::Error> {
 
     let mut event_pump = sdl.event_pump().map_err(err_msg)?;
     'main: loop {
+        alloc::reset();
+        gl_calls::reset();
+
+        frame_profiler.begin();
+        allocation_profiler.begin();
+        gl_call_profiler.begin();
+
         for event in event_pump.poll_iter() {
             if system::input::window::handle_default_window_events(
                 &event,
@@ -194,6 +207,15 @@ fn run() -> Result<(), failure::Error> {
                     iface.send_action(ui::UiAction::NextSlide);
                     false
                 }
+                Event::KeyDown {
+                    scancode: Some(Scancode::P),
+                    ..
+                } => {
+                    frame_profiler.toggle();
+                    allocation_profiler.toggle();
+                    gl_call_profiler.toggle();
+                    false
+                }
                 _ => false,
             };
 
@@ -211,10 +233,14 @@ fn run() -> Result<(), failure::Error> {
             }
         }
 
+        frame_profiler.push(render::color_black());
+
         let delta = time.elapsed().as_fractional_secs() as f32;
         time = Instant::now();
 
         iface.update(delta);
+
+        frame_profiler.push(render::color_blue());
 
         unsafe {
             gl.Enable(gl::CULL_FACE);
@@ -241,11 +267,66 @@ fn run() -> Result<(), failure::Error> {
 
         iface.render(&gl, &color_buffer, &ui_matrix);
 
+        frame_profiler.push(render::color_red());
+
+        let left = 0;
+        let top = window_size.highdpi_height;
+        let right = window_size.highdpi_width;
+        let bottom = 0;
+
+        let ui_matrix = na::Matrix4::new_orthographic(
+            left as f32,
+            right as f32,
+            bottom as f32,
+            top as f32,
+            -10.0,
+            10.0,
+        );
+
+        frame_profiler.render(
+            &gl,
+            &color_buffer,
+            &ui_matrix,
+            window_size.highdpi_width,
+            window_size.highdpi_height,
+        );
+        allocation_profiler.render(&gl, &color_buffer, &ui_matrix, window_size.highdpi_width);
+        gl_call_profiler.render(&gl, &color_buffer, &ui_matrix, window_size.highdpi_width);
+
+        frame_profiler.push(render::color_green());
+
+//        while time.elapsed() < Duration::from_millis(12) {
+//            ::std::thread::yield_now()
+//        }
+
+        {
+            let ac = alloc::alloc_count();
+            let dc = alloc::dealloc_count();
+            if ac > 0 {
+                allocation_profiler.push(ac, render::color_blue());
+            }
+            if dc > 0 {
+                allocation_profiler.push(dc, render::color_green());
+            }
+        }
+
+        let gl_error_c = gl_calls::errors();
+        if gl_error_c > 0 {
+            gl_call_profiler.push(gl_error_c, render::color_red());
+        }
+
+        let gl_call_c = gl_calls::calls();
+        if gl_call_c > 0 {
+            gl_call_profiler.push(gl_call_c, render::color_light_blue());
+        }
+
         while time.elapsed() < Duration::from_millis(6) {
             ::std::thread::yield_now()
         }
 
         window.gl_swap_window();
+
+        frame_profiler.push(render::color_orange());
     }
 
     Ok(())
