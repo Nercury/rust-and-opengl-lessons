@@ -117,7 +117,8 @@ pub enum UiAction {
 pub trait Element {
     fn inflate(&mut self, _base: &mut Base) {}
     fn resize(&mut self, base: &mut Base) {
-        base.layout_vertical(5)
+        let margin = (4.0 * base.scale()) as i32;
+        base.layout_vertical(margin)
     }
     fn update(&mut self, base: &mut Base, _delta: f32) {}
     fn action(&mut self, base: &mut Base, _action: UiAction) {}

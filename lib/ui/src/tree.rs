@@ -6,7 +6,7 @@ use *;
 
 mod shared {
     use na;
-    use std::collections::{BTreeMap, BTreeSet};
+    use std::collections::{BTreeMap, BTreeSet, VecDeque};
     use queues::*;
     use fonts::Fonts;
     use std::cell::RefCell;
@@ -86,10 +86,12 @@ mod shared {
             }
         }
 
+        #[inline(always)]
         pub fn box_size(&self) -> BoxSize {
             self._box_size
         }
 
+        #[inline(always)]
         pub fn scale(&self) -> f32 {
             self.window_scale
         }
@@ -120,37 +122,42 @@ mod shared {
         }
 
         pub fn enable_update(&mut self, state: bool) {
-            if state {
-                self.container
-                    .update_set
-                    .as_mut()
-                    .expect("enable_update (true): self.container.update_set")
-                    .insert(self.id);
+            if let Some(ref mut set) = self.container
+                .update_set
+                .as_mut() {
+                if state {
+                    set.insert(self.id);
+                } else {
+                    set.remove(&self.id);
+                }
             } else {
-                self.container
-                    .update_set
-                    .as_mut()
-                    .expect("enable_update (false): self.container.update_set")
-                    .remove(&self.id);
+                self.container.update_set_actions.push_back(if state {
+                    SetAction::Add(self.id)
+                } else {
+                    SetAction::Remove(self.id)
+                })
             }
         }
 
         pub fn enable_actions(&mut self, state: bool) {
-            if state {
-                self.container
-                    .action_set
-                    .as_mut()
-                    .expect("enable_actions (true): self.container.action_set")
-                    .insert(self.id);
+            if let Some(ref mut set) = self.container
+                .action_set
+                .as_mut() {
+                if state {
+                    set.insert(self.id);
+                } else {
+                    set.remove(&self.id);
+                }
             } else {
-                self.container
-                    .action_set
-                    .as_mut()
-                    .expect("enable_actions (false): self.container.action_set")
-                    .remove(&self.id);
+                self.container.action_set_actions.push_back(if state {
+                    SetAction::Add(self.id)
+                } else {
+                    SetAction::Remove(self.id)
+                })
             }
         }
 
+        #[inline(always)]
         pub fn add<E: Element + 'static>(&mut self, element: E) -> Ix {
             self.add_boxed(Box::new(element) as Box<Element>)
         }
@@ -273,6 +280,7 @@ mod shared {
             }
         }
 
+        #[inline(always)]
         pub fn children_len(&self) -> usize {
             self.children.items.len()
         }
@@ -339,6 +347,11 @@ mod shared {
             }
         }
 
+        pub fn element_transform(&mut self, transform: &na::Projective3<f32>) {
+            self.child.transform = transform.clone();
+            self.propagate_transform();
+        }
+
         fn propagate_transform(&mut self) {
             let transform = na::Translation3::<f32>::new(
                 self.child.translation2d.w as f32,
@@ -346,10 +359,11 @@ mod shared {
                 0.0,
             );
             self.container
-                .transform(self.child.id, &na::convert(transform));
+                .transform(self.child.id, &(self.child.transform * na::convert::<_, na::Projective3<_>>(transform)));
             self.child.transform_propagated = true;
         }
 
+        #[inline(always)]
         pub fn hide(&mut self) {
             self.container.hide(self.child.id, self.window_scale);
         }
@@ -363,8 +377,7 @@ mod shared {
     pub struct Child {
         id: Ix,
         translation2d: ResolvedSize,
-        rotation2d: f32,
-        pivot2d: PivotPoint,
+        transform: na::Projective3<f32>,
         transform_propagated: bool,
     }
 
@@ -373,10 +386,14 @@ mod shared {
             Child {
                 id,
                 translation2d: ResolvedSize { w: 0, h: 0 },
-                rotation2d: 0.0,
-                pivot2d: PivotPoint::Fixed { x: 0, y: 0 },
+                transform: na::Projective3::<f32>::identity(),
                 transform_propagated: false,
             }
+        }
+
+        #[inline(always)]
+        pub fn invalidate_transform_propagation(&mut self) {
+            self.transform_propagated = false;
         }
     }
 
@@ -393,9 +410,15 @@ mod shared {
             }
         }
 
+        #[inline(always)]
         pub fn remove(&mut self, id: Ix) {
             self.items.remove(&id);
         }
+    }
+
+    enum SetAction {
+        Remove(Ix),
+        Add(Ix),
     }
 
     pub struct Container {
@@ -408,6 +431,9 @@ mod shared {
 
         update_set: Option<BTreeSet<Ix>>,
         action_set: Option<BTreeSet<Ix>>,
+
+        update_set_actions: VecDeque<SetAction>,
+        action_set_actions: VecDeque<SetAction>,
     }
 
     impl Container {
@@ -422,9 +448,13 @@ mod shared {
 
                 update_set: Some(BTreeSet::new()),
                 action_set: Some(BTreeSet::new()),
+
+                update_set_actions: VecDeque::with_capacity(32),
+                action_set_actions: VecDeque::with_capacity(32),
             }
         }
 
+        #[inline(always)]
         pub fn fonts(&self) -> &Fonts {
             &self._fonts
         }
@@ -570,10 +600,12 @@ mod shared {
             id
         }
 
+        #[inline(always)]
         pub fn root_id(&self) -> Option<Ix> {
             self._root_id
         }
 
+        #[inline(always)]
         pub fn get_node_mut(&mut self, id: Ix) -> Option<&mut Element> {
             self.nodes.get_mut(&id).map(|node| node.element_mut())
         }
@@ -698,14 +730,17 @@ mod shared {
             )
         }
 
+        #[inline(always)]
         pub fn hide(&mut self, id: Ix, window_scale: f32) {
             self.resize(id, BoxSize::Hidden, window_scale);
         }
 
+        #[inline(always)]
         pub fn create_queue(&mut self) -> Ix {
             self.queues.borrow_mut().create_queue()
         }
 
+        #[inline(always)]
         pub fn delete_queue(&mut self, id: Ix) {
             self.queues.borrow_mut().delete_queue(id);
         }
@@ -725,6 +760,14 @@ mod shared {
             }, action);
 
             ::std::mem::replace(&mut self.action_set, Some(update_list));
+
+            let set = self.action_set.as_mut().unwrap();
+            while let Some(a) = self.action_set_actions.pop_front() {
+                match a {
+                    SetAction::Add(ix) => set.insert(ix),
+                    SetAction::Remove(ix) => set.remove(&ix),
+                };
+            }
         }
 
         pub fn update(&mut self, delta: f32) {
@@ -736,8 +779,17 @@ mod shared {
             }, delta);
 
             ::std::mem::replace(&mut self.update_set, Some(update_list));
+
+            let set = self.update_set.as_mut().unwrap();
+            while let Some(a) = self.update_set_actions.pop_front() {
+                match a {
+                    SetAction::Add(ix) => set.insert(ix),
+                    SetAction::Remove(ix) => set.remove(&ix),
+                };
+            }
         }
 
+        #[inline(always)]
         pub fn update_template<A, F>(&mut self, update_list: &BTreeSet<Ix>, mut fun: F, arg: A)
             where F: FnMut(&mut Element, &mut Base, A), A: Copy
         {
@@ -755,7 +807,7 @@ mod shared {
             for id in update_list {
                 let (parent_id, post_mutate_resize) = self.mutate(
                     *id,
-                    (&mut fun),
+                    &mut fun,
                     |skeleton, _q, fun| (skeleton.last_resolved_size, skeleton.window_scale, fun),
                     |body, container, (last_resolved_size, window_scale, fun)| {
                         let box_size = match last_resolved_size {
@@ -812,6 +864,7 @@ mod shared {
                     while let Some(id) = parent_id {
                         let node = self.nodes.get_mut(&id)
                             .expect("update: self.nodes.get_mut(&id)");
+                        node.invalidate_transform_propagation();
 
                         if let Some(_) = node.parent_id {
                             node.last_resolved_size = None;
@@ -841,6 +894,12 @@ mod shared {
     use std::cell::RefMut;
 
     impl NodeBody {
+        pub fn invalidate_transform_propagation(&mut self) {
+            for child in self.children.items.values_mut() {
+                child.invalidate_transform_propagation();
+            }
+        }
+
         pub fn update_window_scale_for_primitives(&mut self, window_scale: f32) {
             if let Some(ref mut primitives) = self.children.primitives {
                 let mut shared = primitives.shared.borrow_mut();
@@ -952,6 +1011,14 @@ mod shared {
             }
         }
 
+        #[inline(always)]
+        pub fn invalidate_transform_propagation(&mut self) {
+            self.body
+                .as_mut()
+                .expect("invalidate_transform_propagation: encountered stolen body")
+                .invalidate_transform_propagation();
+        }
+
         pub fn resolved_size_is_invisible(&self) -> bool {
             match self.last_resolved_size {
                 None => true,
@@ -960,22 +1027,26 @@ mod shared {
             }
         }
 
+        #[inline(always)]
         pub fn absolute_transform(&self) -> na::Projective3<f32> {
             &self.parent_transform * &self.relative_transform
         }
 
+        #[inline(always)]
         pub fn steal_body(&mut self) -> NodeBody {
             self.body
                 .take()
                 .expect("steal_body: encountered stolen value")
         }
 
+        #[inline(always)]
         pub fn restore_body(&mut self, body: NodeBody) {
             if let Some(_) = ::std::mem::replace(&mut self.body, Some(body)) {
                 unreachable!("restore_body: encountered existing value")
             }
         }
 
+        #[inline(always)]
         pub fn element_mut(&mut self) -> &mut Element {
             self.body
                 .as_mut()
@@ -1007,18 +1078,22 @@ impl Tree {
         }
     }
 
+    #[inline(always)]
     pub fn update(&self, delta: f32) {
         self.shared.borrow_mut().update(delta)
     }
 
+    #[inline(always)]
     pub fn send_action(&self, action: UiAction) {
         self.shared.borrow_mut().send_action(action)
     }
 
+    #[inline(always)]
     pub fn events(&self) -> Events {
         Events::new(&self.shared)
     }
 
+    #[inline(always)]
     pub fn fonts(&self) -> fonts::Fonts {
         self.shared.borrow().fonts().clone()
     }

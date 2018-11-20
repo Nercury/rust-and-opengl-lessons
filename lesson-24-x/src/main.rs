@@ -6,6 +6,7 @@ extern crate lesson_24_x_render as render;
 extern crate lesson_24_x_render_gl as render_gl;
 #[macro_use] extern crate log;
 extern crate nalgebra as na;
+extern crate nalgebra_glm as glm;
 extern crate resources;
 extern crate sdl2;
 extern crate ui;
@@ -240,9 +241,9 @@ fn run() -> Result<(), failure::Error> {
 
         iface.render(&gl, &color_buffer, &ui_matrix);
 
-//        while time.elapsed() < Duration::from_millis(12) {
-//            ::std::thread::yield_now()
-//        }
+        while time.elapsed() < Duration::from_millis(6) {
+            ::std::thread::yield_now()
+        }
 
         window.gl_swap_window();
     }
