@@ -15,9 +15,8 @@ impl Element for RustFest {
     fn inflate(&mut self, base: &mut Base) {
         base.add(
             Presentation::new()
-                .with_slide(TextSlide::new("First slide"))
-                .with_slide(TextSlide::new("Second slide"))
-                .with_slide(TextSlide::new("Yet another slide"))
+                .with_slide(TextSlide::new("Ži", 70.0))
+                .with_slide(TextSlide::new("What the languages with garbage collector can not do", 70.0))
                 .with_slide(CombinedSlide)
         );
     }
@@ -27,8 +26,8 @@ pub struct CombinedSlide;
 
 impl Element for CombinedSlide {
     fn inflate(&mut self, base: &mut Base) {
-        base.add(TextSlide::new("Combined"));
-        base.add(TextSlide::new("Slide"));
+        base.add(TextSlide::new("Combined", 60.0));
+        base.add(TextSlide::new("Slide", 60.0));
     }
 }
 
@@ -247,15 +246,21 @@ impl Element for Presentation {
 }
 
 pub struct TextSlide {
-    text: Option<primitives::Text>,
+    single_line: Option<primitives::Text>,
+    multi_lines: Vec<primitives::Text>,
+
     text_string: String,
+    text_size: f32,
 }
 
 impl TextSlide {
-    pub fn new(text: &str) -> TextSlide {
+    pub fn new(text: &str, size: f32) -> TextSlide {
         TextSlide {
-            text: None,
+            single_line: None,
+            multi_lines: Vec::with_capacity(32),
+
             text_string: text.into(),
+            text_size: size,
         }
     }
 }
@@ -263,27 +268,257 @@ impl TextSlide {
 impl Element for TextSlide {
     fn inflate(&mut self, base: &mut Base) {
         let mut text = base.primitives().text(self.text_string.clone()).expect("failed to create text");
-        text.set_size(60.0);
-        self.text = Some(text);
+        text.set_size(self.text_size);
+        self.single_line = Some(text);
     }
 
     fn resize(&mut self, base: &mut Base) {
-        let text_size = self.text.as_ref().unwrap().measure();
-
         let box_size = base.box_size();
-        let resolved_size = match box_size {
-            BoxSize::Hidden => None,
-            BoxSize::Auto => Some(ResolvedSize {
-                w: text_size.map(|m| m.width).unwrap_or(0.0).round() as i32,
-                h: text_size.map(|m| m.height).unwrap_or(0.0).round() as i32
-            }),
-            BoxSize::Fixed { w, h, .. } => Some(ResolvedSize { w, h }),
-        };
 
-        if let (Some(size), Some(text_size)) = (resolved_size, text_size) {
-            let text = self.text.as_mut().unwrap();
-            text.set_position(size.w as f32 / 2.0 - text_size.width / 2.0, size.h as f32 / 2.0 + text_size.descent + text_size.height / 2.0);
-        }
+        let resolved_size: Option<ResolvedSize> = match box_size {
+            BoxSize::Hidden => return base.layout_empty(),
+            BoxSize::Auto => {
+                let m = match self.single_line.as_mut() {
+                    None => return base.layout_empty(),
+                    Some(line) => {
+                        let m = match line.measurement().measure() {
+                            None => return base.layout_empty(),
+                            Some(s) => s,
+                        };
+
+                        line.set_hidden(false);
+                        line.set_position(0.0, m.ascent + m.line_gap / 2.0);
+
+                        m
+                    }
+                };
+
+                for line in self.multi_lines.iter_mut() {
+                    line.set_hidden(true);
+                }
+
+                Some(ResolvedSize {
+                    w: m.width.round() as i32,
+                    h: m.height.round() as i32
+                })
+            },
+            BoxSize::Fixed { w, h, .. } => {
+                let (metrics, mut positions) = match self.single_line.as_mut() {
+                    None => return base.layout_empty(),
+                    Some(line) => {
+                        line.set_hidden(true);
+                        match line.measurement().measure() {
+                            None => return base.layout_empty(),
+                            Some(m) => (m, line.measurement().glyph_positions())
+                        }
+                    }
+                };
+
+                enum Separator {
+                    Space,
+                    NewLine,
+                }
+
+                #[derive(Debug, Copy, Clone)]
+                enum Line {
+                    Empty,
+                    WordWrap(Segment),
+                    ParagraphBreak(Segment),
+                }
+
+                #[derive(Debug, Copy, Clone)]
+                struct Segment {
+                    offset: u32,
+                    len: u32,
+                    width: f32,
+                }
+
+                fn is_separator(text: &str, m: &primitives::GlyphMeasurement) -> Option<Separator> {
+                    let s: &str = &text[m.byte_offset as usize..(m.byte_offset + m.len) as usize];
+                    if s.chars().any(|c| c == '\n') {
+                        Some(Separator::NewLine)
+                    } else if s.chars().all(|c| c.is_whitespace()) {
+                        Some(Separator::Space)
+                    } else {
+                        None
+                    }
+                }
+
+                let max_line_w = w as f32;
+
+                let mut lines = Vec::new();
+
+                let mut current_line = None;
+                let mut candidate_word_whitespace = None;
+                let mut candidate_word = None;
+
+                while let Some(g) = positions.next() {
+                    match (current_line, candidate_word_whitespace, candidate_word) {
+                        (None, _, _) => match is_separator(&self.text_string, &g) {
+                            Some(Separator::NewLine) => lines.push(Line::Empty),
+                            Some(Separator::Space) => (),
+                            None => current_line = Some(Segment {
+                                offset: g.byte_offset,
+                                len: g.len,
+                                width: g.x_advance,
+                            })
+                        }
+                        (Some(r_current_line), None, None) => match is_separator(&self.text_string, &g) {
+                            Some(Separator::NewLine) => {
+                                lines.push(Line::ParagraphBreak(r_current_line));
+                                current_line = None;
+                            },
+                            Some(Separator::Space) => candidate_word_whitespace = Some(Segment {
+                                offset: g.byte_offset,
+                                len: g.len,
+                                width: g.x_advance,
+                            }),
+                            None => {
+                                let current_line = current_line.as_mut().unwrap();
+
+                                current_line.len += g.len;
+                                current_line.width += g.x_advance;
+                            }
+                        }
+                        (Some(r_current_line), Some(_), None) => match is_separator(&self.text_string, &g) {
+                            Some(Separator::NewLine) => {
+                                lines.push(Line::ParagraphBreak(r_current_line));
+                                current_line = None;
+                                candidate_word_whitespace = None;
+                            },
+                            Some(Separator::Space) => {
+                                let candidate_word_whitespace = candidate_word_whitespace.as_mut().unwrap();
+
+                                candidate_word_whitespace.len += g.len;
+                                candidate_word_whitespace.width += g.x_advance;
+                            },
+                            None => candidate_word = Some(Segment {
+                                offset: g.byte_offset,
+                                len: g.len,
+                                width: g.x_advance,
+                            })
+                        }
+                        (Some(r_current_line), Some(r_candidate_word_whitespace), Some(r_candidate_word)) => match is_separator(&self.text_string, &g) {
+                            Some(Separator::NewLine) => {
+                                let line_width_with_candidate_word = r_current_line.width + r_candidate_word_whitespace.width + r_candidate_word.width;
+                                if line_width_with_candidate_word <= max_line_w {
+                                    lines.push(Line::ParagraphBreak(Segment {
+                                        width: line_width_with_candidate_word,
+                                        offset: r_current_line.offset,
+                                        len: r_current_line.len + r_candidate_word_whitespace.len + r_candidate_word.len,
+                                    }));
+                                    current_line = None;
+                                    candidate_word_whitespace = None;
+                                    candidate_word = None;
+                                } else {
+                                    lines.push(Line::WordWrap(r_current_line));
+                                    lines.push(Line::ParagraphBreak(r_candidate_word));
+                                }
+                                current_line = None;
+                                candidate_word_whitespace = None;
+                                candidate_word = None;
+                            },
+                            Some(Separator::Space) => {
+                                let line_width_with_candidate_word = r_current_line.width + r_candidate_word_whitespace.width + r_candidate_word.width;
+                                if line_width_with_candidate_word <= max_line_w {
+                                    {
+                                        let current_line = current_line.as_mut().unwrap();
+                                        current_line.len += r_candidate_word_whitespace.len + r_candidate_word.len;
+                                        current_line.width += r_candidate_word_whitespace.width + r_candidate_word.width;
+                                    }
+
+                                    candidate_word_whitespace = Some(Segment {
+                                        offset: g.byte_offset,
+                                        len: g.len,
+                                        width: g.x_advance,
+                                    });
+                                    candidate_word = None;
+                                } else {
+                                    lines.push(Line::WordWrap(r_current_line));
+                                    current_line = candidate_word;
+                                    candidate_word = None;
+                                    candidate_word_whitespace = Some(Segment {
+                                        offset: g.byte_offset,
+                                        len: g.len,
+                                        width: g.x_advance,
+                                    });
+                                }
+                            },
+                            None => {
+                                let candidate_word = candidate_word.as_mut().unwrap();
+
+                                candidate_word.len += g.len;
+                                candidate_word.width += g.x_advance;
+                            }
+                        }
+                        _ => unreachable!("invalid state"),
+                    }
+                }
+
+                info!("{:?}", (current_line, candidate_word_whitespace, candidate_word));
+
+                match (current_line, candidate_word_whitespace, candidate_word) {
+                    (None, None, None) => lines.push(Line::Empty),
+                    (Some(r_current_line), None, None) => {
+                        info!("word on last line");
+                        lines.push(Line::ParagraphBreak(r_current_line))
+                    },
+                    (Some(r_current_line), Some(r_candidate_word_whitespace), None) => {
+                        info!("word on last line 2");
+                        lines.push(Line::ParagraphBreak(r_current_line))
+                    },
+                    (Some(r_current_line), Some(r_candidate_word_whitespace), Some(r_candidate_word)) => {
+                        let line_width_with_candidate_word = r_current_line.width + r_candidate_word_whitespace.width + r_candidate_word.width;
+                        if line_width_with_candidate_word <= max_line_w {
+                            info!("fits");
+                            lines.push(Line::ParagraphBreak(Segment {
+                                width: line_width_with_candidate_word,
+                                offset: r_current_line.offset,
+                                len: r_current_line.len + r_candidate_word_whitespace.len + r_candidate_word.len,
+                            }));
+                        } else {
+                            info!("not fits");
+                            lines.push(Line::WordWrap(r_current_line));
+                            lines.push(Line::ParagraphBreak(r_candidate_word));
+                        }
+                    },
+                    _ => unreachable!("invalid state"),
+                }
+
+                let mut top: f32 = 0.0;
+                let mut max_width: f32 = lines.iter().map(|l| match l {
+                    Line::Empty => 0.0,
+                    Line::ParagraphBreak(s) => s.width,
+                    Line::WordWrap(s) => s.width,
+                }).max_by(|x, y| if x > y {
+                    ::std::cmp::Ordering::Greater
+                } else {
+                    ::std::cmp::Ordering::Less
+                }).unwrap_or(0.0);
+
+                self.multi_lines.clear();
+
+                info!("{:?}", lines);
+
+                for line in lines.iter() {
+                    if let Some(mut text) = match line {
+                        Line::WordWrap(s) => base.primitives().text(self.text_string[s.offset as usize..(s.offset + s.len) as usize].to_string()),
+                        Line::ParagraphBreak(s) => base.primitives().text(self.text_string[s.offset as usize..(s.offset + s.len) as usize].to_string()),
+                        Line::Empty => None,
+                    } {
+                        text.set_position(0.0, top + metrics.height);
+                        self.multi_lines.push(text);
+                    }
+
+                    top += metrics.height;
+                }
+
+                Some(ResolvedSize {
+                    w,
+                    h
+                })
+            },
+        };
 
         base.resolve_size(resolved_size);
     }

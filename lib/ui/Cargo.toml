@@ -15,3 +15,4 @@ harfbuzz_rs = "0.3.0"
 font-kit = { version = "0.1.0", path = "../../patches/font-kit" }
 lyon_path = "0.11.0"
 slotmap = "0.3"
+unicode-segmentation = "1.2.1"

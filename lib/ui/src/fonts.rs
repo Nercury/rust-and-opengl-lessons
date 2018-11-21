@@ -93,7 +93,7 @@ impl Font {
             .metrics
     }
 
-    pub fn create_buffer<P: ToString>(&self, text: P, transform: &na::Projective3<f32>) -> Buffer {
+    pub fn create_buffer<P: ToString>(&self, text: P, transform: Option<na::Projective3<f32>>) -> Buffer {
         Buffer::new(self.clone(), text, transform)
     }
 }
@@ -122,7 +122,7 @@ pub struct Buffer {
 }
 
 impl Buffer {
-    fn new<P: ToString>(font: Font, text: P, transform: &na::Projective3<f32>) -> Buffer {
+    fn new<P: ToString>(font: Font, text: P, transform: Option<na::Projective3<f32>>) -> Buffer {
         let id = {
             let mut shared = font.container.borrow_mut();
             shared.create_buffer(font.id, text, transform)
@@ -154,22 +154,22 @@ impl Buffer {
         self._id
     }
 
-    pub fn absolute_transform(&self, parent_absolute_transform: &na::Projective3<f32>) -> na::Projective3<f32> {
+    pub fn absolute_transform(&self, parent_absolute_transform: &na::Projective3<f32>) -> Option<na::Projective3<f32>> {
         let shared = self._font.container.borrow();
-        parent_absolute_transform * shared.get_buffer_transform(self._id)
+        shared.get_buffer_transform(self._id).map(|bt| parent_absolute_transform * bt)
     }
 
-    pub fn transform(&self) -> na::Projective3<f32> {
+    pub fn transform(&self) -> Option<na::Projective3<f32>> {
         let shared = self._font.container.borrow();
         shared.get_buffer_transform(self._id)
     }
 
-    pub fn set_transform(&self, transform: &na::Projective3<f32>) {
+    pub fn set_transform(&self, transform: Option<na::Projective3<f32>>) {
         self._font.container.borrow_mut().set_buffer_transform(self._id, transform);
     }
 
-    pub fn size(&self) -> Option<Measurement> {
-        self._font.container.borrow().get_buffer_size(self._id)
+    pub fn measure(&self, glyphs: &mut Vec<GlyphPosition>) -> Option<Measurement> {
+        self._font.container.borrow().measure(self._id, glyphs)
     }
 }
 
@@ -245,22 +245,30 @@ mod shared {
     pub struct GlyphPosition {
         pub id: u32,
         pub cluster: u32,
+        pub byte_offset: u32,
+        pub len: u32,
         pub x_advance: i32,
         pub y_advance: i32,
         pub x_offset: i32,
         pub y_offset: i32,
     }
 
+    pub struct GraphemeInfo {
+        pub start_byte: u32,
+        pub len: u32,
+    }
+
     pub struct BufferData {
         text: String,
-        transform: na::Projective3<f32>,
+        graphemes: Vec<GraphemeInfo>,
+        transform: Option<na::Projective3<f32>>,
         buffer: Option<hb::GlyphBuffer>,
         font_id: usize,
         count: usize,
     }
 
     impl BufferData {
-        fn new<P: ToString>(font_id: usize, font_data: &FontData, text: P, transform: &na::Projective3<f32>) -> BufferData {
+        fn new<P: ToString>(font_id: usize, font_data: &FontData, text: P, transform: Option<na::Projective3<f32>>) -> BufferData {
             let text = text.to_string();
             let unicode_buffer = hb::UnicodeBuffer::new().add_str(&text);
 
@@ -270,9 +278,19 @@ mod shared {
                 hb::shape(&font, unicode_buffer, &[])
             });
 
+            use unicode_segmentation::UnicodeSegmentation;
+            let graphemes = text.grapheme_indices(true)
+                .map(|(pos, s)| GraphemeInfo { start_byte: pos as u32, len: s.len() as u32 })
+                .collect::<Vec<_>>();
+
+            if graphemes.len() != buffer.as_ref().unwrap().len() {
+                panic!("unicode segmentation mismatch for {:?}", text);
+            }
+
             BufferData {
                 text,
-                transform: *transform,
+                graphemes,
+                transform,
                 buffer,
                 font_id,
                 count: 1,
@@ -294,36 +312,33 @@ mod shared {
             ::std::mem::replace(&mut self.buffer, Some(hb::shape(&font, unicode_buffer, &[])));
         }
 
-        fn last_horizontal_glyph_position(&self) -> Option<((i32, i32), u32)> {
+        fn measure(&self, output: &mut Vec<GlyphPosition>) -> Option<(i32, i32)> {
             let buffer_data = self.buffer.as_ref().expect("expected glyph buffer to always contain glyph output");
+
             let positions = buffer_data.get_glyph_positions();
             let infos = buffer_data.get_glyph_infos();
 
-            positions.iter().zip(infos.iter())
-                .fold(None, |a, (p, i)| {
-                     match a {
-                         None => Some(((p.x_offset + p.x_advance, p.y_offset + p.y_advance), i.codepoint)),
-                         Some(((x, y), _)) => Some(((p.x_offset + p.x_advance + x, p.y_offset + p.y_advance + y), i.codepoint))
-                     }
-                })
-        }
+            let mut last_glyph_pos = None;
 
-        fn positions(&self, output: &mut Vec<GlyphPosition>) {
-            let buffer_data = self.buffer.as_ref().expect("expected glyph buffer to always contain glyph output");
-            let positions = buffer_data.get_glyph_positions();
-            let infos = buffer_data.get_glyph_infos();
+            for (position, (info, grapheme)) in positions.iter().zip(infos.iter().zip(self.graphemes.iter())) {
+                output.push(GlyphPosition {
+                    id: info.codepoint,
+                    cluster: info.cluster,
+                    byte_offset: grapheme.start_byte,
+                    len: grapheme.len,
+                    x_advance: position.x_advance,
+                    y_advance: position.y_advance,
+                    x_offset: position.x_offset,
+                    y_offset: position.y_offset,
+                });
 
-            output.extend(
-                positions.iter().zip(infos.iter()).map(|(position, info)| {
-                    GlyphPosition {
-                        id: info.codepoint,
-                        cluster: info.cluster,
-                        x_advance: position.x_advance,
-                        y_advance: position.y_advance,
-                        x_offset: position.x_offset,
-                        y_offset: position.y_offset,
-                    }
-                }));
+                last_glyph_pos = match last_glyph_pos {
+                    None => Some((position.x_offset + position.x_advance, position.y_offset + position.y_advance)),
+                    Some((x, y)) => Some((position.x_offset + position.x_advance + x, position.y_offset + position.y_advance + y)),
+                };
+            }
+
+            last_glyph_pos
         }
     }
 
@@ -357,7 +372,7 @@ mod shared {
             }
         }
 
-        pub fn create_buffer<P: ToString>(&mut self, font_id: usize, text: P, transform: &na::Projective3<f32>) -> usize {
+        pub fn create_buffer<P: ToString>(&mut self, font_id: usize, text: P, transform: Option<na::Projective3<f32>>) -> usize {
             let buffer = {
                 let font_data = self.get(font_id).expect("FontsContainer::create_buffer - self.get(font_id)");
                 BufferData::new(font_id, font_data, text, transform)
@@ -368,13 +383,13 @@ mod shared {
 
         pub fn buffer_glyphs(&self, buffer_id: usize, output: &mut Vec<GlyphPosition>) {
             self.buffers.get(buffer_id).expect("buffer_glyph_ids: self.buffers.get(buffer_id)")
-                .positions(output)
+                .measure(output);
         }
 
-        pub fn get_buffer_size(&self, buffer_id: usize) -> Option<Measurement> {
+        pub fn measure(&self, buffer_id: usize, glyphs: &mut Vec<GlyphPosition>) -> Option<Measurement> {
             let buffer = self.buffers.get(buffer_id).expect("get_buffer_size: self.buffers.get(buffer_id)");
             let font = self.fonts_id_prop.get(&buffer.font_id).expect("get_buffer_size: self.fonts_id_prop.get(&buffer.font_id)");
-            if let Some((last_glyph_pos, id)) = buffer.last_horizontal_glyph_position() {
+            if let Some(last_glyph_pos) = buffer.measure(glyphs) {
                 Some(Measurement {
                     ascent: font.metrics.ascent,
                     descent: font.metrics.descent,
@@ -389,12 +404,12 @@ mod shared {
             }
         }
 
-        pub fn get_buffer_transform(&self, buffer_id: usize) -> na::Projective3<f32> {
+        pub fn get_buffer_transform(&self, buffer_id: usize) -> Option<na::Projective3<f32>> {
             self.buffers[buffer_id].transform
         }
 
-        pub fn set_buffer_transform(&mut self, buffer_id: usize, transform: &na::Projective3<f32>) {
-            self.buffers[buffer_id].transform = *transform;
+        pub fn set_buffer_transform(&mut self, buffer_id: usize, transform: Option<na::Projective3<f32>>) {
+            self.buffers[buffer_id].transform = transform;
         }
 
         pub fn get_and_inc_buffer(&mut self, id: usize) -> Option<(usize, usize)> {

@@ -11,6 +11,7 @@ extern crate byteorder;
 extern crate font_kit;
 extern crate harfbuzz_rs;
 extern crate lyon_path;
+extern crate unicode_segmentation;
 
 mod tree;
 pub mod primitives;
@@ -120,8 +121,8 @@ pub trait Element {
         let margin = (4.0 * base.scale()) as i32;
         base.layout_vertical(margin)
     }
-    fn update(&mut self, base: &mut Base, _delta: f32) {}
-    fn action(&mut self, base: &mut Base, _action: UiAction) {}
+    fn update(&mut self, _base: &mut Base, _delta: f32) {}
+    fn action(&mut self, _base: &mut Base, _action: UiAction) {}
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]

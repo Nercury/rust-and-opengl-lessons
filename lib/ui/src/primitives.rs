@@ -3,24 +3,46 @@ use *;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-pub struct Text {
-    size: f32,
-    position: na::Vector3<f32>,
-    origin: na::Vector3<f32>,
-    transform: na::Projective3<f32>,
-
-    font_scale: f32,
-    slot: shared::PrimitiveSlot,
-    shared: Rc<RefCell<shared::InnerPrimitives>>,
+#[derive(Copy, Clone, Debug)]
+pub struct GlyphMeasurement {
+    pub id: u32,
+    pub cluster: u32,
+    pub byte_offset: u32,
+    pub len: u32,
+    pub x_advance: f32,
+    pub y_advance: f32,
+    pub x_offset: f32,
+    pub y_offset: f32,
 }
 
-impl Text {
-    pub fn measure(&self) -> Option<Measurement> {
-        let shared =  self.shared.borrow();
-        let ws = shared.get_window_scale();
-        shared.get_size(self.slot).map(|m| {
-            let s = self.font_scale * self.size * ws;
-            Measurement {
+#[derive(Clone)]
+pub struct TextMeasurement {
+    size: f32,
+    font_scale: f32,
+
+    metrics: Option<Measurement>,
+    glyph_positions: Vec<GlyphPosition>,
+
+    shared: Rc<RefCell<shared::InnerPrimitives>>,
+    buffer: Buffer,
+}
+
+impl TextMeasurement {
+    fn update_metrics(&mut self) {
+        self.glyph_positions.clear();
+        self.metrics = self.buffer.measure(&mut self.glyph_positions);
+    }
+
+    pub fn measure(&mut self) -> Option<Measurement> {
+        if self.metrics.is_none() {
+            self.update_metrics();
+        }
+
+        if let Some(m) = self.metrics {
+            let shared =  self.shared.borrow();
+            let ws = shared.get_window_scale();
+            let s = self.scale() * ws;
+            return Some(Measurement {
                 ascent: m.ascent * s,
                 descent: m.descent * s,
                 width: m.width * s,
@@ -28,17 +50,66 @@ impl Text {
                 x_height: m.x_height * s,
                 line_gap: m.line_gap * s,
                 height: m.height * s,
-            }
-        })
+            });
+        }
+
+        None
     }
 
+    pub fn glyph_positions<'r>(&'r mut self) -> impl Iterator<Item = GlyphMeasurement> + 'r {
+        if self.metrics.is_none() {
+            self.update_metrics();
+        }
+
+        let shared =  self.shared.borrow();
+        let ws = shared.get_window_scale();
+        let s = self.scale() * ws;
+
+        self.glyph_positions.iter()
+            .map(move |p| GlyphMeasurement {
+                id: p.id,
+                cluster: p.cluster,
+                byte_offset: p.byte_offset,
+                len: p.len,
+                x_advance: p.x_advance as f32 * s,
+                y_advance: p.y_advance as f32 * s,
+                x_offset: p.x_offset as f32 * s,
+                y_offset: p.y_offset as f32 * s,
+            })
+    }
+
+    pub fn scale(&self) -> f32 {
+        self.font_scale * self.size
+    }
+
+    pub fn set_size(&mut self, size: f32) {
+        self.size = size;
+    }
+}
+
+pub struct Text {
+    measurement: TextMeasurement,
+
+    position: na::Vector3<f32>,
+    origin: na::Vector3<f32>,
+    transform: na::Projective3<f32>,
+    slot: shared::PrimitiveSlot,
+    hidden: bool,
+}
+
+impl Text {
     pub fn set_transform(&mut self, transform: &na::Projective3<f32>) {
         self.transform = transform.clone();
         self.update_transform();
     }
 
     pub fn set_size(&mut self, size: f32) {
-        self.size = size;
+        self.measurement.set_size(size);
+        self.update_transform();
+    }
+
+    pub fn set_hidden(&mut self, value: bool) {
+        self.hidden = value;
         self.update_transform();
     }
 
@@ -53,21 +124,34 @@ impl Text {
     }
 
     fn update_transform(&self) {
-        let scale = self.font_scale * self.size;
+        if self.hidden {
+            let mut shared =  self.measurement.shared.borrow_mut();
+            shared.set_text_transform(self.slot, None);
+        } else {
+            let scale = self.measurement.scale();
 
-        let mut shared =  self.shared.borrow_mut();
-        shared.set_text_transform(self.slot, &(
-            self.transform
-            * na::convert::<_, na::Projective3<_>>(na::Translation3::new(self.position.x, self.position.y, self.position.z))
-            * na::convert::<_, na::Projective3<_>>(na::Translation3::new(-self.origin.x, -self.origin.y, -self.origin.z))
-            * na::convert::<_, na::Projective3<_>>(na::Similarity3::new(na::zero(), na::zero(), scale))
-        ));
+            let mut shared = self.measurement.shared.borrow_mut();
+            shared.set_text_transform(self.slot, Some(
+                self.transform
+                    * na::convert::<_, na::Projective3<_>>(na::Translation3::new(self.position.x, self.position.y, self.position.z))
+                    * na::convert::<_, na::Projective3<_>>(na::Translation3::new(-self.origin.x, -self.origin.y, -self.origin.z))
+                    * na::convert::<_, na::Projective3<_>>(na::Similarity3::new(na::zero(), na::zero(), scale))
+            ));
+        }
+    }
+
+    pub fn measurement(&mut self) -> &mut TextMeasurement {
+        &mut self.measurement
+    }
+
+    pub fn into_measurement(self) -> TextMeasurement {
+        self.measurement.clone()
     }
 }
 
 impl Drop for Text {
     fn drop(&mut self) {
-        self.shared.borrow_mut().delete_text_buffer(self.slot);
+        self.measurement.shared.borrow_mut().delete_text_buffer(self.slot);
     }
 }
 
@@ -87,6 +171,7 @@ impl Primitives {
 
     pub fn text<P: ToString>(&mut self, text: P) -> Option<Text> {
 
+        let text = text.to_string();
         let font = self.fonts.find_best_match(&[FamilyName::SansSerif],
                                    &{ let mut p = Properties::new(); p.weight(Weight::BOLD); p });
 
@@ -97,23 +182,33 @@ impl Primitives {
             let font_scale = 1.0 / metrics.units_per_em as f32;
             let scale = font_scale * size;
 
-            let slot = {
+            let text_len = text.len();
+
+            let (slot, buffer) = {
                 let mut shared = self.shared.borrow_mut();
                 shared.create_text_buffer(
                     &font, text,
-                    &na::convert::<_, na::Projective3<_>>(na::Similarity3::new(na::zero(), na::zero(), scale))
+                    Some(na::convert::<_, na::Projective3<_>>(na::Similarity3::new(na::zero(), na::zero(), scale)))
                 )
             };
 
             return Some(Text {
+                measurement: TextMeasurement {
+                    metrics: None,
+                    glyph_positions: Vec::with_capacity(text_len),
+
+                    size,
+                    font_scale,
+                    shared: self.shared.clone(),
+                    buffer,
+                },
+
                 transform: na::Projective3::<f32>::identity(),
-                size,
                 position: na::zero(),
                 origin: na::zero(),
-
-                font_scale,
                 slot,
-                shared: self.shared.clone(),
+
+                hidden: false,
             });
         }
 
@@ -135,14 +230,14 @@ mod shared {
     pub struct PrimitiveSlotData {
         kind: PrimitiveKind,
         invalidated: bool,
-        font_transform: na::Projective3<f32>,
+        font_transform: Option<na::Projective3<f32>>,
     }
 
     impl PrimitiveSlotData {
         pub fn update_buffer(&mut self, window_scale: f32) {
             match self.kind {
                 PrimitiveKind::TextBuffer(ref mut b) => b.set_transform(
-                    &(PrimitiveSlotData::calc_transform(&(self.font_transform), window_scale))
+                    self.font_transform.map(|transform| PrimitiveSlotData::calc_transform(&transform, window_scale))
                 ),
             }
         }
@@ -197,29 +292,22 @@ mod shared {
             }
         }
 
-        pub fn get_size(&self, slot: PrimitiveSlot) -> Option<Measurement> {
-            let data = self.primitive_data.get(slot).unwrap();
-            match data.kind {
-                PrimitiveKind::TextBuffer(ref b) => b.size(),
-            }
-        }
-
-        pub fn set_text_transform(&mut self, slot: PrimitiveSlot, transform: &na::Projective3<f32>) {
+        pub fn set_text_transform(&mut self, slot: PrimitiveSlot, transform: Option<na::Projective3<f32>>) {
             if let Some(data) = self.primitive_data.get_mut(slot) {
                 self.invalidated = true;
                 data.invalidated = true;
-                data.font_transform = transform.clone();
+                data.font_transform = transform;
                 data.update_buffer(self.window_scale);
             }
         }
 
-        pub fn create_text_buffer<P: ToString>(&mut self, font: &Font, text: P, font_transform: &na::Projective3<f32>) -> PrimitiveSlot {
-            let buffer = font.create_buffer(text, &PrimitiveSlotData::calc_transform(font_transform, self.window_scale));
+        pub fn create_text_buffer<P: ToString>(&mut self, font: &Font, text: P, font_transform: Option<na::Projective3<f32>>) -> (PrimitiveSlot, Buffer) {
+            let buffer = font.create_buffer(text,  font_transform.map(|t| PrimitiveSlotData::calc_transform(&t, self.window_scale)));
 
             let data = PrimitiveSlotData {
                 invalidated: true,
                 kind: PrimitiveKind::TextBuffer(buffer.clone()),
-                font_transform: font_transform.clone(),
+                font_transform,
             };
 
             let slot = self.primitive_slots.insert(PrimitiveSlotKeyData {});
@@ -227,7 +315,7 @@ mod shared {
             self.primitive_data.insert(slot, data);
             self.invalidated = true;
 
-            slot
+            (slot, buffer)
         }
 
         pub fn delete_text_buffer(&mut self, slot: PrimitiveSlot) {

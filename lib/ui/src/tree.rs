@@ -944,7 +944,7 @@ mod shared {
                 for buffer in shared.buffers() {
                     queues.send(Effect::TextTransform {
                         buffer_id: buffer.id(),
-                        absolute_transform: Some(buffer.absolute_transform(absolute_transform)),
+                        absolute_transform: buffer.absolute_transform(absolute_transform),
                     });
                 }
 
@@ -968,7 +968,7 @@ mod shared {
                 for buffer in shared.only_invalidated_buffers() {
                     queues.send(Effect::TextTransform {
                         buffer_id: buffer.id(),
-                        absolute_transform: Some(buffer.absolute_transform(absolute_transform)),
+                        absolute_transform: buffer.absolute_transform(absolute_transform),
                     });
                 }
 
