@@ -14,6 +14,7 @@ extern crate lyon_path;
 extern crate lyon_tessellation;
 extern crate int_hash;
 
+pub mod camera;
 pub mod debug;
 pub mod interface;
 pub mod profiling;
@@ -118,6 +119,16 @@ fn run() -> Result<(), failure::Error> {
 
     // set up shared state for window
 
+    let mut camera = camera::TargetCamera::new(
+        window_size.width as f32 / window_size.height as f32,
+        3.14 / 2.5,
+        0.1,
+        10000.0,
+        3.14 / 4.0,
+        500.0,
+        na::Point3::new(window_size.highdpi_width as f32 / 2.0, -window_size.highdpi_height as f32 / 2.0, 0.0)
+    );
+
     viewport.set_used(&gl);
     color_buffer.set_clear_color(&gl, na::Vector3::new(1.0, 1.0, 1.0));
     color_buffer.enable_multisample(&gl);
@@ -132,7 +143,9 @@ fn run() -> Result<(), failure::Error> {
         },
         scale * scale_modifier
     )?;
-    iface.toggle_bounds();
+//    iface.toggle_bounds();
+
+    let mut perspective_view = false;
 
     // main loop
 
@@ -153,11 +166,13 @@ fn run() -> Result<(), failure::Error> {
                 &gl,
                 &window,
                 &mut window_size,
-                &mut viewport
+                &mut viewport,
+                &mut camera
             ) == system::input::window::HandleResult::Quit
             {
                 break 'main;
             }
+            system::input::camera::handle_camera_events(&event, &mut camera);
 
             use sdl2::event::Event;
             use sdl2::keyboard::Scancode;
@@ -182,6 +197,13 @@ fn run() -> Result<(), failure::Error> {
                     ..
                 } => {
                     iface.toggle_wireframe();
+                    false
+                }
+                Event::KeyDown {
+                    scancode: Some(Scancode::C),
+                    ..
+                } => {
+                    perspective_view = !perspective_view;
                     false
                 }
                 Event::KeyDown {
@@ -250,6 +272,7 @@ fn run() -> Result<(), failure::Error> {
         let delta = time.elapsed().as_fractional_secs() as f32;
         time = Instant::now();
 
+        camera.update(delta);
         iface.update(delta);
 
         frame_profiler.push(render::color_blue());
@@ -262,20 +285,23 @@ fn run() -> Result<(), failure::Error> {
 
         color_buffer.clear(&gl);
 
-        let left = 0;
-        let top = window_size.highdpi_height;
-        let right = window_size.highdpi_width;
-        let bottom = 0;
+        let ui_matrix = if !perspective_view {
+            let left = 0;
+            let top = 0;
+            let right = window_size.highdpi_width;
+            let bottom = -window_size.highdpi_height;
 
-        let ui_matrix = na::Matrix4::new_nonuniform_scaling(&[1.0, -1.0, 1.0].into())
-            * na::Matrix4::new_orthographic(
+            na::Matrix4::new_orthographic(
                 left as f32,
                 right as f32,
                 bottom as f32,
                 top as f32,
                 -10.0,
                 10.0,
-            );
+            )
+        } else {
+            camera.get_vp_matrix()
+        };
 
         iface.render(&gl, &color_buffer, &ui_matrix);
 

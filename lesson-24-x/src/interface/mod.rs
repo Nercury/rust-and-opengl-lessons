@@ -188,7 +188,6 @@ impl Interface {
                         .expect("process_events: self.controls.remove(&id)");
                 }
                 Effect::TextAdd { buffer } => {
-                    trace!(">> add text {:?}", buffer.id());
 
                     let alphabet = match self.alphabets.entry(AlphabetKey { feature: AlphabetFeature::Font, id: buffer._font_id }) {
                         collections::hash_map::Entry::Occupied(e) => e.into_mut(),
@@ -232,7 +231,6 @@ impl Interface {
                     self.flush_updates_set.insert(ControlId::Text(buffer_id));
                 }
                 Effect::TextRemove { buffer_id } => {
-                    trace!(">> remove text {:?}", buffer_id);
                     if let None = self.controls.remove(&ControlId::Text(buffer_id)) {
                         warn!("tried to remove nonexisting flatland group {}", buffer_id);
                     }
@@ -264,8 +262,10 @@ impl Interface {
     pub fn mouse_up(&mut self, _x: i32, _y: i32) {}
 
     pub fn render(&mut self, gl: &gl::Gl, target: &ColorBuffer, vp_matrix: &na::Matrix4<f32>) {
-        self.debug_lines.render(gl, target, vp_matrix);
-        self.flatlander.render(gl, target, vp_matrix);
+        let flipped_matrix = vp_matrix * na::Matrix4::new_nonuniform_scaling(&[1.0, -1.0, 1.0].into());
+
+        self.debug_lines.render(gl, target, &flipped_matrix);
+        self.flatlander.render(gl, target, &flipped_matrix);
     }
 
     pub fn toggle_wireframe(&mut self) {

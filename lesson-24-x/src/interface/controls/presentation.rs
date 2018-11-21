@@ -21,8 +21,9 @@ impl Element for RustFest {
                         .centered()
                 )
                 .with_slide(
-                    TextSlide::new("Test\nTest\nMore Test")
-                        .size(50.0)
+                    TextSlide::new("Why Rust?\n\nWhere is my GC?")
+                        .size(70.0)
+                        .centered()
                 )
                 .with_slide(CombinedSlide)
         );

@@ -3,6 +3,7 @@ use render::WindowSize;
 use render_gl::Viewport;
 use sdl2::event::{Event, WindowEvent};
 use sdl2::video::Window;
+use camera::TargetCamera;
 
 #[derive(PartialEq)]
 pub enum HandleResult {
@@ -15,7 +16,8 @@ pub fn handle_default_window_events(
     gl: &gl::Gl,
     window: &Window,
     window_size: &mut WindowSize,
-    viewport: &mut Viewport
+    viewport: &mut Viewport,
+    camera: &mut TargetCamera
 ) -> HandleResult {
     match event {
         Event::Quit { .. } => return HandleResult::Quit,
@@ -25,7 +27,6 @@ pub fn handle_default_window_events(
         } => {
             if window_size.high_dpi {
                 let (hdpi_w, hdpi_h) = window.drawable_size();
-                println!("drawable_size: {:?}", (hdpi_w, hdpi_h));
 
                 viewport.update_size(hdpi_w as i32, hdpi_h as i32);
                 viewport.set_used(&gl);
@@ -47,7 +48,7 @@ pub fn handle_default_window_events(
                     high_dpi: window_size.high_dpi,
                 };
             }
-            //camera.update_aspect(hdpi_w as f32 / hdpi_h as f32);
+            camera.update_aspect(window_size.highdpi_width as f32 / window_size.highdpi_height as f32);
         }
         _ => (),
     };
