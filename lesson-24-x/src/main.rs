@@ -12,6 +12,7 @@ extern crate sdl2;
 extern crate ui;
 extern crate lyon_path;
 extern crate lyon_tessellation;
+extern crate int_hash;
 
 pub mod debug;
 pub mod interface;
@@ -58,13 +59,13 @@ fn run() -> Result<(), failure::Error> {
     gl_attr.set_accelerated_visual(true);
     gl_attr.set_double_buffer(true);
     gl_attr.set_multisample_buffers(1);
-    gl_attr.set_multisample_samples(8);
+    gl_attr.set_multisample_samples(4);
 
     let mut window_size = render::WindowSize {
-        width: 960,
-        height: 600,
-        highdpi_width: 960,
-        highdpi_height: 600,
+        width: 1800,
+        height: 960,
+        highdpi_width: 1800,
+        highdpi_height: 960,
         high_dpi: true,
     };
 
@@ -105,8 +106,11 @@ fn run() -> Result<(), failure::Error> {
     video_subsystem.gl_set_swap_interval(if vsync { 1 } else { 0 });
 
     let mut frame_profiler = render_gl::FrameProfiler::new(&gl, &resources, 80)?;
+    frame_profiler.toggle();
     let mut allocation_profiler = render_gl::EventCountProfiler::new(&gl, &resources, 3, 0)?;
+    allocation_profiler.toggle();
     let mut gl_call_profiler = render_gl::EventCountProfiler::new(&gl, &resources, 1, 20)?;
+    gl_call_profiler.toggle();
 
     let mut viewport =
         render_gl::Viewport::for_window(window_size.highdpi_width, window_size.highdpi_height);
@@ -128,6 +132,7 @@ fn run() -> Result<(), failure::Error> {
         },
         scale * scale_modifier
     )?;
+    iface.toggle_bounds();
 
     // main loop
 
@@ -302,7 +307,7 @@ fn run() -> Result<(), failure::Error> {
 
         frame_profiler.push(render::color_green());
 
-//        while time.elapsed() < Duration::from_millis(12) {
+//        while time.elapsed() < Duration::from_millis(6) {
 //            ::std::thread::yield_now()
 //        }
 

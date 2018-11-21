@@ -2,6 +2,7 @@ use fonts::*;
 use *;
 use std::cell::RefCell;
 use std::rc::Rc;
+pub use self::shared::ModificationLogEntry;
 
 #[derive(Copy, Clone, Debug)]
 pub struct GlyphMeasurement {
@@ -151,6 +152,7 @@ impl Text {
 
 impl Drop for Text {
     fn drop(&mut self) {
+        trace!("-- drop text {:?} with buffer {:?}", self.slot, self.measurement.buffer.id());
         self.measurement.shared.borrow_mut().delete_text_buffer(self.slot);
     }
 }
@@ -187,10 +189,12 @@ impl Primitives {
             let (slot, buffer) = {
                 let mut shared = self.shared.borrow_mut();
                 shared.create_text_buffer(
-                    &font, text,
+                    &font, text.clone(),
                     Some(na::convert::<_, na::Projective3<_>>(na::Similarity3::new(na::zero(), na::zero(), scale)))
                 )
             };
+
+            trace!("-- create text {:?}, slot {:?} with buffer {:?}", text, slot, buffer.id());
 
             return Some(Text {
                 measurement: TextMeasurement {
@@ -253,12 +257,16 @@ mod shared {
         TextBuffer(Buffer),
     }
 
+    pub enum ModificationLogEntry {
+        Added { buffer: Buffer },
+        Removed { buffer_id: usize },
+    }
+
     pub struct InnerPrimitives {
         pub primitive_slots: slotmap::HopSlotMap<PrimitiveSlot, PrimitiveSlotKeyData>,
         pub primitive_data: slotmap::SparseSecondaryMap<PrimitiveSlot, PrimitiveSlotData>,
 
-        pub added_buffers: Vec<Buffer>,
-        pub removed_buffer_ids: Vec<usize>,
+        pub modification_log: Vec<ModificationLogEntry>,
 
         pub invalidated: bool,
         pub window_scale: f32,
@@ -270,8 +278,7 @@ mod shared {
                 primitive_slots: slotmap::HopSlotMap::with_key(),
                 primitive_data: slotmap::SparseSecondaryMap::new(),
 
-                added_buffers: Vec::with_capacity(32),
-                removed_buffer_ids: Vec::with_capacity(32),
+                modification_log: Vec::with_capacity(32),
 
                 invalidated: false,
                 window_scale,
@@ -311,7 +318,9 @@ mod shared {
             };
 
             let slot = self.primitive_slots.insert(PrimitiveSlotKeyData {});
-            self.added_buffers.push(buffer.clone());
+            self.modification_log.push(ModificationLogEntry::Added { buffer: buffer.clone() });
+            trace!("== insert into added buffers {:?}", buffer.id());
+
             self.primitive_data.insert(slot, data);
             self.invalidated = true;
 
@@ -322,7 +331,10 @@ mod shared {
             if let Some(data) = self.primitive_data.remove(slot) {
                 self.invalidated = true;
                 match data.kind {
-                    PrimitiveKind::TextBuffer(b) => self.removed_buffer_ids.push(b.id()),
+                    PrimitiveKind::TextBuffer(b) => {
+                        self.modification_log.push( ModificationLogEntry::Removed { buffer_id: b.id() });
+                        trace!("== insert into removed buffers {:?}", b.id());
+                    },
                 };
             }
 
@@ -336,12 +348,8 @@ mod shared {
             }
         }
 
-        pub fn added_text_buffers<'r>(&'r mut self) -> impl Iterator<Item = Buffer> + 'r {
-            self.added_buffers.drain(..)
-        }
-
-        pub fn removed_text_buffers<'r>(&'r mut self) -> impl Iterator<Item = usize> + 'r {
-            self.removed_buffer_ids.drain(..)
+        pub fn modified_buffers<'r>(&'r mut self) -> impl Iterator<Item = ModificationLogEntry> + 'r {
+            self.modification_log.drain(..)
         }
 
         pub (crate) fn buffers_keep_invalidated<'r>(&'r mut self) -> impl Iterator<Item = &'r Buffer> + 'r {

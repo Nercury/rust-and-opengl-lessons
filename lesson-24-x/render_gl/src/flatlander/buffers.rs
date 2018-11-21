@@ -146,9 +146,7 @@ impl Buffers {
     }
 
     pub fn upload_groups(&mut self, items_len: usize, items: impl Iterator<Item = FlatlanderGroupDrawData>) {
-        let items = items.collect::<Vec<_>>();
-
-        self.draw_id.upload(items_len, items.iter()
+        self.draw_id.upload(items_len, items
             .map(|i| {
                 let mat: na::Matrix4<f32> = na::convert::<_, na::Matrix4<f32>>(i.transform) *
                     na::Matrix4::<f32>::new_nonuniform_scaling(&na::Vector3::new(1.0, -1.0, 1.0));
@@ -166,8 +164,10 @@ impl Buffers {
                     model_col3: data::f32_f32_f32_f32::new(col3[0], col3[1], col3[2], col3[3]),
                 }
             }));
+    }
 
-        self.indirect.upload(items_len, items.into_iter()
+    pub fn upload_draw_commands(&mut self, items_len: usize, items: impl Iterator<Item = FlatlanderGroupDrawData>) {
+        self.indirect.upload(items_len, items
             .map(|i| i.cmd));
     }
 }

@@ -80,6 +80,7 @@ pub struct Flatland {
 
     pub alphabets_invalidated: bool,
     pub groups_invalidated: bool,
+    pub draw_invalidated: bool,
 
     total_alphabet_vertices: usize,
     total_alphabet_indices: usize,
@@ -99,6 +100,7 @@ impl Flatland {
 
             alphabets_invalidated: false,
             groups_invalidated: false,
+            draw_invalidated: false,
 
             total_alphabet_vertices: 0,
             total_alphabet_indices: 0,
@@ -211,6 +213,7 @@ impl Flatland {
         });
 
         self.groups_invalidated = true;
+        self.draw_invalidated = true;
 
         slot
     }
@@ -220,12 +223,13 @@ impl Flatland {
         self.group_data[slot].items.extend(items);
 
         self.groups_invalidated = true;
+        self.draw_invalidated = true;
     }
 
     pub fn update_transform(&mut self, slot: GroupSlot, &transform: &na::Projective3<f32>) {
         self.group_data[slot].transform = transform;
 
-        self.groups_invalidated = true;
+        self.draw_invalidated = true;
     }
 
     pub fn delete_flatland_group(&mut self, slot: GroupSlot) {
@@ -233,6 +237,7 @@ impl Flatland {
         self.group_data.remove(slot);
 
         self.groups_invalidated = true;
+        self.draw_invalidated = true;
     }
 
     pub fn create_alphabet(&mut self) -> AlphabetSlot {
@@ -249,6 +254,7 @@ impl Flatland {
         self.alphabets_invalidated = true;
         self.alphabet_data_index_offsets_invalidated = true;
         self.groups_invalidated = true;
+        self.draw_invalidated = true;
 
         self.total_alphabet_vertices += vertices.len();
         self.total_alphabet_indices += indices.len();
@@ -276,5 +282,6 @@ impl Flatland {
         self.alphabets_invalidated = true;
         self.alphabet_data_index_offsets_invalidated = true;
         self.groups_invalidated = true;
+        self.draw_invalidated = true;
     }
 }

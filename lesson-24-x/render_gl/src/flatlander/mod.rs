@@ -73,6 +73,18 @@ impl Flatlander {
 
             flatland.groups_invalidated = false;
         }
+
+        if flatland.draw_invalidated {
+            if self.buffers.is_none() {
+                return;
+            }
+
+            if let Some(ref mut buffers) = self.buffers {
+                buffers.upload_draw_commands(flatland.groups_len(), flatland.groups_draw_data());
+            }
+
+            flatland.draw_invalidated = false;
+        }
     }
 
     pub fn create_alphabet(&self) -> Alphabet {

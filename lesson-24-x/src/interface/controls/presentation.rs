@@ -15,8 +15,15 @@ impl Element for RustFest {
     fn inflate(&mut self, base: &mut Base) {
         base.add(
             Presentation::new()
-                .with_slide(TextSlide::new("Ži", 70.0))
-                .with_slide(TextSlide::new("What the languages with garbage collector can not do", 70.0))
+                .with_slide(
+                    TextSlide::new("What garbage collected languages\ncan not do")
+                        .size(70.0)
+                        .centered()
+                )
+                .with_slide(
+                    TextSlide::new("Test\nTest\nMore Test")
+                        .size(50.0)
+                )
                 .with_slide(CombinedSlide)
         );
     }
@@ -26,8 +33,14 @@ pub struct CombinedSlide;
 
 impl Element for CombinedSlide {
     fn inflate(&mut self, base: &mut Base) {
-        base.add(TextSlide::new("Combined", 60.0));
-        base.add(TextSlide::new("Slide", 60.0));
+        base.add(
+            TextSlide::new("Combined")
+                .centered()
+        );
+        base.add(
+            TextSlide::new("Slide")
+                .centered()
+        );
     }
 }
 
@@ -210,7 +223,6 @@ impl Element for Presentation {
     fn action(&mut self, base: &mut Base, action: UiAction) {
         match action {
             UiAction::NextSlide => {
-                debug!("next slide");
                 if self.slide_index < self.num_elements - 1 {
                     let previous_index = self.slide_index;
                     self.slide_index += 1;
@@ -226,7 +238,6 @@ impl Element for Presentation {
                 }
             },
             UiAction::PreviousSlide => {
-                debug!("previous slide");
                 if self.slide_index > 0 {
                     let previous_index = self.slide_index;
                     self.slide_index -= 1;
@@ -245,23 +256,43 @@ impl Element for Presentation {
     }
 }
 
+#[derive(Copy, Clone, Eq, PartialEq)]
+pub enum Align {
+    Left,
+    Center,
+}
+
 pub struct TextSlide {
     single_line: Option<primitives::Text>,
     multi_lines: Vec<primitives::Text>,
 
     text_string: String,
     text_size: f32,
+
+    align: Align,
 }
 
 impl TextSlide {
-    pub fn new(text: &str, size: f32) -> TextSlide {
+    pub fn new(text: &str) -> TextSlide {
         TextSlide {
             single_line: None,
             multi_lines: Vec::with_capacity(32),
 
             text_string: text.into(),
-            text_size: size,
+            text_size: 60.0,
+
+            align: Align::Left,
         }
+    }
+
+    pub fn size(mut self, size: f32) -> TextSlide {
+        self.text_size = size;
+        self
+    }
+
+    pub fn centered(mut self) -> TextSlide {
+        self.align = Align::Center;
+        self
     }
 }
 
@@ -455,29 +486,23 @@ impl Element for TextSlide {
                     }
                 }
 
-                info!("{:?}", (current_line, candidate_word_whitespace, candidate_word));
-
                 match (current_line, candidate_word_whitespace, candidate_word) {
                     (None, None, None) => lines.push(Line::Empty),
                     (Some(r_current_line), None, None) => {
-                        info!("word on last line");
                         lines.push(Line::ParagraphBreak(r_current_line))
                     },
                     (Some(r_current_line), Some(r_candidate_word_whitespace), None) => {
-                        info!("word on last line 2");
                         lines.push(Line::ParagraphBreak(r_current_line))
                     },
                     (Some(r_current_line), Some(r_candidate_word_whitespace), Some(r_candidate_word)) => {
                         let line_width_with_candidate_word = r_current_line.width + r_candidate_word_whitespace.width + r_candidate_word.width;
                         if line_width_with_candidate_word <= max_line_w {
-                            info!("fits");
                             lines.push(Line::ParagraphBreak(Segment {
                                 width: line_width_with_candidate_word,
                                 offset: r_current_line.offset,
                                 len: r_current_line.len + r_candidate_word_whitespace.len + r_candidate_word.len,
                             }));
                         } else {
-                            info!("not fits");
                             lines.push(Line::WordWrap(r_current_line));
                             lines.push(Line::ParagraphBreak(r_candidate_word));
                         }
@@ -485,8 +510,8 @@ impl Element for TextSlide {
                     _ => unreachable!("invalid state"),
                 }
 
-                let mut top: f32 = 0.0;
-                let mut max_width: f32 = lines.iter().map(|l| match l {
+
+                let mut max_text_width: f32 = lines.iter().map(|l| match l {
                     Line::Empty => 0.0,
                     Line::ParagraphBreak(s) => s.width,
                     Line::WordWrap(s) => s.width,
@@ -495,18 +520,25 @@ impl Element for TextSlide {
                 } else {
                     ::std::cmp::Ordering::Less
                 }).unwrap_or(0.0);
+                let max_text_height = lines.len() as f32 * metrics.height;
+
+                let left_offset = max_line_w / 2.0 - max_text_width / 2.0;
 
                 self.multi_lines.clear();
 
-                info!("{:?}", lines);
-
+                let mut top: f32 = h as f32 / 2.0 - max_text_height / 2.0 + metrics.descent;
                 for line in lines.iter() {
-                    if let Some(mut text) = match line {
-                        Line::WordWrap(s) => base.primitives().text(self.text_string[s.offset as usize..(s.offset + s.len) as usize].to_string()),
-                        Line::ParagraphBreak(s) => base.primitives().text(self.text_string[s.offset as usize..(s.offset + s.len) as usize].to_string()),
-                        Line::Empty => None,
+                    if let (line_width, Some(mut text)) = match line {
+                        Line::WordWrap(s) => (s.width, base.primitives().text(self.text_string[s.offset as usize..(s.offset + s.len) as usize].to_string())),
+                        Line::ParagraphBreak(s) => (s.width, base.primitives().text(self.text_string[s.offset as usize..(s.offset + s.len) as usize].to_string())),
+                        Line::Empty => (0.0, None),
                     } {
-                        text.set_position(0.0, top + metrics.height);
+                        if self.align == Align::Center {
+                            text.set_position(left_offset + max_text_width / 2.0 - line_width / 2.0, top + metrics.height);
+                        } else {
+                            text.set_position(left_offset, top + metrics.height);
+                        }
+                        text.set_size(self.text_size);
                         self.multi_lines.push(text);
                     }
 

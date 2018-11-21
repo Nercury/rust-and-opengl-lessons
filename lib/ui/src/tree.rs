@@ -911,10 +911,19 @@ mod shared {
             if let Some(ref mut primitives) = self.children.primitives {
                 let mut shared = primitives.shared.borrow_mut();
 
-                for buffer in shared.added_text_buffers() {
-                    queues.send(Effect::TextAdd {
-                        buffer: buffer.weak_ref()
-                    });
+                for entry in shared.modified_buffers() {
+                    match entry {
+                        primitives::ModificationLogEntry::Added { buffer } => {
+                            queues.send(Effect::TextAdd {
+                                buffer: buffer.weak_ref()
+                            });
+                        }
+                        primitives::ModificationLogEntry::Removed { buffer_id } => {
+                            queues.send(Effect::TextRemove {
+                                buffer_id
+                            });
+                        }
+                    }
                 }
 
                 for buffer in shared.buffers_keep_invalidated() {
@@ -923,22 +932,26 @@ mod shared {
                         absolute_transform: None,
                     });
                 }
-
-                for buffer_id in shared.removed_text_buffers() {
-                    queues.send(Effect::TextRemove {
-                        buffer_id
-                    });
-                }
             }
         }
 
         pub fn sync_primitives(&mut self, absolute_transform: &na::Projective3<f32>, queues: &mut RefMut<Queues>) {
             if let Some(ref mut primitives) = self.children.primitives {
                 let mut shared = primitives.shared.borrow_mut();
-                for buffer in shared.added_text_buffers() {
-                    queues.send(Effect::TextAdd {
-                        buffer: buffer.weak_ref()
-                    });
+
+                for entry in shared.modified_buffers() {
+                    match entry {
+                        primitives::ModificationLogEntry::Added { buffer } => {
+                            queues.send(Effect::TextAdd {
+                                buffer: buffer.weak_ref()
+                            });
+                        }
+                        primitives::ModificationLogEntry::Removed { buffer_id } => {
+                            queues.send(Effect::TextRemove {
+                                buffer_id
+                            });
+                        }
+                    }
                 }
 
                 for buffer in shared.buffers() {
@@ -947,34 +960,32 @@ mod shared {
                         absolute_transform: buffer.absolute_transform(absolute_transform),
                     });
                 }
-
-                for buffer_id in shared.removed_text_buffers() {
-                    queues.send(Effect::TextRemove {
-                        buffer_id
-                    });
-                }
             }
         }
 
         pub fn sync_invalidated_primitives(&mut self, absolute_transform: &na::Projective3<f32>, queues: &mut RefMut<Queues>) {
             if let Some(ref mut primitives) = self.children.primitives {
                 let mut shared = primitives.shared.borrow_mut();
-                for buffer in shared.added_text_buffers() {
-                    queues.send(Effect::TextAdd {
-                        buffer: buffer.weak_ref()
-                    });
+
+                for entry in shared.modified_buffers() {
+                    match entry {
+                        primitives::ModificationLogEntry::Added { buffer } => {
+                            queues.send(Effect::TextAdd {
+                                buffer: buffer.weak_ref()
+                            });
+                        }
+                        primitives::ModificationLogEntry::Removed { buffer_id } => {
+                            queues.send(Effect::TextRemove {
+                                buffer_id
+                            });
+                        }
+                    }
                 }
 
                 for buffer in shared.only_invalidated_buffers() {
                     queues.send(Effect::TextTransform {
                         buffer_id: buffer.id(),
                         absolute_transform: buffer.absolute_transform(absolute_transform),
-                    });
-                }
-
-                for buffer_id in shared.removed_text_buffers() {
-                    queues.send(Effect::TextRemove {
-                        buffer_id
                     });
                 }
             }

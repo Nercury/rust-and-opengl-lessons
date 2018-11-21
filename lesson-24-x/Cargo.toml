@@ -19,6 +19,7 @@ env_logger = "*"
 log = "*"
 lyon_tessellation = "0.11.0"
 lyon_path = "0.11.0"
+int_hash = "0.1.1"
 
 [dependencies.sdl2]
 version = "0.31.0"

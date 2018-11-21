@@ -6,8 +6,8 @@ use render_gl::ColorBuffer;
 use render_gl::{DebugLines, RectMarker};
 use render_gl::{Flatlander, Alphabet, FlatlanderVertex, FlatlandGroup, FlatlandItem};
 use resources;
-use std::collections::BTreeSet;
 use std::collections::{HashMap, self};
+use int_hash::IntHashSet;
 use ui::*;
 
 mod controls;
@@ -116,7 +116,7 @@ pub struct Interface {
     events: Events,
     controls: HashMap<ControlId, ControlInfo>,
     event_read_buffer: Vec<Effect>,
-    flush_updates_set: BTreeSet<ControlId>,
+    flush_updates_set: IntHashSet<ControlId>,
 
     debug_lines: DebugLines,
     flatlander: Flatlander,
@@ -146,7 +146,7 @@ impl Interface {
             events,
             controls: HashMap::new(),
             event_read_buffer: Vec::new(),
-            flush_updates_set: BTreeSet::new(),
+            flush_updates_set: IntHashSet::default(),
             debug_lines: DebugLines::new(gl, resources)?,
             flatlander: Flatlander::new(gl, resources)?,
             alphabets: HashMap::new(),
@@ -188,6 +188,8 @@ impl Interface {
                         .expect("process_events: self.controls.remove(&id)");
                 }
                 Effect::TextAdd { buffer } => {
+                    trace!(">> add text {:?}", buffer.id());
+
                     let alphabet = match self.alphabets.entry(AlphabetKey { feature: AlphabetFeature::Font, id: buffer._font_id }) {
                         collections::hash_map::Entry::Occupied(e) => e.into_mut(),
                         collections::hash_map::Entry::Vacant(mut e) => e.insert(self.flatlander.create_alphabet()),
@@ -230,6 +232,7 @@ impl Interface {
                     self.flush_updates_set.insert(ControlId::Text(buffer_id));
                 }
                 Effect::TextRemove { buffer_id } => {
+                    trace!(">> remove text {:?}", buffer_id);
                     if let None = self.controls.remove(&ControlId::Text(buffer_id)) {
                         warn!("tried to remove nonexisting flatland group {}", buffer_id);
                     }
