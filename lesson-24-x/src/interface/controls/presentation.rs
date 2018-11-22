@@ -20,11 +20,20 @@ impl Element for RustFest {
                         .size(70.0)
                         .centered()
                 )
+                // Rust is fast. So what? Go is fast, Javascript is fast, C# is fast.
+                //
+                // And then, we hear that Rust does not have a GC, instead, it has a
+                // strict rules we have to learn and obey.
+                //
+                // At this point Rust must offer something quite special to be worth the bargain.
                 .with_slide(
                     TextSlide::new("Why Rust?\n\nWhere is my GC?")
                         .size(70.0)
                         .centered()
                 )
+                // We are going to skip few of those things. We won't talk about zero-cost
+                // abstractions. We won't talk about awesome type system or concurrency
+                // without data races.
                 .with_slide(
                     CombinedSlide::new()
                         .with(
@@ -49,14 +58,60 @@ impl Element for RustFest {
                                 .centered()
                         )
                 )
+                // Instead, I will talk how Rust offers precise control over memory, and allows
+                // us to create convenient abstractions that are both fast and easy to use.
+                //
+                // But even if Rust advertises that it can do it, new Rust users run into
+                // some problems while trying to do convenient things.
                 .with_slide(
                     CombinedSlide::new()
                         .with(
                             TextSlide::new(
-                                "Predictive control over memory"
+                                "Control over memory\n\
+                                vs.\n\
+                                Convenient use of memory"
                             )
                                 .centered()
                                 .size(80.0)
+                        )
+                )
+                // The main problem with ownership and borrowing is that this system is tied to
+                // the stack.
+                .with_slide(
+                    CombinedSlide::new()
+                        .with(
+                            TextSlide::new("Enter:")
+                                .size(70.0)
+                                .centered()
+                        )
+                        .with(
+                            TextSlide::new(
+                                "The Stack Problem"
+                            )
+                                .centered()
+                                .bold(true)
+                                .size(80.0)
+                        )
+                        .with(
+                            TextSlide::new("")
+                                .size(70.0)
+                                .centered()
+                        )
+                )
+                // syntect = "3.0"
+                .with_slide(
+                    CombinedSlide::new()
+                        .with(
+                            TextSlide::new(
+r##"
+let mut renderer = TextRenderer::new();
+let buffer: &mut Buffer = renderer.create_buffer("Hello");
+"##
+                            )
+                                .word_wrap(false)
+                                .monospaced(true)
+                                .bold(true)
+                                .size(40.0)
                         )
                 )
         );
@@ -341,6 +396,8 @@ pub struct TextSlide {
     _bold: bool,
     _italic: bool,
     _monospaced: bool,
+
+    _word_wrap: bool,
 }
 
 impl TextSlide {
@@ -357,6 +414,8 @@ impl TextSlide {
             _bold: false,
             _italic: false,
             _monospaced: false,
+
+            _word_wrap: true,
         }
     }
 
@@ -382,6 +441,11 @@ impl TextSlide {
 
     pub fn monospaced(mut self, value: bool) -> TextSlide {
         self._monospaced = value;
+        self
+    }
+
+    pub fn word_wrap(mut self, value: bool) -> TextSlide {
+        self._word_wrap = value;
         self
     }
 }
@@ -454,11 +518,11 @@ impl Element for TextSlide {
                     width: f32,
                 }
 
-                fn is_separator(text: &str, m: &primitives::GlyphMeasurement) -> Option<Separator> {
+                fn is_separator(text: &str, word_wrap: bool, m: &primitives::GlyphMeasurement) -> Option<Separator> {
                     let s: &str = &text[m.byte_offset as usize..(m.byte_offset + m.len) as usize];
                     if s.chars().any(|c| c == '\n') {
                         Some(Separator::NewLine)
-                    } else if s.chars().all(|c| c.is_whitespace()) {
+                    } else if word_wrap && s.chars().all(|c| c.is_whitespace()) {
                         Some(Separator::Space)
                     } else {
                         None
@@ -475,7 +539,7 @@ impl Element for TextSlide {
 
                 while let Some(g) = positions.next() {
                     match (current_line, candidate_word_whitespace, candidate_word) {
-                        (None, _, _) => match is_separator(&self.text_string, &g) {
+                        (None, _, _) => match is_separator(&self.text_string, self._word_wrap, &g) {
                             Some(Separator::NewLine) => lines.push(Line::Empty),
                             Some(Separator::Space) => (),
                             None => current_line = Some(Segment {
@@ -484,7 +548,7 @@ impl Element for TextSlide {
                                 width: g.x_advance,
                             })
                         }
-                        (Some(r_current_line), None, None) => match is_separator(&self.text_string, &g) {
+                        (Some(r_current_line), None, None) => match is_separator(&self.text_string, self._word_wrap, &g) {
                             Some(Separator::NewLine) => {
                                 lines.push(Line::ParagraphBreak(r_current_line));
                                 current_line = None;
@@ -501,7 +565,7 @@ impl Element for TextSlide {
                                 current_line.width += g.x_advance;
                             }
                         }
-                        (Some(r_current_line), Some(_), None) => match is_separator(&self.text_string, &g) {
+                        (Some(r_current_line), Some(_), None) => match is_separator(&self.text_string, self._word_wrap, &g) {
                             Some(Separator::NewLine) => {
                                 lines.push(Line::ParagraphBreak(r_current_line));
                                 current_line = None;
@@ -519,7 +583,7 @@ impl Element for TextSlide {
                                 width: g.x_advance,
                             })
                         }
-                        (Some(r_current_line), Some(r_candidate_word_whitespace), Some(r_candidate_word)) => match is_separator(&self.text_string, &g) {
+                        (Some(r_current_line), Some(r_candidate_word_whitespace), Some(r_candidate_word)) => match is_separator(&self.text_string, self._word_wrap, &g) {
                             Some(Separator::NewLine) => {
                                 let line_width_with_candidate_word = r_current_line.width + r_candidate_word_whitespace.width + r_candidate_word.width;
                                 if line_width_with_candidate_word <= max_line_w {
