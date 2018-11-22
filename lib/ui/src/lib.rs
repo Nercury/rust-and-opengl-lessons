@@ -119,7 +119,8 @@ pub trait Element {
     fn inflate(&mut self, _base: &mut Base) {}
     fn resize(&mut self, base: &mut Base) {
         let margin = (4.0 * base.scale()) as i32;
-        base.layout_vertical(margin)
+        let item_gap = (1.0 * base.scale()) as i32;
+        base.layout_vertical(margin, item_gap)
     }
     fn update(&mut self, _base: &mut Base, _delta: f32) {}
     fn action(&mut self, _base: &mut Base, _action: UiAction) {}

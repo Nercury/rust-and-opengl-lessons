@@ -171,11 +171,22 @@ impl Primitives {
         }
     }
 
-    pub fn text<P: ToString>(&mut self, text: P) -> Option<Text> {
+    pub fn text<P: ToString>(&mut self, text: P, bold: bool, italic: bool, monospaced: bool) -> Option<Text> {
 
         let text = text.to_string();
-        let font = self.fonts.find_best_match(&[FamilyName::SansSerif],
-                                   &{ let mut p = Properties::new(); p.weight(Weight::BOLD); p });
+        let mut properties = Properties::new();
+        if bold {
+            properties.weight(Weight::BOLD);
+        }
+        if italic {
+            properties.style(Style::Italic);
+        }
+
+        let font = self.fonts.find_best_match( if monospaced {
+            &[FamilyName::Monospace]
+        } else {
+            &[FamilyName::SansSerif]
+        }, &properties);
 
         if let Some(font) = font {
             let size = 48.0;

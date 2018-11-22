@@ -40,7 +40,7 @@ impl Element for Label {
         {
             let primitives = base.primitives();
             for i in 0..100 {
-                if let Some(t) = primitives.text("Kaip faina") {
+                if let Some(t) = primitives.text("Kaip faina", false, false, false) {
                     self.text.push(t);
                 }
             }
@@ -104,7 +104,7 @@ impl Element for Button {
     }
 
     fn resize(&mut self, base: &mut Base) {
-        base.layout_vertical(self.margin)
+        base.layout_vertical(self.margin, self.margin)
     }
 
     fn update(&mut self, base: &mut Base, delta: f32) {
@@ -136,6 +136,6 @@ impl Element for Fill {
     }
 
     fn resize(&mut self, base: &mut Base) {
-        base.layout_horizontal(20)
+        base.layout_horizontal(20, 0)
     }
 }

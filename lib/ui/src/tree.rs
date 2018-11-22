@@ -179,7 +179,7 @@ mod shared {
             self.resolve_size(None);
         }
 
-        pub fn layout_auto_sized_list(&mut self, margin: i32, flow: FlowDirection) {
+        pub fn layout_auto_sized_list(&mut self, margin: i32, item_gap: i32, flow: FlowDirection) {
             let mut flow_forward = margin;
             let flow_side_offset = margin;
 
@@ -201,18 +201,18 @@ mod shared {
 
                     child.set_translation(ResolvedSize::from_flow(flow, flow_side_offset, flow_forward));
 
-                    flow_forward += element_flow_val + margin;
+                    flow_forward += element_flow_val + item_gap;
                 }
             });
 
             if let Some(w) = flow_width {
-                self.resolve_size(Some(ResolvedSize::from_flow(flow, w + margin * 2, flow_forward)));
+                self.resolve_size(Some(ResolvedSize::from_flow(flow, w + margin * 2, flow_forward - item_gap + margin)));
             } else {
                 self.resolve_size(None);
             }
         }
 
-        pub fn layout_equally_sized_fill_list(&mut self, margin: i32, size: ResolvedSize, flow: FlowDirection) {
+        pub fn layout_equally_sized_fill_list(&mut self, margin: i32, item_gap: i32, size: ResolvedSize, flow: FlowDirection) {
             let options = LayoutingOptions::default();
             let children_len = self.children_len();
 
@@ -223,7 +223,7 @@ mod shared {
             let (w, h) = size.to_flow(flow);
 
             let w_without_margin = w - margin * 2;
-            let h_without_margin = h - margin * 2 - margin * (children_len as i32 - 1);
+            let h_without_margin = h - margin * 2 - item_gap * (children_len as i32 - 1);
 
             if w_without_margin <= 0 || h_without_margin <= 0 {
                 return self.layout_empty();
@@ -258,25 +258,25 @@ mod shared {
 
                 child.set_translation(ResolvedSize::from_flow(flow, offset_x, offset_y));
 
-                next_child_offset_y += set_h + margin;
+                next_child_offset_y += set_h + item_gap;
             });
 
             self.resolve_size(Some(ResolvedSize::from_flow(flow, w, h)));
         }
 
-        pub fn layout_vertical(&mut self, margin: i32) {
+        pub fn layout_vertical(&mut self, margin: i32, item_gap: i32) {
             match self.box_size() {
                 BoxSize::Hidden => self.layout_empty(),
-                BoxSize::Auto => self.layout_auto_sized_list(margin, FlowDirection::Vertical),
-                BoxSize::Fixed { w, h } => self.layout_equally_sized_fill_list(margin, ResolvedSize { w, h }, FlowDirection::Vertical),
+                BoxSize::Auto => self.layout_auto_sized_list(margin, item_gap, FlowDirection::Vertical),
+                BoxSize::Fixed { w, h } => self.layout_equally_sized_fill_list(margin, item_gap, ResolvedSize { w, h }, FlowDirection::Vertical),
             }
         }
 
-        pub fn layout_horizontal(&mut self, margin: i32) {
+        pub fn layout_horizontal(&mut self, margin: i32, item_gap: i32) {
             match self.box_size() {
                 BoxSize::Hidden => self.layout_empty(),
-                BoxSize::Auto => self.layout_auto_sized_list(margin, FlowDirection::Horizontal),
-                BoxSize::Fixed { w, h } => self.layout_equally_sized_fill_list(margin, ResolvedSize { w, h }, FlowDirection::Horizontal),
+                BoxSize::Auto => self.layout_auto_sized_list(margin, item_gap, FlowDirection::Horizontal),
+                BoxSize::Fixed { w, h } => self.layout_equally_sized_fill_list(margin, item_gap, ResolvedSize { w, h }, FlowDirection::Horizontal),
             }
         }
 

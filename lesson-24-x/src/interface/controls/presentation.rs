@@ -25,23 +25,86 @@ impl Element for RustFest {
                         .size(70.0)
                         .centered()
                 )
-                .with_slide(CombinedSlide)
+                .with_slide(
+                    CombinedSlide::new()
+                        .with(
+                            TextSlide::new("Multifaceted answer")
+                                .size(70.0)
+                                .bold(true)
+                                .centered()
+                        )
+                        .with(
+                            TextSlide::new(
+                                "Zero-cost abstractions\n\
+                                    Awesome type system\n\
+                                    Great concurrency story"
+                            )
+                                .centered()
+                                .size(60.0)
+                        )
+                        .with(
+                            TextSlide::new("")
+                                .size(70.0)
+                                .bold(true)
+                                .centered()
+                        )
+                )
+                .with_slide(
+                    CombinedSlide::new()
+                        .with(
+                            TextSlide::new(
+                                "Predictive control over memory"
+                            )
+                                .centered()
+                                .size(80.0)
+                        )
+                )
         );
     }
 }
 
-pub struct CombinedSlide;
+pub struct CombinedSlide {
+    items: Vec<Box<Element>>,
+    _margin: f32,
+    _item_gap: f32,
+}
+
+impl CombinedSlide {
+    pub fn new() -> CombinedSlide {
+        CombinedSlide {
+            items: Vec::new(),
+            _margin: 30.0,
+            _item_gap: 0.0,
+        }
+    }
+
+    pub fn with<E: Element + 'static>(mut self, slide: E) -> Self {
+        self.items.push(Box::new(slide) as Box<Element>);
+        self
+    }
+
+    pub fn margin(mut self, margin: f32) -> Self {
+        self._margin = margin;
+        self
+    }
+
+    pub fn gap(mut self, gap: f32) -> Self {
+        self._item_gap = gap;
+        self
+    }
+}
 
 impl Element for CombinedSlide {
     fn inflate(&mut self, base: &mut Base) {
-        base.add(
-            TextSlide::new("Combined")
-                .centered()
-        );
-        base.add(
-            TextSlide::new("Slide")
-                .centered()
-        );
+        for item in self.items.drain(..) {
+            base.add_boxed(item);
+        }
+    }
+
+    fn resize(&mut self, base: &mut Base) {
+        let margin = (self._margin * base.scale()) as i32;
+        let item_gap = (self._item_gap * base.scale()) as i32;
+        base.layout_vertical(margin, item_gap)
     }
 }
 
@@ -194,10 +257,13 @@ impl Element for Presentation {
     fn update(&mut self, base: &mut Base, delta: f32) {
         let mut someone_updating = false;
 
+        const UPDATE_TIME: f32 = 0.5;
+        const UPDATE_SPEED: f32 = 1.0 / UPDATE_TIME;
+
         base.children_mut(|i, mut child| {
             let (end, update) = match self.element_info[i].target {
                 Some(ref mut target) => {
-                    target.t += 0.5 * delta;
+                    target.t += UPDATE_SPEED * delta;
                     (target.t >= 1.0, true)
                 },
                 None => (false, false),
@@ -271,6 +337,10 @@ pub struct TextSlide {
     text_size: f32,
 
     align: Align,
+
+    _bold: bool,
+    _italic: bool,
+    _monospaced: bool,
 }
 
 impl TextSlide {
@@ -283,6 +353,10 @@ impl TextSlide {
             text_size: 60.0,
 
             align: Align::Left,
+
+            _bold: false,
+            _italic: false,
+            _monospaced: false,
         }
     }
 
@@ -295,11 +369,26 @@ impl TextSlide {
         self.align = Align::Center;
         self
     }
+
+    pub fn bold(mut self, value: bool) -> TextSlide {
+        self._bold = value;
+        self
+    }
+
+    pub fn italic(mut self, value: bool) -> TextSlide {
+        self._italic = value;
+        self
+    }
+
+    pub fn monospaced(mut self, value: bool) -> TextSlide {
+        self._monospaced = value;
+        self
+    }
 }
 
 impl Element for TextSlide {
     fn inflate(&mut self, base: &mut Base) {
-        let mut text = base.primitives().text(self.text_string.clone()).expect("failed to create text");
+        let mut text = base.primitives().text(self.text_string.clone(), self._bold, self._italic, self._monospaced).expect("failed to create text");
         text.set_size(self.text_size);
         self.single_line = Some(text);
     }
@@ -530,8 +619,8 @@ impl Element for TextSlide {
                 let mut top: f32 = h as f32 / 2.0 - max_text_height / 2.0 + metrics.descent;
                 for line in lines.iter() {
                     if let (line_width, Some(mut text)) = match line {
-                        Line::WordWrap(s) => (s.width, base.primitives().text(self.text_string[s.offset as usize..(s.offset + s.len) as usize].to_string())),
-                        Line::ParagraphBreak(s) => (s.width, base.primitives().text(self.text_string[s.offset as usize..(s.offset + s.len) as usize].to_string())),
+                        Line::WordWrap(s) => (s.width, base.primitives().text(self.text_string[s.offset as usize..(s.offset + s.len) as usize].to_string(), self._bold, self._italic, self._monospaced)),
+                        Line::ParagraphBreak(s) => (s.width, base.primitives().text(self.text_string[s.offset as usize..(s.offset + s.len) as usize].to_string(), self._bold, self._italic, self._monospaced)),
                         Line::Empty => (0.0, None),
                     } {
                         if self.align == Align::Center {
