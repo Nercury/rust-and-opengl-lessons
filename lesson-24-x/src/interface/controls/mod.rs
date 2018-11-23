@@ -40,7 +40,7 @@ impl Element for Label {
         {
             let primitives = base.primitives();
             for i in 0..100 {
-                if let Some(t) = primitives.text("Kaip faina", false, false, false) {
+                if let Some(t) = primitives.text("Kaip faina", false, false, false, [0, 0, 0, 255].into()) {
                     self.text.push(t);
                 }
             }

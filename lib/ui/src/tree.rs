@@ -927,9 +927,10 @@ mod shared {
                 }
 
                 for buffer in shared.buffers_keep_invalidated() {
-                    queues.send(Effect::TextTransform {
+                    queues.send(Effect::TextUpdate {
                         buffer_id: buffer.id(),
                         absolute_transform: None,
+                        color: [0, 0, 0, 255].into(),
                     });
                 }
             }
@@ -955,9 +956,10 @@ mod shared {
                 }
 
                 for buffer in shared.buffers() {
-                    queues.send(Effect::TextTransform {
+                    queues.send(Effect::TextUpdate {
                         buffer_id: buffer.id(),
                         absolute_transform: buffer.absolute_transform(absolute_transform),
+                        color: buffer.color(),
                     });
                 }
             }
@@ -983,9 +985,10 @@ mod shared {
                 }
 
                 for buffer in shared.only_invalidated_buffers() {
-                    queues.send(Effect::TextTransform {
+                    queues.send(Effect::TextUpdate {
                         buffer_id: buffer.id(),
                         absolute_transform: buffer.absolute_transform(absolute_transform),
+                        color: buffer.color(),
                     });
                 }
             }

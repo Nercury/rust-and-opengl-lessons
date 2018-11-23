@@ -93,8 +93,8 @@ impl Font {
             .metrics
     }
 
-    pub fn create_buffer<P: ToString>(&self, text: P, transform: Option<na::Projective3<f32>>) -> Buffer {
-        Buffer::new(self.clone(), text, transform)
+    pub fn create_buffer<P: ToString>(&self, text: P, transform: Option<na::Projective3<f32>>, color: na::Vector4<u8>) -> Buffer {
+        Buffer::new(self.clone(), text, transform, color)
     }
 }
 
@@ -122,10 +122,10 @@ pub struct Buffer {
 }
 
 impl Buffer {
-    fn new<P: ToString>(font: Font, text: P, transform: Option<na::Projective3<f32>>) -> Buffer {
+    fn new<P: ToString>(font: Font, text: P, transform: Option<na::Projective3<f32>>, color: na::Vector4<u8>) -> Buffer {
         let id = {
             let mut shared = font.container.borrow_mut();
-            shared.create_buffer(font.id, text, transform)
+            shared.create_buffer(font.id, text, transform, color)
         };
 
         Buffer {
@@ -162,6 +162,11 @@ impl Buffer {
     pub fn transform(&self) -> Option<na::Projective3<f32>> {
         let shared = self._font.container.borrow();
         shared.get_buffer_transform(self._id)
+    }
+
+    pub fn color(&self) -> na::Vector4<u8> {
+        let shared = self._font.container.borrow();
+        shared.get_buffer_color(self._id)
     }
 
     pub fn set_transform(&self, transform: Option<na::Projective3<f32>>) {
@@ -265,10 +270,11 @@ mod shared {
         buffer: Option<hb::GlyphBuffer>,
         font_id: usize,
         count: usize,
+        color: na::Vector4<u8>,
     }
 
     impl BufferData {
-        fn new<P: ToString>(font_id: usize, font_data: &FontData, text: P, transform: Option<na::Projective3<f32>>) -> BufferData {
+        fn new<P: ToString>(font_id: usize, font_data: &FontData, text: P, transform: Option<na::Projective3<f32>>, color: na::Vector4<u8>) -> BufferData {
             let text = text.to_string();
             let unicode_buffer = hb::UnicodeBuffer::new().add_str(&text);
 
@@ -294,6 +300,7 @@ mod shared {
                 buffer,
                 font_id,
                 count: 1,
+                color,
             }
         }
 
@@ -372,10 +379,10 @@ mod shared {
             }
         }
 
-        pub fn create_buffer<P: ToString>(&mut self, font_id: usize, text: P, transform: Option<na::Projective3<f32>>) -> usize {
+        pub fn create_buffer<P: ToString>(&mut self, font_id: usize, text: P, transform: Option<na::Projective3<f32>>, color: na::Vector4<u8>) -> usize {
             let buffer = {
                 let font_data = self.get(font_id).expect("FontsContainer::create_buffer - self.get(font_id)");
-                BufferData::new(font_id, font_data, text, transform)
+                BufferData::new(font_id, font_data, text, transform, color)
             };
 
             self.buffers.insert(buffer)
@@ -406,6 +413,10 @@ mod shared {
 
         pub fn get_buffer_transform(&self, buffer_id: usize) -> Option<na::Projective3<f32>> {
             self.buffers[buffer_id].transform
+        }
+
+        pub fn get_buffer_color(&self, buffer_id: usize) -> na::Vector4<u8> {
+            self.buffers[buffer_id].color
         }
 
         pub fn set_buffer_transform(&mut self, buffer_id: usize, transform: Option<na::Projective3<f32>>) {

@@ -13,6 +13,7 @@ extern crate ui;
 extern crate lyon_path;
 extern crate lyon_tessellation;
 extern crate int_hash;
+extern crate syntect;
 
 pub mod camera;
 pub mod debug;
@@ -63,10 +64,14 @@ fn run() -> Result<(), failure::Error> {
     gl_attr.set_multisample_samples(4);
 
     let mut window_size = render::WindowSize {
-        width: 1800,
-        height: 960,
-        highdpi_width: 1800,
-        highdpi_height: 960,
+//        width: 1800,
+//        height: 960,
+//        highdpi_width: 1800,
+//        highdpi_height: 960,
+        width: 960,
+        height: 600,
+        highdpi_width: 960,
+        highdpi_height: 600,
         high_dpi: true,
     };
 
@@ -254,8 +259,6 @@ fn run() -> Result<(), failure::Error> {
             };
 
             if iface_resize {
-                println!("scale: {}", scale * scale_modifier);
-
                 if iface_auto_size {
                     iface.resize(ui::BoxSize::Auto, scale * scale_modifier);
                 } else {
@@ -358,7 +361,7 @@ fn run() -> Result<(), failure::Error> {
             gl_call_profiler.push(gl_call_c, render::color_light_blue());
         }
 
-        while time.elapsed() < Duration::from_millis(6) {
+        while time.elapsed() < Duration::from_millis(24) {
             ::std::thread::yield_now()
         }
 

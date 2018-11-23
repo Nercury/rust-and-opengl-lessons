@@ -8,9 +8,9 @@ layout (location = 4) in vec4 ModelCol0;
 layout (location = 5) in vec4 ModelCol1;
 layout (location = 6) in vec4 ModelCol2;
 layout (location = 7) in vec4 ModelCol3;
+layout (location = 8) in vec4 Color;
 
 uniform mat4 ViewProjection;
-uniform vec4 Color;
 
 out VS_OUTPUT {
     vec4 Color;

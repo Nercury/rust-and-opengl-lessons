@@ -105,11 +105,13 @@ impl Element for RustFest {
                             TextSlide::new(
 r##"
 let mut renderer = TextRenderer::new();
-let buffer: &mut Buffer = renderer.create_buffer("Hello");
+let buffer: &mut Buffer
+    = renderer.create_buffer("Hello");
 "##
                             )
                                 .word_wrap(false)
                                 .monospaced(true)
+                                .highlight("rs")
                                 .bold(true)
                                 .size(40.0)
                         )
@@ -398,6 +400,11 @@ pub struct TextSlide {
     _monospaced: bool,
 
     _word_wrap: bool,
+
+    _color: na::Vector4<u8>,
+
+    _highlighter: Option<String>,
+    highlighted_lines: Option<Vec<(syntect::highlighting::Style, usize)>>,
 }
 
 impl TextSlide {
@@ -416,6 +423,11 @@ impl TextSlide {
             _monospaced: false,
 
             _word_wrap: true,
+
+            _color: [0, 0, 0, 255].into(),
+
+            _highlighter: None,
+            highlighted_lines: None,
         }
     }
 
@@ -448,11 +460,50 @@ impl TextSlide {
         self._word_wrap = value;
         self
     }
+
+    pub fn color(mut self, color: na::Vector4<u8>) -> TextSlide {
+        self._color = color;
+        self
+    }
+
+    pub fn highlight(mut self, lang: &str) -> TextSlide {
+        self._highlighter = Some(lang.into());
+        self.update_highlighted_lines();
+        self
+    }
+
+    fn update_highlighted_lines(&mut self) {
+        match self._highlighter {
+            Some(ref lang) => {
+                use syntect::easy::HighlightLines;
+                use syntect::parsing::SyntaxSet;
+                use syntect::highlighting::{ThemeSet};
+                use syntect::util::{LinesWithEndings};
+
+                let ps = SyntaxSet::load_defaults_newlines();
+                let ts = ThemeSet::load_defaults();
+
+                let syntax = ps.find_syntax_by_extension(&lang[..]).unwrap();
+                let mut h = HighlightLines::new(syntax, &ts.themes["InspiredGitHub"]);
+
+                self.highlighted_lines = Some(
+                    LinesWithEndings::from(&self.text_string)
+                        .flat_map(|line|
+                            h.highlight(line, &ps)
+                                .into_iter()
+                                .map(|(style, s)| (style, s.len()))
+                        )
+                        .collect()
+                );
+            },
+            None => self.highlighted_lines = None,
+        }
+    }
 }
 
 impl Element for TextSlide {
     fn inflate(&mut self, base: &mut Base) {
-        let mut text = base.primitives().text(self.text_string.clone(), self._bold, self._italic, self._monospaced).expect("failed to create text");
+        let mut text = base.primitives().text(self.text_string.clone(), self._bold, self._italic, self._monospaced, self._color).expect("failed to create text");
         text.set_size(self.text_size);
         self.single_line = Some(text);
     }
@@ -506,7 +557,7 @@ impl Element for TextSlide {
 
                 #[derive(Debug, Copy, Clone)]
                 enum Line {
-                    Empty,
+                    Empty(Segment),
                     WordWrap(Segment),
                     ParagraphBreak(Segment),
                 }
@@ -533,20 +584,50 @@ impl Element for TextSlide {
 
                 let mut lines = Vec::new();
 
+                let mut leading_space = None;
                 let mut current_line = None;
                 let mut candidate_word_whitespace = None;
                 let mut candidate_word = None;
 
                 while let Some(g) = positions.next() {
                     match (current_line, candidate_word_whitespace, candidate_word) {
-                        (None, _, _) => match is_separator(&self.text_string, self._word_wrap, &g) {
-                            Some(Separator::NewLine) => lines.push(Line::Empty),
-                            Some(Separator::Space) => (),
-                            None => current_line = Some(Segment {
-                                offset: g.byte_offset,
-                                len: g.len,
-                                width: g.x_advance,
-                            })
+                        (None, None, None) => match is_separator(&self.text_string, self._word_wrap, &g) {
+                            Some(Separator::NewLine) => {
+                                lines.push(Line::Empty(Segment {
+                                    offset: g.byte_offset,
+                                    len: g.len,
+                                    width: g.x_advance,
+                                }));
+                                leading_space = None;
+                            },
+                            Some(Separator::Space) => match leading_space {
+                                None => leading_space = Some(Segment {
+                                    offset: g.byte_offset,
+                                    len: g.len,
+                                    width: g.x_advance,
+                                }),
+                                Some(_) => {
+                                    let leading_space = leading_space.as_mut().unwrap();
+
+                                    leading_space.len += g.len;
+                                    leading_space.width += g.x_advance;
+                                }
+                            },
+                            None => match leading_space {
+                                None => current_line = Some(Segment {
+                                    offset: g.byte_offset,
+                                    len: g.len,
+                                    width: g.x_advance,
+                                }),
+                                Some(r_leading_space) => {
+                                    current_line = Some(Segment {
+                                        offset: r_leading_space.offset,
+                                        len: r_leading_space.len + g.len,
+                                        width: r_leading_space.width + g.x_advance,
+                                    });
+                                    leading_space = None;
+                                }
+                            }
                         }
                         (Some(r_current_line), None, None) => match is_separator(&self.text_string, self._word_wrap, &g) {
                             Some(Separator::NewLine) => {
@@ -641,7 +722,11 @@ impl Element for TextSlide {
                 }
 
                 match (current_line, candidate_word_whitespace, candidate_word) {
-                    (None, None, None) => lines.push(Line::Empty),
+                    (None, None, None) => lines.push(Line::Empty(Segment {
+                        offset: self.text_string.len() as u32,
+                        len: 0,
+                        width: 0.0,
+                    })),
                     (Some(r_current_line), None, None) => {
                         lines.push(Line::ParagraphBreak(r_current_line))
                     },
@@ -666,7 +751,7 @@ impl Element for TextSlide {
 
 
                 let mut max_text_width: f32 = lines.iter().map(|l| match l {
-                    Line::Empty => 0.0,
+                    Line::Empty(_) => 0.0,
                     Line::ParagraphBreak(s) => s.width,
                     Line::WordWrap(s) => s.width,
                 }).max_by(|x, y| if x > y {
@@ -680,20 +765,72 @@ impl Element for TextSlide {
 
                 self.multi_lines.clear();
 
+                let mut highlight_index = self.highlighted_lines.as_ref().map(|_| 0);
+                let mut highlight_index_byte = 0;
+
                 let mut top: f32 = h as f32 / 2.0 - max_text_height / 2.0 + metrics.descent;
                 for line in lines.iter() {
-                    if let (line_width, Some(mut text)) = match line {
-                        Line::WordWrap(s) => (s.width, base.primitives().text(self.text_string[s.offset as usize..(s.offset + s.len) as usize].to_string(), self._bold, self._italic, self._monospaced)),
-                        Line::ParagraphBreak(s) => (s.width, base.primitives().text(self.text_string[s.offset as usize..(s.offset + s.len) as usize].to_string(), self._bold, self._italic, self._monospaced)),
-                        Line::Empty => (0.0, None),
-                    } {
-                        if self.align == Align::Center {
-                            text.set_position(left_offset + max_text_width / 2.0 - line_width / 2.0, top + metrics.height);
-                        } else {
-                            text.set_position(left_offset, top + metrics.height);
+                    let (new_line, do_render, s) = match line {
+                        Line::WordWrap(s) => (false, true, s),
+                        Line::ParagraphBreak(s) => (true, true, s),
+                        Line::Empty(s) => (true, false, s),
+                    };
+
+                    let (mut x, y) = if self.align == Align::Center {
+                        (left_offset + max_text_width / 2.0 - s.width / 2.0, top + metrics.height)
+                    } else {
+                        (left_offset, top + metrics.height)
+                    };
+
+                    match highlight_index {
+                        None => {
+                            if do_render {
+                                let mut text = base.primitives()
+                                    .text(self.text_string[s.offset as usize..(s.offset + s.len) as usize].to_string(),
+                                          self._bold, self._italic, self._monospaced, self._color)
+                                    .unwrap();
+                                text.set_position(x, y);
+                                text.set_size(self.text_size);
+                                self.multi_lines.push(text);
+                            }
+                        },
+                        Some(mut ix) => {
+                            let mut mismatch = s.offset as i32 - highlight_index_byte as i32;
+
+                            while mismatch > 0 {
+                                let (h_item, h_len) = self.highlighted_lines.as_ref().unwrap()[ix];
+                                highlight_index_byte += h_len;
+                                ix += 1;
+                                mismatch = s.offset as i32 - highlight_index_byte as i32;
+                            }
+
+                            if do_render {
+                                while (highlight_index_byte as u32) < s.offset + s.len {
+                                    let (h_item, h_len) = self.highlighted_lines.as_ref().unwrap()[ix];
+
+                                    let mut text = &self.text_string[highlight_index_byte as usize..(highlight_index_byte as usize + h_len)];
+
+                                    while text.ends_with("\n") {
+                                        text = &text[..text.len() - 1];
+                                    }
+
+                                    let mut text = base.primitives()
+                                        .text(text,
+                                              self._bold, self._italic, self._monospaced, [h_item.foreground.r, h_item.foreground.g, h_item.foreground.b, h_item.foreground.a].into())
+                                        .unwrap();
+                                    text.set_position(x, y);
+                                    text.set_size(self.text_size);
+                                    x += text.measurement().measure().unwrap().width;
+
+                                    self.multi_lines.push(text);
+
+                                    highlight_index_byte += h_len;
+                                    ix += 1;
+                                }
+                            }
+
+                            highlight_index = Some(ix);
                         }
-                        text.set_size(self.text_size);
-                        self.multi_lines.push(text);
                     }
 
                     top += metrics.height;

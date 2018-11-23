@@ -15,7 +15,6 @@ pub use self::buffers::{FlatlanderVertex, FlatlanderGroupDrawData, DrawIndirectC
 pub struct Flatlander {
     program: Program,
     program_view_projection_location: Option<i32>,
-    program_color_location: Option<i32>,
     flatland: Rc<RefCell<flatland::Flatland>>,
     buffers: Option<buffers::Buffers>,
     draw_enabled: bool,
@@ -26,12 +25,10 @@ impl Flatlander {
     pub fn new(gl: &gl::Gl, res: &Resources) -> Result<Flatlander, failure::Error> {
         let program = Program::from_res(gl, res, "shaders/render_gl/flatland")?;
         let program_view_projection_location = program.get_uniform_location("ViewProjection");
-        let program_color_location = program.get_uniform_location("Color");
 
         Ok(Flatlander {
             program,
             program_view_projection_location,
-            program_color_location,
             flatland: Rc::new(RefCell::new(flatland::Flatland::new())),
             buffers: None,
             draw_enabled: true,
@@ -105,12 +102,6 @@ impl Flatlander {
                 if let Some(loc) = self.program_view_projection_location {
                     self.program.set_uniform_matrix_4fv(loc, &vp_matrix);
                 }
-
-                let program_color_location = self
-                    .program_color_location
-                    .expect("Flatland Color uniform must exist");
-
-                self.program.set_uniform_4f(program_color_location, &na::Vector4::<f32>::new(0.1, 0.1, 0.1, 1.0));
 
                 buffers.lines_vao.bind();
                 buffers.indirect.buffer.bind();
@@ -207,8 +198,8 @@ pub struct FlatlandGroup {
 }
 
 impl FlatlandGroup {
-    pub fn new(transform: &na::Projective3<f32>, alphabet: Alphabet, items: Vec<FlatlandItem>) -> FlatlandGroup {
-        let id = alphabet.flatland.borrow_mut().create_flatland_group_with_items(transform, alphabet.slot, items);
+    pub fn new(transform: &na::Projective3<f32>, color: na::Vector4<u8>, alphabet: Alphabet, items: Vec<FlatlandItem>) -> FlatlandGroup {
+        let id = alphabet.flatland.borrow_mut().create_flatland_group_with_items(transform, color, alphabet.slot, items);
 
         FlatlandGroup {
             alphabet: alphabet.clone(),
@@ -222,6 +213,10 @@ impl FlatlandGroup {
 
     pub fn update_transform(&self, transform: &na::Projective3<f32>) {
         self.alphabet.flatland.borrow_mut().update_transform(self.group_slot, transform);
+    }
+
+    pub fn update_color(&self, color: na::Vector4<u8>) {
+        self.alphabet.flatland.borrow_mut().update_color(self.group_slot, color);
     }
 }
 

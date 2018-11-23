@@ -33,6 +33,9 @@ pub struct FlatlanderVertexDrawId {
     #[location = "7"]
     #[divisor = "1"]
     pub model_col3: data::f32_f32_f32_f32,
+    #[location = "8"]
+    #[divisor = "1"]
+    pub color: data::u8_u8_u8_u8_float,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -46,12 +49,12 @@ pub struct DrawIndirectCmd {
 }
 
 #[derive(Copy, Clone, Debug)]
-#[repr(C, packed)]
 pub struct FlatlanderGroupDrawData {
     pub cmd: DrawIndirectCmd,
     pub x_offset: f32,
     pub y_offset: f32,
     pub transform: na::Projective3<f32>,
+    pub color: na::Vector4<u8>,
 }
 
 pub struct Buffers {
@@ -162,6 +165,7 @@ impl Buffers {
                     model_col1: data::f32_f32_f32_f32::new(col1[0], col1[1], col1[2], col1[3]),
                     model_col2: data::f32_f32_f32_f32::new(col2[0], col2[1], col2[2], col2[3]),
                     model_col3: data::f32_f32_f32_f32::new(col3[0], col3[1], col3[2], col3[3]),
+                    color: (i.color.x, i.color.y, i.color.z, i.color.w).into(),
                 }
             }));
     }

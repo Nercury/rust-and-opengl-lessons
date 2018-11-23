@@ -25,6 +25,7 @@ struct ControlInfo {
     marker: Option<RectMarker>,
     flatland_group_data: Option<(Alphabet, Vec<FlatlandItem>)>,
     flatland_group: Option<FlatlandGroup>,
+    color: Option<na::Vector4<u8>>,
 }
 
 impl ControlInfo {
@@ -36,6 +37,7 @@ impl ControlInfo {
             marker: None,
             flatland_group_data: None,
             flatland_group: None,
+            color: None,
         }
     }
 
@@ -47,6 +49,7 @@ impl ControlInfo {
             marker: None,
             flatland_group_data: Some((alphabet, items)),
             flatland_group: None,
+            color: None,
         }
     }
 
@@ -56,6 +59,10 @@ impl ControlInfo {
 
     pub fn update_transform(&mut self, absolute_transform: Option<na::Projective3<f32>>) {
         self.absolute_transform = absolute_transform;
+    }
+
+    pub fn update_color(&mut self, color: Option<na::Vector4<u8>>) {
+        self.color = color;
     }
 
     pub fn flush_updates(&mut self, debug_lines: &DebugLines) {
@@ -79,19 +86,20 @@ impl ControlInfo {
             (true, _, _) => self.marker = None,
         }
 
-        match (self.flatland_group.is_some(), &self.flatland_group_data, self.absolute_transform) {
-            (false, &Some((ref alphabet, ref items)), Some(t)) => {
+        match (self.flatland_group.is_some(), &self.flatland_group_data, self.absolute_transform, self.color) {
+            (false, &Some((ref alphabet, ref items)), Some(t), Some(color)) => {
                 self.flatland_group = Some(
-                    FlatlandGroup::new(&t, alphabet.clone(), items.clone())
+                    FlatlandGroup::new(&t, color, alphabet.clone(), items.clone())
                 );
             }
-            (true, Some((ref alphabet, ref items)), Some(t)) => {
+            (true, Some((ref alphabet, ref items)), Some(t), Some(color)) => {
                 let g = self.flatland_group.as_mut().unwrap();
                 g.update_items(items.iter());
                 g.update_transform(&t);
+                g.update_color(color);
             },
-            (false, _, _) => {},
-            (true, _, _) => {
+            (false, _, _, _) => {},
+            (true, _, _, _) => {
                 self.flatland_group = None
             },
         }
@@ -224,10 +232,13 @@ impl Interface {
                     ));
                     self.flush_updates_set.insert(ControlId::Text(buffer.id()));
                 }
-                Effect::TextTransform { buffer_id, absolute_transform } => {
+                Effect::TextUpdate { buffer_id, absolute_transform, color } => {
                     self.controls
                         .get_mut(&ControlId::Text(buffer_id))
-                        .map(|c| c.update_transform(absolute_transform));
+                        .map(|c| {
+                            c.update_transform(absolute_transform);
+                            c.update_color(Some(color));
+                        });
                     self.flush_updates_set.insert(ControlId::Text(buffer_id));
                 }
                 Effect::TextRemove { buffer_id } => {

@@ -94,6 +94,7 @@ pub struct Text {
     position: na::Vector3<f32>,
     origin: na::Vector3<f32>,
     transform: na::Projective3<f32>,
+    color: na::Vector4<u8>,
     slot: shared::PrimitiveSlot,
     hidden: bool,
 }
@@ -121,6 +122,11 @@ impl Text {
 
     pub fn set_origin(&mut self, x: f32, y: f32) {
         self.origin = [x, y, 0.0].into();
+        self.update_transform();
+    }
+
+    pub fn set_color(&mut self, r: u8, g: u8, b: u8, a: u8) {
+        self.color = [r, g, b, a].into();
         self.update_transform();
     }
 
@@ -152,7 +158,6 @@ impl Text {
 
 impl Drop for Text {
     fn drop(&mut self) {
-        trace!("-- drop text {:?} with buffer {:?}", self.slot, self.measurement.buffer.id());
         self.measurement.shared.borrow_mut().delete_text_buffer(self.slot);
     }
 }
@@ -171,7 +176,7 @@ impl Primitives {
         }
     }
 
-    pub fn text<P: ToString>(&mut self, text: P, bold: bool, italic: bool, monospaced: bool) -> Option<Text> {
+    pub fn text<P: ToString>(&mut self, text: P, bold: bool, italic: bool, monospaced: bool, color: na::Vector4<u8>) -> Option<Text> {
 
         let text = text.to_string();
         let mut properties = Properties::new();
@@ -201,11 +206,10 @@ impl Primitives {
                 let mut shared = self.shared.borrow_mut();
                 shared.create_text_buffer(
                     &font, text.clone(),
-                    Some(na::convert::<_, na::Projective3<_>>(na::Similarity3::new(na::zero(), na::zero(), scale)))
+                    Some(na::convert::<_, na::Projective3<_>>(na::Similarity3::new(na::zero(), na::zero(), scale))),
+                    color
                 )
             };
-
-            trace!("-- create text {:?}, slot {:?} with buffer {:?}", text, slot, buffer.id());
 
             return Some(Text {
                 measurement: TextMeasurement {
@@ -224,6 +228,8 @@ impl Primitives {
                 slot,
 
                 hidden: false,
+
+                color,
             });
         }
 
@@ -319,8 +325,8 @@ mod shared {
             }
         }
 
-        pub fn create_text_buffer<P: ToString>(&mut self, font: &Font, text: P, font_transform: Option<na::Projective3<f32>>) -> (PrimitiveSlot, Buffer) {
-            let buffer = font.create_buffer(text,  font_transform.map(|t| PrimitiveSlotData::calc_transform(&t, self.window_scale)));
+        pub fn create_text_buffer<P: ToString>(&mut self, font: &Font, text: P, font_transform: Option<na::Projective3<f32>>, color: na::Vector4<u8>) -> (PrimitiveSlot, Buffer) {
+            let buffer = font.create_buffer(text, font_transform.map(|t| PrimitiveSlotData::calc_transform(&t, self.window_scale)), color);
 
             let data = PrimitiveSlotData {
                 invalidated: true,
@@ -330,7 +336,6 @@ mod shared {
 
             let slot = self.primitive_slots.insert(PrimitiveSlotKeyData {});
             self.modification_log.push(ModificationLogEntry::Added { buffer: buffer.clone() });
-            trace!("== insert into added buffers {:?}", buffer.id());
 
             self.primitive_data.insert(slot, data);
             self.invalidated = true;
@@ -344,7 +349,6 @@ mod shared {
                 match data.kind {
                     PrimitiveKind::TextBuffer(b) => {
                         self.modification_log.push( ModificationLogEntry::Removed { buffer_id: b.id() });
-                        trace!("== insert into removed buffers {:?}", b.id());
                     },
                 };
             }

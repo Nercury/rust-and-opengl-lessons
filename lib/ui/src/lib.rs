@@ -99,9 +99,10 @@ pub enum Effect {
     TextAdd {
         buffer: fonts::BufferRef,
     },
-    TextTransform {
+    TextUpdate {
         buffer_id: usize,
         absolute_transform: Option<na::Projective3<f32>>,
+        color: na::Vector4<u8>,
     },
     TextRemove {
         buffer_id: usize,
