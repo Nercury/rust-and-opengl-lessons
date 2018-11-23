@@ -98,7 +98,8 @@ impl Element for RustFest {
                                 .centered()
                         )
                 )
-                // syntect = "3.0"
+                // For example, we may design a text renderer,
+                // that gives us back created text buffers:
                 .with_slide(
                     CombinedSlide::new()
                         .with(
@@ -106,6 +107,125 @@ impl Element for RustFest {
 r##"
 let mut renderer = TextRenderer::new();
 let buffer: &mut Buffer
+    = renderer.create_buffer("Hello");
+"##
+                            )
+                                .word_wrap(false)
+                                .monospaced(true)
+                                .highlight("rs")
+                                .bold(true)
+                                .size(40.0)
+                        )
+                )
+                // But of course, this buffer has a convenient method to change text position or rotation:
+                .with_slide(
+                    CombinedSlide::new()
+                        .with(
+                            TextSlide::new(
+                                r##"
+let mut renderer = TextRenderer::new();
+let buffer: &mut Buffer
+    = renderer.create_buffer("Hello");
+
+buffer.translate(1.0, 3.3);
+buffer.rotate(90.0);
+"##
+                            )
+                                .word_wrap(false)
+                                .monospaced(true)
+                                .highlight("rs")
+                                .bold(true)
+                                .size(40.0)
+                        )
+                )
+                // Why do we use a renderer? Well, we want to efficiently render all the
+                // text in a single draw call:
+                .with_slide(
+                    CombinedSlide::new()
+                        .with(
+                            TextSlide::new(
+                                r##"
+let mut renderer = TextRenderer::new();
+let buffer: &mut Buffer
+    = renderer.create_buffer("Hello");
+
+buffer.translate(1.0, 3.3);
+buffer.rotate(90.0);
+
+renderer.render(&open_gl);
+
+// ERROR! cannot borrow `renderer` as mutable more
+// than once at a time!
+"##
+                            )
+                                .word_wrap(false)
+                                .monospaced(true)
+                                .highlight("rs")
+                                .bold(true)
+                                .size(40.0)
+                        )
+                )
+                // Oh wait, we have to finish borrowing to use renderer again:
+                .with_slide(
+                    CombinedSlide::new()
+                        .with(
+                            TextSlide::new(
+                                r##"
+let mut renderer = TextRenderer::new();
+
+{
+    let buffer: &mut Buffer
+        = renderer.create_buffer("Hello");
+
+    buffer.translate(1.0, 3.3);
+    buffer.rotate(90.0);
+}
+
+renderer.render(&open_gl);
+"##
+                            )
+                                .word_wrap(false)
+                                .monospaced(true)
+                                .highlight("rs")
+                                .bold(true)
+                                .size(40.0)
+                        )
+                )
+                // This kind of workaround works, but it ties our solution to the borrow checker
+                // requirements. This is not what we wanted! We wanted to keep and pass buffer to
+                // any other structure, and keep it around so that we can update the translation and
+                // rotation from anywhere, anytime!
+                //
+                // The most flexible workaround is to keep integer handle instead of whole buffer
+                .with_slide(
+                    CombinedSlide::new()
+                        .with(
+                            TextSlide::new("Workaround:")
+                                .size(70.0)
+                                .centered()
+                        )
+                        .with(
+                            TextSlide::new(
+                                "Keep Integer Handle instead of whole Buffer"
+                            )
+                                .centered()
+                                .bold(true)
+                                .size(80.0)
+                        )
+                        .with(
+                            TextSlide::new("")
+                                .size(70.0)
+                                .centered()
+                        )
+                )
+                // If we get a handle, we can know what buffer we refer to elsewhere in the system:
+                .with_slide(
+                    CombinedSlide::new()
+                        .with(
+                            TextSlide::new(
+                                r##"
+let mut renderer = TextRenderer::new();
+let buffer_handle: u32
     = renderer.create_buffer("Hello");
 "##
                             )
