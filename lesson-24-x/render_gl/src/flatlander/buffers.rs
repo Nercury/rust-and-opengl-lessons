@@ -17,22 +17,22 @@ pub struct FlatlanderVertex {
 pub struct FlatlanderVertexDrawId {
     #[location = "2"]
     #[divisor = "1"]
-    pub x_offset: data::f32_,
+    pub x_offset: data::f16_,
     #[location = "3"]
     #[divisor = "1"]
-    pub y_offset: data::f32_,
+    pub y_offset: data::f16_,
     #[location = "4"]
     #[divisor = "1"]
-    pub model_col0: data::f32_f32_f32_f32,
+    pub model_col0: data::f16_f16_f16_f16,
     #[location = "5"]
     #[divisor = "1"]
-    pub model_col1: data::f32_f32_f32_f32,
+    pub model_col1: data::f16_f16_f16_f16,
     #[location = "6"]
     #[divisor = "1"]
-    pub model_col2: data::f32_f32_f32_f32,
+    pub model_col2: data::f16_f16_f16_f16,
     #[location = "7"]
     #[divisor = "1"]
-    pub model_col3: data::f32_f32_f32_f32,
+    pub model_col3: data::f16_f16_f16_f16,
     #[location = "8"]
     #[divisor = "1"]
     pub color: data::u8_u8_u8_u8_float,
@@ -161,10 +161,10 @@ impl Buffers {
                 FlatlanderVertexDrawId {
                     x_offset: i.x_offset.into(),
                     y_offset: i.y_offset.into(),
-                    model_col0: data::f32_f32_f32_f32::new(col0[0], col0[1], col0[2], col0[3]),
-                    model_col1: data::f32_f32_f32_f32::new(col1[0], col1[1], col1[2], col1[3]),
-                    model_col2: data::f32_f32_f32_f32::new(col2[0], col2[1], col2[2], col2[3]),
-                    model_col3: data::f32_f32_f32_f32::new(col3[0], col3[1], col3[2], col3[3]),
+                    model_col0: data::f16_f16_f16_f16::from((col0[0], col0[1], col0[2], col0[3])),
+                    model_col1: data::f16_f16_f16_f16::from((col1[0], col1[1], col1[2], col1[3])),
+                    model_col2: data::f16_f16_f16_f16::from((col2[0], col2[1], col2[2], col2[3])),
+                    model_col3: data::f16_f16_f16_f16::from((col3[0], col3[1], col3[2], col3[3])),
                     color: (i.color.x, i.color.y, i.color.z, i.color.w).into(),
                 }
             }));

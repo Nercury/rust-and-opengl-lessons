@@ -148,7 +148,7 @@ fn run() -> Result<(), failure::Error> {
         },
         scale * scale_modifier
     )?;
-//    iface.toggle_bounds();
+    iface.toggle_bounds();
 
     let mut perspective_view = false;
 
@@ -222,14 +222,14 @@ fn run() -> Result<(), failure::Error> {
                     scancode: Some(Scancode::LeftBracket),
                     ..
                 } => {
-                    scale_modifier /= 1.5;
+                    scale_modifier /= 1.2;
                     true
                 }
                 Event::KeyDown {
                     scancode: Some(Scancode::RightBracket),
                     ..
                 } => {
-                    scale_modifier *= 1.5;
+                    scale_modifier *= 1.2;
                     true
                 }
                 Event::KeyDown {

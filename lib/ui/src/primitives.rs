@@ -251,14 +251,14 @@ mod shared {
     pub struct PrimitiveSlotData {
         kind: PrimitiveKind,
         invalidated: bool,
-        font_transform: Option<na::Projective3<f32>>,
+        outer_transform: Option<na::Projective3<f32>>,
     }
 
     impl PrimitiveSlotData {
         pub fn update_buffer(&mut self, window_scale: f32) {
             match self.kind {
                 PrimitiveKind::TextBuffer(ref mut b) => b.set_transform(
-                    self.font_transform.map(|transform| PrimitiveSlotData::calc_transform(&transform, window_scale))
+                    self.outer_transform.map(|transform| PrimitiveSlotData::calc_transform(&transform, window_scale))
                 ),
             }
         }
@@ -320,7 +320,7 @@ mod shared {
             if let Some(data) = self.primitive_data.get_mut(slot) {
                 self.invalidated = true;
                 data.invalidated = true;
-                data.font_transform = transform;
+                data.outer_transform = transform;
                 data.update_buffer(self.window_scale);
             }
         }
@@ -331,7 +331,7 @@ mod shared {
             let data = PrimitiveSlotData {
                 invalidated: true,
                 kind: PrimitiveKind::TextBuffer(buffer.clone()),
-                font_transform,
+                outer_transform: font_transform,
             };
 
             let slot = self.primitive_slots.insert(PrimitiveSlotKeyData {});

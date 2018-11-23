@@ -71,14 +71,14 @@ impl ControlInfo {
                 self.marker = Some(debug_lines.rect_marker(
                     t * na::Translation3::new(1.0, 0.0, 0.0),
                     na::Vector2::new((wh.0 - 1) as f32, (wh.1 - 1) as f32),
-                    na::Vector4::new(1.0, 0.5, 0.2, 1.0),
+                    na::Vector4::new(0.0, 0.5, 1.0, 1.0),
                 ))
             }
             (true, Some(wh), Some(t)) => {
                 let marker = self.marker.as_mut().unwrap();
                 marker.update_size_and_color(
                     na::Vector2::new((wh.0 - 1) as f32, (wh.1 - 1) as f32),
-                    na::Vector4::new(1.0, 0.5, 0.2, 1.0),
+                    na::Vector4::new(0.0, 0.5, 1.0, 1.0),
                 );
                 marker.update_transform(t * na::Translation3::new(1.0, 0.0, 0.0));
             }
