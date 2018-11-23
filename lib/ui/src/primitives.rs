@@ -120,6 +120,11 @@ impl Text {
         self.update_transform();
     }
 
+    pub fn set_position_3d(&mut self, x: f32, y: f32, z: f32) {
+        self.position = [x, y, z].into();
+        self.update_transform();
+    }
+
     pub fn set_origin(&mut self, x: f32, y: f32) {
         self.origin = [x, y, 0.0].into();
         self.update_transform();
@@ -187,11 +192,11 @@ impl Primitives {
             properties.style(Style::Italic);
         }
 
-        let font = self.fonts.find_best_match( if monospaced {
-            &[FamilyName::Monospace]
+        let font =  if monospaced {
+            self.fonts.find_best_match(&[FamilyName::Title("Menlo".into()), FamilyName::Monospace], &properties)
         } else {
-            &[FamilyName::SansSerif]
-        }, &properties);
+            self.fonts.find_best_match(&[FamilyName::SansSerif], &properties)
+        };
 
         if let Some(font) = font {
             let size = 48.0;

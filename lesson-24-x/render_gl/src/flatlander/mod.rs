@@ -108,7 +108,7 @@ impl Flatlander {
 
                 unsafe {
                     target.set_default_blend_func(gl);
-                    target.enable_blend(gl);
+//                    target.enable_blend(gl);
                     target.front_face_cw(gl);
                     if self.wireframe {
                         target.polygon_mode_line(gl);
@@ -140,7 +140,7 @@ impl Flatlander {
                         target.polygon_mode_fill(gl);
                     }
                     target.front_face_ccw(gl);
-                    target.disable_blend(gl);
+//                    target.disable_blend(gl);
                 }
 
                 buffers.indirect.buffer.unbind();

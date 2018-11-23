@@ -72,7 +72,7 @@ fn run() -> Result<(), failure::Error> {
         height: 600,
         highdpi_width: 960,
         highdpi_height: 600,
-        high_dpi: true,
+        high_dpi: false,
     };
 
     let mut window = video_subsystem
@@ -310,8 +310,8 @@ fn run() -> Result<(), failure::Error> {
                 right as f32,
                 bottom as f32,
                 top as f32,
-                -10.0,
-                10.0,
+                -10000.0,
+                10000.0,
             )
         } else {
             camera.get_vp_matrix()

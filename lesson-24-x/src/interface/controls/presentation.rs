@@ -16,9 +16,29 @@ impl Element for RustFest {
         base.add(
             Presentation::new()
                 .with_slide(
-                    TextSlide::new("What garbage collected languages\ncan not do")
-                        .size(70.0)
-                        .centered()
+                    CombinedSlide::new()
+                        .with(
+                            TextSlide::new("")
+                                .size(40.0)
+                                .centered()
+                        )
+                        .with(
+                            TextSlide::new("")
+                                .size(40.0)
+                        )
+                        .with(
+                            TextSlide::new("What garbage collected languages\ncan not do")
+                                .size(70.0)
+                                .centered()
+                        )
+                        .with(
+                            TextSlide::new("")
+                                .size(40.0)
+                        )
+                        .with(
+                            TextSlide::new("@nercury")
+                                .size(40.0)
+                        )
                 )
                 // Rust is fast. So what? Go is fast, Javascript is fast, C# is fast.
                 //
@@ -108,7 +128,6 @@ let buffer: &mut Buffer
                                 .word_wrap(false)
                                 .monospaced(true)
                                 .highlight("rs")
-                                .bold(true)
                                 .size(40.0)
                 )
                 // But of course, this buffer has a convenient method to change text position or rotation:
@@ -126,7 +145,6 @@ buffer.rotate(90.0);
                                 .word_wrap(false)
                                 .monospaced(true)
                                 .highlight("rs")
-                                .bold(true)
                                 .size(40.0)
                 )
                 // Why do we use a renderer? Well, we want to efficiently render all the
@@ -150,7 +168,6 @@ renderer.render(&open_gl);
                                 .word_wrap(false)
                                 .monospaced(true)
                                 .highlight("rs")
-                                .bold(true)
                                 .size(40.0)
                 )
                 // Oh wait, we have to finish borrowing to use renderer again:
@@ -173,7 +190,6 @@ renderer.render(&open_gl);
                                 .word_wrap(false)
                                 .monospaced(true)
                                 .highlight("rs")
-                                .bold(true)
                                 .size(40.0)
                 )
                 // This kind of workaround works, but it ties our solution to the borrow checker
@@ -215,7 +231,6 @@ let buffer_handle: u32
                                 .word_wrap(false)
                                 .monospaced(true)
                                 .highlight("rs")
-                                .bold(true)
                                 .size(40.0)
                 )
                 // With that, we can pass this handle anywhere! Whenever we want to do anything with it,
@@ -230,7 +245,6 @@ renderer.rotate(buffer_handle, 90.0);
                                 .word_wrap(false)
                                 .monospaced(true)
                                 .highlight("rs")
-                                .bold(true)
                                 .size(40.0)
                 )
                 // This works, and this is quite performant solution.
@@ -275,7 +289,6 @@ renderer.rotate(buffer_handle, 90.0);
                                 .word_wrap(false)
                                 .monospaced(true)
                                 .highlight("rs")
-                                .bold(true)
                                 .size(40.0)
                 )
                 // It works as before.
@@ -298,7 +311,6 @@ struct TextRenderer {
                                 .word_wrap(false)
                                 .monospaced(true)
                                 .highlight("rs")
-                                .bold(true)
                                 .size(40.0)
                 )
                 // Yes, we use the dreaded Rc-RefCell here. However, instead of using it for
@@ -320,7 +332,6 @@ struct TextRenderer {
                                 .word_wrap(false)
                                 .monospaced(true)
                                 .highlight("rs")
-                                .bold(true)
                                 .size(40.0)
                 )
                 // What has just happened?
@@ -351,7 +362,6 @@ impl TextRenderer {
                                 .word_wrap(false)
                                 .monospaced(true)
                                 .highlight("rs")
-                                .bold(true)
                                 .size(40.0)
                 )
                 // The buffer wraps the handle and again, the reference to this hidden world
@@ -368,7 +378,6 @@ struct Buffer {
                                 .word_wrap(false)
                                 .monospaced(true)
                                 .highlight("rs")
-                                .bold(true)
                                 .size(40.0)
                 )
                 // This is pretty cool. This means we can store this buffer anywhere in our system,
@@ -386,7 +395,6 @@ buffer.translate(1.0, 3.3);
                                 .word_wrap(false)
                                 .monospaced(true)
                                 .highlight("rs")
-                                .bold(true)
                                 .size(40.0)
                 )
                 // Inside, we forward the call to the hidden world, to shared TextRenderer:
@@ -405,7 +413,6 @@ impl Buffer {
                                 .word_wrap(false)
                                 .monospaced(true)
                                 .highlight("rs")
-                                .bold(true)
                                 .size(40.0)
                 )
                 // Suppose we are rendering a lot of text, and we have many buffers.
@@ -427,7 +434,6 @@ renderer.render(&open_gl);
                                 .word_wrap(false)
                                 .monospaced(true)
                                 .highlight("rs")
-                                .bold(true)
                                 .size(40.0)
                 )
                 // This render function can quickly find if any of the buffers were recently updated
@@ -452,7 +458,6 @@ impl TextRenderer {
                                 .word_wrap(false)
                                 .monospaced(true)
                                 .highlight("rs")
-                                .bold(true)
                                 .size(40.0)
                 )
                 // and if they were, it can upload the updates to GPU
@@ -477,7 +482,6 @@ impl TextRenderer {
                                 .word_wrap(false)
                                 .monospaced(true)
                                 .highlight("rs")
-                                .bold(true)
                                 .size(40.0)
                 )
                 // otherwise, it can render everything with a single draw call:
@@ -509,7 +513,6 @@ impl TextRenderer {
                                 .word_wrap(false)
                                 .monospaced(true)
                                 .highlight("rs")
-                                .bold(true)
                                 .size(40.0)
                 )
                 // One more thing: this buffer becomes our own custom resource, like a file:
@@ -551,7 +554,6 @@ impl Drop for Buffer {
                         .word_wrap(false)
                         .monospaced(true)
                         .highlight("rs")
-                        .bold(true)
                         .size(40.0)
                 )
                 // The best part: we don't need to.
@@ -624,7 +626,6 @@ let (sender, receiver) = channel();
                                 .word_wrap(false)
                                 .monospaced(true)
                                 .highlight("rs")
-                                .bold(true)
                                 .size(40.0)
                         )
                         .with(
@@ -678,7 +679,104 @@ let (sender, receiver) = channel();
                                 .size(90.0)
                         )
                 )
+                .with_slide(
+                    CreditsSlide::new()
+                )
         );
+    }
+}
+
+struct CreditsAnumationState {
+    angle: f32,
+}
+
+pub struct CreditsSlide {
+    text_items: Vec<(primitives::Text, CreditsAnumationState)>,
+    width: f32,
+}
+
+impl CreditsSlide {
+    pub fn new() -> CreditsSlide {
+        CreditsSlide {
+            text_items: vec![],
+            width: 0.0,
+        }
+    }
+
+    fn init_animation(&mut self) {
+        let item_len = self.text_items.len();
+        let piece_rads = ::std::f32::consts::PI * 2.0 / item_len as f32;
+        for (i, (_, item)) in self.text_items.iter_mut().enumerate() {
+            item.angle = i as f32 * piece_rads;
+        }
+    }
+
+    fn update_animation(&mut self, delta: f32) {
+        for (i, (text, item)) in self.text_items.iter_mut().enumerate() {
+            item.angle += 0.5 * delta;
+            let transform = na::Rotation3::from_axis_angle(&na::Unit::new_normalize(na::Vector3::new(1.0, 1.0, 1.0)), item.angle);
+            text.set_transform(&(
+                na::convert::<_, na::Projective3<f32>>(transform)
+                    * na::convert::<_, na::Projective3<f32>>(na::Translation::from(na::Vector3::new(self.width / 2.0, 0.0, 0.0)))
+            ));
+        }
+    }
+}
+
+impl Element for CreditsSlide {
+    fn inflate(&mut self, base: &mut Base) {
+        for item in vec![
+            "nalgebra",
+            "nalgebra-glm",
+            "ncollide3d",
+            "slab",
+            "slotmap",
+            "metrohash",
+            "int_hash",
+            "sha-1",
+            "byteorder",
+            "font-kit",
+            "harfbuzz_rs",
+            "unicode-segmentation",
+            "syntect",
+            "lyon_path",
+            "lyon_tessellation",
+            "gl",
+            "gl_generator",
+            "log",
+            "failure",
+            "floating-duration",
+            "half",
+            "euclid",
+            "sdl2",
+        ] {
+            self.text_items.push(
+                (base.primitives()
+                    .text(item, true, false, true, [20, 20, 20, 255].into()).unwrap(),
+                 CreditsAnumationState {
+                     angle: 0.0,
+                 })
+            )
+        }
+    }
+
+    fn resize(&mut self, base: &mut Base) {
+        let box_size = base.box_size();
+        match box_size {
+            BoxSize::Hidden => base.enable_update(false),
+            BoxSize::Auto => {},
+            BoxSize::Fixed { w, h } => {
+                self.width = w as f32;
+                base.enable_update(true);
+                base.resolve_size(Some(ResolvedSize { w, h }));
+                self.init_animation();
+                self.update_animation(0.0);
+            },
+        }
+    }
+
+    fn update(&mut self, base: &mut Base, delta: f32) {
+        self.update_animation(delta);
     }
 }
 
