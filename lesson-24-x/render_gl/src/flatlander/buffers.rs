@@ -7,9 +7,9 @@ use buffer::VertexArray;
 #[repr(C, packed)]
 pub struct FlatlanderVertex {
     #[location = "0"]
-    pub pos: data::f32_f32,
+    pub pos: data::f16_f16,
     #[location = "1"]
-    pub normal: data::f32_f32,
+    pub normal: data::f16_f16,
 }
 
 #[derive(VertexAttribPointers, Copy, Clone, Debug)]

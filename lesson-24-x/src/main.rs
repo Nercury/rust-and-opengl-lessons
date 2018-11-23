@@ -85,7 +85,7 @@ fn run() -> Result<(), failure::Error> {
         builder.allow_highdpi();
     }
 
-    let window = builder.build()?;
+    let mut window = builder.build()?;
 
     if window_size.high_dpi {
         let drawable_size = window.drawable_size();
@@ -253,6 +253,17 @@ fn run() -> Result<(), failure::Error> {
                     frame_profiler.toggle();
                     allocation_profiler.toggle();
                     gl_call_profiler.toggle();
+                    false
+                }
+                Event::KeyDown {
+                    scancode: Some(Scancode::F),
+                    ..
+                } => {
+                    if window.fullscreen_state() == sdl2::video::FullscreenType::Off {
+                        window.set_fullscreen(sdl2::video::FullscreenType::Desktop).unwrap();
+                    } else {
+                        window.set_fullscreen(sdl2::video::FullscreenType::Off).unwrap();
+                    }
                     false
                 }
                 _ => false,

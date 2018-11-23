@@ -1235,9 +1235,6 @@ impl Element for TextSlide {
                                         offset: r_current_line.offset,
                                         len: r_current_line.len + r_candidate_word_whitespace.len + r_candidate_word.len,
                                     }));
-                                    current_line = None;
-                                    candidate_word_whitespace = None;
-                                    candidate_word = None;
                                 } else {
                                     lines.push(Line::WordWrap(r_current_line));
                                     lines.push(Line::ParagraphBreak(r_candidate_word));
@@ -1292,7 +1289,7 @@ impl Element for TextSlide {
                     (Some(r_current_line), None, None) => {
                         lines.push(Line::ParagraphBreak(r_current_line))
                     },
-                    (Some(r_current_line), Some(r_candidate_word_whitespace), None) => {
+                    (Some(r_current_line), Some(_), None) => {
                         lines.push(Line::ParagraphBreak(r_current_line))
                     },
                     (Some(r_current_line), Some(r_candidate_word_whitespace), Some(r_candidate_word)) => {
@@ -1332,7 +1329,7 @@ impl Element for TextSlide {
 
                 let mut top: f32 = h as f32 / 2.0 - max_text_height / 2.0 + metrics.descent;
                 for line in lines.iter() {
-                    let (new_line, do_render, s) = match line {
+                    let (_new_line, do_render, s) = match line {
                         Line::WordWrap(s) => (false, true, s),
                         Line::ParagraphBreak(s) => (true, true, s),
                         Line::Empty(s) => (true, false, s),
@@ -1360,7 +1357,7 @@ impl Element for TextSlide {
                             let mut mismatch = s.offset as i32 - highlight_index_byte as i32;
 
                             while mismatch > 0 {
-                                let (h_item, h_len) = self.highlighted_lines.as_ref().unwrap()[ix];
+                                let (_h_item, h_len) = self.highlighted_lines.as_ref().unwrap()[ix];
                                 highlight_index_byte += h_len;
                                 ix += 1;
                                 mismatch = s.offset as i32 - highlight_index_byte as i32;

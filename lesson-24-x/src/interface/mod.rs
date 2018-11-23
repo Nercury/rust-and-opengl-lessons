@@ -6,8 +6,9 @@ use render_gl::ColorBuffer;
 use render_gl::{DebugLines, RectMarker};
 use render_gl::{Flatlander, Alphabet, FlatlanderVertex, FlatlandGroup, FlatlandItem};
 use resources;
-use std::collections::{HashMap, self};
+use std::collections;
 use int_hash::IntHashSet;
+use int_hash::IntHashMap;
 use ui::*;
 
 mod controls;
@@ -92,7 +93,7 @@ impl ControlInfo {
                     FlatlandGroup::new(&t, color, alphabet.clone(), items.clone())
                 );
             }
-            (true, Some((ref alphabet, ref items)), Some(t), Some(color)) => {
+            (true, Some((ref _alphabet, ref items)), Some(t), Some(color)) => {
                 let g = self.flatland_group.as_mut().unwrap();
                 g.update_items(items.iter());
                 g.update_transform(&t);
@@ -122,14 +123,14 @@ pub struct Interface {
     fonts: Fonts,
     fill: Leaf<controls::presentation::RustFest>,
     events: Events,
-    controls: HashMap<ControlId, ControlInfo>,
+    controls: IntHashMap<ControlId, ControlInfo>,
     event_read_buffer: Vec<Effect>,
     flush_updates_set: IntHashSet<ControlId>,
 
     debug_lines: DebugLines,
     flatlander: Flatlander,
 
-    alphabets: HashMap<AlphabetKey, Alphabet>,
+    alphabets: IntHashMap<AlphabetKey, Alphabet>,
 }
 
 impl Interface {
@@ -152,12 +153,12 @@ impl Interface {
             fonts,
             fill,
             events,
-            controls: HashMap::new(),
+            controls: IntHashMap::default(),
             event_read_buffer: Vec::new(),
             flush_updates_set: IntHashSet::default(),
             debug_lines: DebugLines::new(gl, resources)?,
             flatlander: Flatlander::new(gl, resources)?,
-            alphabets: HashMap::new(),
+            alphabets: IntHashMap::default(),
         })
     }
 
@@ -173,7 +174,7 @@ impl Interface {
 
         for event in self.event_read_buffer.drain(..) {
             match event {
-                Effect::Add { id, parent_id } => {
+                Effect::Add { id, .. } => {
                     self.controls.insert(ControlId::Node(id), ControlInfo::new(ControlId::Node(id)));
                     self.flush_updates_set.insert(ControlId::Node(id));
                 }
@@ -309,11 +310,11 @@ fn ensure_glyph_is_in_alphabet_and_return_index(builder: &mut lyon_path::default
         // Compute the tessellation.
         tessellator.tessellate_path(
             path.path_iter(),
-            &FillOptions::default().with_tolerance(5.0),
+            &FillOptions::default().with_tolerance(10.0),
             &mut BuffersBuilder::new(&mut geometry, |vertex: FillVertex| {
                 FlatlanderVertex {
-                    pos: data::f32_f32::new(vertex.position.x, vertex.position.y),
-                    normal: data::f32_f32::new(vertex.normal.x, vertex.normal.y),
+                    pos: data::f16_f16::from((vertex.position.x, vertex.position.y)),
+                    normal: data::f16_f16::from((vertex.normal.x, vertex.normal.y)),
                 }
             }),
         ).unwrap();

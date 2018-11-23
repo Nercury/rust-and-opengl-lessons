@@ -39,7 +39,7 @@ impl Element for Label {
     fn inflate(&mut self, base: &mut Base) {
         {
             let primitives = base.primitives();
-            for i in 0..100 {
+            for _ in 0..100 {
                 if let Some(t) = primitives.text("Kaip faina", false, false, false, [0, 0, 0, 255].into()) {
                     self.text.push(t);
                 }
