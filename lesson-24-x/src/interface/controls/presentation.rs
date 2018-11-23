@@ -16,6 +16,9 @@ impl Element for RustFest {
         base.add(
             Presentation::new()
                 .with_slide(
+                    CreditsSlide::new()
+                )
+                .with_slide(
                     CombinedSlide::new()
                         .with(
                             TextSlide::new("")
@@ -679,9 +682,7 @@ let (sender, receiver) = channel();
                                 .size(90.0)
                         )
                 )
-                .with_slide(
-                    CreditsSlide::new()
-                )
+
         );
     }
 }
@@ -725,7 +726,7 @@ impl CreditsSlide {
 
 impl Element for CreditsSlide {
     fn inflate(&mut self, base: &mut Base) {
-        for item in vec![
+        for item in &[
             "nalgebra",
             "nalgebra-glm",
             "ncollide3d",
