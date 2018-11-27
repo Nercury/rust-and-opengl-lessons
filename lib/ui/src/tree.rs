@@ -1,12 +1,14 @@
 pub use self::shared::{Base, LastResolvedSize, ResizeFlow};
 use std::cell::RefCell;
 use std::marker::PhantomData;
+use resources::Resources;
 use std::rc::Rc;
 use *;
 
 mod shared {
     use na;
     use std::collections::{BTreeMap, BTreeSet, VecDeque};
+    use resources::Resources;
     use queues::*;
     use fonts::Fonts;
     use std::cell::RefCell;
@@ -306,7 +308,7 @@ mod shared {
         pub fn primitives(&mut self) -> &mut Primitives {
             if self.children.primitives.is_none() {
                 let window_scale = self.window_scale;
-                let primitives = Primitives::new(self.container.fonts(), window_scale);
+                let primitives = Primitives::new(self.container.fonts(), self.container.shapes(), &self.container._resources, window_scale);
                 self.children.primitives = Some(primitives.clone());
             }
 
@@ -414,6 +416,157 @@ mod shared {
         pub fn remove(&mut self, id: Ix) {
             self.items.remove(&id);
         }
+
+        pub fn invalidate_transform_propagation(&mut self) {
+            for child in self.items.values_mut() {
+                child.invalidate_transform_propagation();
+            }
+        }
+
+        pub fn update_window_scale_for_primitives(&mut self, window_scale: f32) {
+            if let Some(ref mut primitives) = self.primitives {
+                let mut shared = primitives.shared.borrow_mut();
+                shared.set_window_scale(window_scale);
+            }
+        }
+
+        pub fn hide_primitives(&mut self, queues: &mut RefMut<Queues>) {
+            if let Some(ref mut primitives) = self.primitives {
+                let mut shared = primitives.shared.borrow_mut();
+
+                for entry in shared.modified_buffers() {
+                    match entry {
+                        primitives::ModificationLogEntry::Added { buffer } => {
+                            queues.send(Effect::TextAdd {
+                                buffer: buffer.weak_ref()
+                            });
+                        }
+                        primitives::ModificationLogEntry::Removed { buffer_id } => {
+                            queues.send(Effect::TextRemove {
+                                buffer_id
+                            });
+                        }
+                        primitives::ModificationLogEntry::AddedShape { shape } => {
+                            queues.send(Effect::ShapeAdd {
+                                shape
+                            });
+                        }
+                        primitives::ModificationLogEntry::RemovedShape { shape_slot } => {
+                            queues.send(Effect::ShapeRemove {
+                                shape_slot
+                            });
+                        }
+                    }
+                }
+
+                for buffer in shared.buffers_keep_invalidated() {
+                    queues.send(Effect::TextUpdate {
+                        buffer_id: buffer.id(),
+                        absolute_transform: None,
+                        color: [0, 0, 0, 255].into(),
+                    });
+                }
+
+                for shape in shared.shapes_keep_invalidated() {
+                    queues.send(Effect::ShapeUpdate {
+                        shape_slot: shape.slot(),
+                        absolute_transform: None,
+                    });
+                }
+            }
+        }
+
+        pub fn sync_primitives(&mut self, absolute_transform: &na::Projective3<f32>, queues: &mut RefMut<Queues>) {
+            if let Some(ref mut primitives) = self.primitives {
+                let mut shared = primitives.shared.borrow_mut();
+
+                for entry in shared.modified_buffers() {
+                    match entry {
+                        primitives::ModificationLogEntry::Added { buffer } => {
+                            queues.send(Effect::TextAdd {
+                                buffer: buffer.weak_ref()
+                            });
+                        }
+                        primitives::ModificationLogEntry::Removed { buffer_id } => {
+                            queues.send(Effect::TextRemove {
+                                buffer_id
+                            });
+                        }
+                        primitives::ModificationLogEntry::AddedShape { shape } => {
+                            queues.send(Effect::ShapeAdd {
+                                shape
+                            });
+                        }
+                        primitives::ModificationLogEntry::RemovedShape { shape_slot } => {
+                            queues.send(Effect::ShapeRemove {
+                                shape_slot
+                            });
+                        }
+                    }
+                }
+
+                for buffer in shared.buffers() {
+                    queues.send(Effect::TextUpdate {
+                        buffer_id: buffer.id(),
+                        absolute_transform: buffer.absolute_transform(absolute_transform),
+                        color: buffer.color(),
+                    });
+                }
+
+                for shape in shared.shapes() {
+                    queues.send(Effect::ShapeUpdate {
+                        shape_slot: shape.slot(),
+                        absolute_transform: shape.absolute_transform(absolute_transform),
+                    });
+                }
+            }
+        }
+
+        pub fn sync_invalidated_primitives(&mut self, absolute_transform: &na::Projective3<f32>, queues: &mut RefMut<Queues>) {
+            if let Some(ref mut primitives) = self.primitives {
+                let mut shared = primitives.shared.borrow_mut();
+
+                for entry in shared.modified_buffers() {
+                    match entry {
+                        primitives::ModificationLogEntry::Added { buffer } => {
+                            queues.send(Effect::TextAdd {
+                                buffer: buffer.weak_ref()
+                            });
+                        }
+                        primitives::ModificationLogEntry::Removed { buffer_id } => {
+                            queues.send(Effect::TextRemove {
+                                buffer_id
+                            });
+                        }
+                        primitives::ModificationLogEntry::AddedShape { shape } => {
+                            queues.send(Effect::ShapeAdd {
+                                shape
+                            });
+                        }
+                        primitives::ModificationLogEntry::RemovedShape { shape_slot } => {
+                            queues.send(Effect::ShapeRemove {
+                                shape_slot
+                            });
+                        }
+                    }
+                }
+
+                for buffer in shared.only_invalidated_buffers() {
+                    queues.send(Effect::TextUpdate {
+                        buffer_id: buffer.id(),
+                        absolute_transform: buffer.absolute_transform(absolute_transform),
+                        color: buffer.color(),
+                    });
+                }
+
+                for shape in shared.only_invalidated_shapes() {
+                    queues.send(Effect::ShapeUpdate {
+                        shape_slot: shape.slot(),
+                        absolute_transform: shape.absolute_transform(absolute_transform),
+                    });
+                }
+            }
+        }
     }
 
     enum SetAction {
@@ -424,6 +577,8 @@ mod shared {
     pub struct Container {
         queues: Rc<RefCell<Queues>>,
         _fonts: Fonts,
+        _shapes: Shapes,
+        _resources: Resources,
 
         next_id: Ix,
         _root_id: Option<Ix>,
@@ -437,10 +592,12 @@ mod shared {
     }
 
     impl Container {
-        pub fn new() -> Container {
+        pub fn new(resources: &Resources) -> Container {
             Container {
                 queues: Rc::new(RefCell::new(Queues::new())),
                 _fonts: Fonts::new(),
+                _shapes: Shapes::new(),
+                _resources: resources.clone(),
 
                 next_id: Ix(0),
                 _root_id: None,
@@ -457,6 +614,11 @@ mod shared {
         #[inline(always)]
         pub fn fonts(&self) -> &Fonts {
             &self._fonts
+        }
+
+        #[inline(always)]
+        pub fn shapes(&self) -> &Shapes {
+            &self._shapes
         }
 
         #[inline(always)]
@@ -496,9 +658,13 @@ mod shared {
 
         pub fn delete_node(&mut self, id: Ix) {
             if let Some(mut removed) = self.nodes.remove(&id) {
-                let body = removed.steal_body();
+                info!("delete node {:?}", id);
 
-                for (child_id, _) in body.children.items {
+                let absolute_transform = removed.absolute_transform();
+
+                let mut body = removed.steal_body();
+
+                for (&child_id, _) in &body.children.items {
                     self.delete_node(child_id);
                 }
 
@@ -510,6 +676,11 @@ mod shared {
                             .children.remove(id);
                     }
                 }
+
+                let mut children = body.children;
+                let el = body.el;
+                ::std::mem::drop(el);
+                children.sync_primitives(&absolute_transform, &mut self.queues.borrow_mut());
 
                 self.queues.borrow_mut().send(Effect::Remove { id })
             }
@@ -623,7 +794,7 @@ mod shared {
                         (false, Some(LastResolvedSize::ElementSizeFixed { w, h, size }), BoxSize::Fixed { w: new_w, h: new_h }) if w == new_w && h == new_h => (LastResolvedSize::ElementSizeFixed { w, h, size }, size, true, None),
                         (_, _, box_size) => {
                             if window_scale_changed {
-                                body.update_window_scale_for_primitives(window_scale);
+                                body.children.update_window_scale_for_primitives(window_scale);
                             }
 
                             let mut base = Base::new(id, container, &mut body.children, ResizeFlow::ParentIsResizing, box_size, window_scale);
@@ -653,12 +824,12 @@ mod shared {
                     if !skip_update || new_window_scale.is_some() {
                         match resolved_size {
                             None => {
-                                skeleton.body.as_mut().map(|b| b.hide_primitives(&mut q.borrow_mut()));
+                                skeleton.body.as_mut().map(|b| b.children.hide_primitives(&mut q.borrow_mut()));
                             }
                             _ => {
                                 let absolute_transform = skeleton.absolute_transform();
                                 skeleton.body.as_mut().map(|b| {
-                                    b.sync_primitives(&absolute_transform, &mut q.borrow_mut())
+                                    b.children.sync_primitives(&absolute_transform, &mut q.borrow_mut())
                                 });
                             }
                         }
@@ -687,7 +858,7 @@ mod shared {
                         for (child_id, _) in &body.children.items {
                             container.parent_transform(*child_id, &absolute_transform);
                         }
-                        body.sync_primitives(&absolute_transform, &mut container.queues.borrow_mut());
+                        body.children.sync_primitives(&absolute_transform, &mut container.queues.borrow_mut());
                         Some(absolute_transform)
                     } else {
                         None
@@ -715,7 +886,7 @@ mod shared {
                         for (child_id, _) in &body.children.items {
                             container.parent_transform(*child_id, &absolute_transform);
                         }
-                        body.sync_primitives(&absolute_transform, &mut container.queues.borrow_mut());
+                        body.children.sync_primitives(&absolute_transform, &mut container.queues.borrow_mut());
                         Some(absolute_transform)
                     } else {
                         None
@@ -841,7 +1012,7 @@ mod shared {
                             BoxSize::Hidden => (),
                             _ => {
                                 let absolute_transform = skeleton.absolute_transform();
-                                skeleton.body.as_mut().map(|b| b.sync_invalidated_primitives(&absolute_transform, &mut q.borrow_mut()));
+                                skeleton.body.as_mut().map(|b| b.children.sync_invalidated_primitives(&absolute_transform, &mut q.borrow_mut()));
                             }
                         }
 
@@ -886,114 +1057,15 @@ mod shared {
         }
     }
 
+    pub struct ElementDummy;
+    impl Element for ElementDummy {}
+
     pub struct NodeBody {
         children: Children,
         el: Box<Element>,
     }
 
     use std::cell::RefMut;
-
-    impl NodeBody {
-        pub fn invalidate_transform_propagation(&mut self) {
-            for child in self.children.items.values_mut() {
-                child.invalidate_transform_propagation();
-            }
-        }
-
-        pub fn update_window_scale_for_primitives(&mut self, window_scale: f32) {
-            if let Some(ref mut primitives) = self.children.primitives {
-                let mut shared = primitives.shared.borrow_mut();
-                shared.set_window_scale(window_scale);
-            }
-        }
-
-        pub fn hide_primitives(&mut self, queues: &mut RefMut<Queues>) {
-            if let Some(ref mut primitives) = self.children.primitives {
-                let mut shared = primitives.shared.borrow_mut();
-
-                for entry in shared.modified_buffers() {
-                    match entry {
-                        primitives::ModificationLogEntry::Added { buffer } => {
-                            queues.send(Effect::TextAdd {
-                                buffer: buffer.weak_ref()
-                            });
-                        }
-                        primitives::ModificationLogEntry::Removed { buffer_id } => {
-                            queues.send(Effect::TextRemove {
-                                buffer_id
-                            });
-                        }
-                    }
-                }
-
-                for buffer in shared.buffers_keep_invalidated() {
-                    queues.send(Effect::TextUpdate {
-                        buffer_id: buffer.id(),
-                        absolute_transform: None,
-                        color: [0, 0, 0, 255].into(),
-                    });
-                }
-            }
-        }
-
-        pub fn sync_primitives(&mut self, absolute_transform: &na::Projective3<f32>, queues: &mut RefMut<Queues>) {
-            if let Some(ref mut primitives) = self.children.primitives {
-                let mut shared = primitives.shared.borrow_mut();
-
-                for entry in shared.modified_buffers() {
-                    match entry {
-                        primitives::ModificationLogEntry::Added { buffer } => {
-                            queues.send(Effect::TextAdd {
-                                buffer: buffer.weak_ref()
-                            });
-                        }
-                        primitives::ModificationLogEntry::Removed { buffer_id } => {
-                            queues.send(Effect::TextRemove {
-                                buffer_id
-                            });
-                        }
-                    }
-                }
-
-                for buffer in shared.buffers() {
-                    queues.send(Effect::TextUpdate {
-                        buffer_id: buffer.id(),
-                        absolute_transform: buffer.absolute_transform(absolute_transform),
-                        color: buffer.color(),
-                    });
-                }
-            }
-        }
-
-        pub fn sync_invalidated_primitives(&mut self, absolute_transform: &na::Projective3<f32>, queues: &mut RefMut<Queues>) {
-            if let Some(ref mut primitives) = self.children.primitives {
-                let mut shared = primitives.shared.borrow_mut();
-
-                for entry in shared.modified_buffers() {
-                    match entry {
-                        primitives::ModificationLogEntry::Added { buffer } => {
-                            queues.send(Effect::TextAdd {
-                                buffer: buffer.weak_ref()
-                            });
-                        }
-                        primitives::ModificationLogEntry::Removed { buffer_id } => {
-                            queues.send(Effect::TextRemove {
-                                buffer_id
-                            });
-                        }
-                    }
-                }
-
-                for buffer in shared.only_invalidated_buffers() {
-                    queues.send(Effect::TextUpdate {
-                        buffer_id: buffer.id(),
-                        absolute_transform: buffer.absolute_transform(absolute_transform),
-                        color: buffer.color(),
-                    });
-                }
-            }
-        }
-    }
 
     pub struct NodeSkeleton {
         last_resolved_size: Option<LastResolvedSize>,
@@ -1030,7 +1102,7 @@ mod shared {
             self.body
                 .as_mut()
                 .expect("invalidate_transform_propagation: encountered stolen body")
-                .invalidate_transform_propagation();
+                .children.invalidate_transform_propagation();
         }
 
         pub fn resolved_size_is_invisible(&self) -> bool {
@@ -1075,8 +1147,8 @@ pub struct Tree {
 }
 
 impl Tree {
-    pub fn new() -> Tree {
-        let shared = Rc::new(RefCell::new(shared::Container::new()));
+    pub fn new(resources: &Resources) -> Tree {
+        let shared = Rc::new(RefCell::new(shared::Container::new(resources)));
 
         Tree { shared }
     }

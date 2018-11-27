@@ -347,9 +347,9 @@ fn run() -> Result<(), failure::Error> {
 
         frame_profiler.push(render::color_green());
 
-//        while time.elapsed() < Duration::from_millis(6) {
-//            ::std::thread::yield_now()
-//        }
+        while time.elapsed() < Duration::from_millis(12) {
+            ::std::thread::yield_now()
+        }
 
         {
             let ac = alloc::alloc_count();

@@ -121,7 +121,7 @@ struct AlphabetKey {
 pub struct Interface {
     tree: Tree,
     fonts: Fonts,
-    fill: Leaf<controls::presentation::RustFest>,
+    fill: Leaf<controls::test::TestPresentation>,
     events: Events,
     controls: IntHashMap<ControlId, ControlInfo>,
     event_read_buffer: Vec<Effect>,
@@ -140,11 +140,11 @@ impl Interface {
         size: BoxSize,
         window_scale: f32
     ) -> Result<Interface, failure::Error> {
-        let tree = Tree::new();
+        let tree = Tree::new(resources);
         let fonts = tree.fonts();
 
         let events = tree.events();
-        let fill = tree.create_root(controls::presentation::RustFest::new(), window_scale);
+        let fill = tree.create_root(controls::test::TestPresentation::new(), window_scale);
 
         fill.resize(size, window_scale);
 
@@ -246,6 +246,15 @@ impl Interface {
                     if let None = self.controls.remove(&ControlId::Text(buffer_id)) {
                         warn!("tried to remove nonexisting flatland group {}", buffer_id);
                     }
+                }
+                Effect::ShapeAdd { shape } => {
+                    info!("Shape add {:?}", shape.slot());
+                }
+                Effect::ShapeUpdate { shape_slot, absolute_transform } => {
+                    info!("Shape update {:?}", shape_slot);
+                }
+                Effect::ShapeRemove { shape_slot } => {
+                    info!("Shape remove {:?}", shape_slot);
                 }
             }
         }

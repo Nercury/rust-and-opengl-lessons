@@ -30,7 +30,7 @@ impl Queues {
         //trace!("event: {:?}", e);
 
         for (_, q) in self.queues.iter_mut() {
-            q.push_back(e);
+            q.push_back(e.clone());
         }
     }
 

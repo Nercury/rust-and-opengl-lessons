@@ -11,16 +11,24 @@ extern crate byteorder;
 extern crate font_kit;
 extern crate harfbuzz_rs;
 extern crate lyon_path;
+extern crate lyon_geom;
 extern crate unicode_segmentation;
+extern crate resources;
+extern crate usvg;
+extern crate failure;
+extern crate lyon_tessellation;
 
 mod tree;
 pub mod primitives;
 mod queues;
 mod fonts;
+mod svg;
+mod shapes;
 
 pub use primitives::Primitives;
 pub use tree::{Base, Events, LastResolvedSize, Leaf, Tree};
 pub use fonts::{Fonts, Font, BufferRef, GlyphPosition, HintingOptions};
+pub use shapes::{Shapes, Shape};
 
 fn approx_equal(a: f32, b: f32, decimal_places: u8) -> bool {
     let factor = 10.0f32.powi(decimal_places as i32);
@@ -79,7 +87,7 @@ pub enum FlowDirection {
     Vertical
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub enum Effect {
     Add {
         id: Ix,
@@ -106,7 +114,17 @@ pub enum Effect {
     },
     TextRemove {
         buffer_id: usize,
-    }
+    },
+    ShapeAdd {
+        shape: Shape,
+    },
+    ShapeUpdate {
+        shape_slot: shapes::ShapeSlot,
+        absolute_transform: Option<na::Projective3<f32>>,
+    },
+    ShapeRemove {
+        shape_slot: shapes::ShapeSlot,
+    },
 }
 
 /// This is a hack - the ui does not yet have input events
