@@ -34,3 +34,6 @@ debug-assertions = true
 lto = false
 debug = true
 opt-level = 2
+
+[patch.crates-io]
+font-kit = { git = 'https://github.com/Nercury/font-kit', branch = "patch-lyon-deps" }

@@ -1,4 +1,0 @@
-[submodule "font-kit"]
-	path = patches/font-kit
-	url = git@github.com:Nercury/font-kit.git
-	branch = patch-lyon-deps
