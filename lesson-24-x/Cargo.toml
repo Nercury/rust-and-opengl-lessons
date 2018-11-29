@@ -6,7 +6,7 @@ authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
 [dependencies]
 gl = { path = "../lib/gl" }
 resources = { path = "../lib/resources", features = ["backend_filesystem"] }
-ui = { path = "../lib/ui" }
+ui = { path = "ui" }
 lesson_24_x_render = { path = "render" }
 lesson_24_x_render_gl = { path = "render_gl" }
 lesson_24_x_render_gl_derive = { path = "render_gl_derive" }

@@ -13,7 +13,7 @@ sha-1 = "0.8.0"
 byteorder = "1.2.7"
 harfbuzz_rs = "0.3.0"
 font-kit = { version = "0.1.0", path = "../../patches/font-kit" }
-resources = { path = "../resources", features = ["backend_filesystem"] }
+resources = { path = "../../lib/resources", features = ["backend_filesystem"] }
 lyon_path = "0.11.0"
 lyon_geom = "0.11.0"
 lyon_tessellation = "0.11.0"

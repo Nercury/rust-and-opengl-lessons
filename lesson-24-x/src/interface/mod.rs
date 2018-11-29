@@ -108,20 +108,14 @@ impl ControlInfo {
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-enum AlphabetFeature {
-    Font = 0,
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-struct AlphabetKey {
-    feature: AlphabetFeature,
-    id: usize,
+enum AlphabetKey {
+    Font(usize),
 }
 
 pub struct Interface {
     tree: Tree,
     fonts: Fonts,
-    fill: Leaf<controls::test::TestPresentation>,
+    fill: Leaf<controls::rust_fest::RustFest>,
     events: Events,
     controls: IntHashMap<ControlId, ControlInfo>,
     event_read_buffer: Vec<Effect>,
@@ -144,7 +138,7 @@ impl Interface {
         let fonts = tree.fonts();
 
         let events = tree.events();
-        let fill = tree.create_root(controls::test::TestPresentation::new(), window_scale);
+        let fill = tree.create_root(controls::rust_fest::RustFest::new(), window_scale);
 
         fill.resize(size, window_scale);
 
@@ -198,7 +192,7 @@ impl Interface {
                 }
                 Effect::TextAdd { buffer } => {
 
-                    let alphabet = match self.alphabets.entry(AlphabetKey { feature: AlphabetFeature::Font, id: buffer._font_id }) {
+                    let alphabet = match self.alphabets.entry(AlphabetKey::Font(buffer._font_id)) {
                         collections::hash_map::Entry::Occupied(e) => e.into_mut(),
                         collections::hash_map::Entry::Vacant(mut e) => e.insert(self.flatlander.create_alphabet()),
                     };
@@ -248,6 +242,7 @@ impl Interface {
                     }
                 }
                 Effect::ShapeAdd { shape } => {
+                    // this design did not work out that well; redesign is needed
                     info!("Shape add {:?}", shape.slot());
                 }
                 Effect::ShapeUpdate { shape_slot, absolute_transform } => {

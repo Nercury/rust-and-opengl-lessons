@@ -19,6 +19,53 @@ impl Element for RustFest {
                 .with_slide(
                     CombinedSlide::new()
                         .with(
+                            TextSlide::new("This experiment contains presentation slides \n\
+                            built in Rust. The code is not that nice or performant, because this \n\
+                            was done in a hurry. The presentation itself is also not that good. \n\
+                            However this experiment was very informative and educational for me, \n\
+                            and also quite cool to have something resembling a finished thing, even \n\
+                            if it is not backed by a very good implementation.")
+                                .centered()
+                                .word_wrap(false)
+                                .size(30.0)
+                        )
+                        .with(
+                            CombinedSlide::new()
+                                .with(
+                                TextSlide::new("Use arrows <- and -> to change the slide")
+                                    .bold(true)
+                                    .centered()
+                                    .size(25.0)
+                                )
+                                .with(
+                                    TextSlide::new("Use arrows [ and ] to change the scale")
+                                        .bold(true)
+                                        .centered()
+                                        .size(25.0)
+                                )
+                                .with(
+                                    TextSlide::new("B to toggle element borders, P to toggle the profiler")
+                                        .bold(true)
+                                        .centered()
+                                        .size(25.0)
+                                )
+                                .with(
+                                    TextSlide::new("T wireframe, C perspective camera, F fullscreen")
+                                        .bold(true)
+                                        .centered()
+                                        .size(25.0)
+                                )
+                                .with(
+                                    TextSlide::new("WASD to move in perspective camera, Right Mouse to look around")
+                                        .bold(true)
+                                        .centered()
+                                        .size(25.0)
+                                )
+                        )
+                )
+                .with_slide(
+                    CombinedSlide::new()
+                        .with(
                             TextSlide::new("")
                                 .size(40.0)
                                 .centered()

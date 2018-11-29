@@ -28,7 +28,7 @@ mod shapes;
 pub use primitives::Primitives;
 pub use tree::{Base, Events, LastResolvedSize, Leaf, Tree};
 pub use fonts::{Fonts, Font, BufferRef, GlyphPosition, HintingOptions};
-pub use shapes::{Shapes, Shape};
+pub use shapes::{Shapes, Shape, ShapeSlot};
 
 fn approx_equal(a: f32, b: f32, decimal_places: u8) -> bool {
     let factor = 10.0f32.powi(decimal_places as i32);
