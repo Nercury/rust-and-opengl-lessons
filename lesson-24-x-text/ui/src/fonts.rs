@@ -228,7 +228,7 @@ pub struct Measurement {
     pub height: f32,
 }
 
-mod shared {
+pub mod shared {
     use crate::na;
     use harfbuzz_rs as hb;
 
@@ -304,13 +304,13 @@ mod shared {
             }
         }
 
-        fn replace(&mut self, font_data: &FontData, text: &str) {
+        pub fn replace(&mut self, font_data: &FontData, text: &str) {
             self.text.clear();
             self.text.push_str(text);
             self.shape(font_data)
         }
 
-        fn shape(&mut self, font_data: &FontData) {
+        pub fn shape(&mut self, font_data: &FontData) {
             let font = &font_data.hb_font;
 
             let mut unicode_buffer = ::std::mem::replace(&mut self.buffer, None).unwrap().clear();

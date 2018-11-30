@@ -21,8 +21,8 @@ extern crate lyon_tessellation;
 mod tree;
 pub mod primitives;
 mod queues;
-mod fonts;
-mod svg;
+pub mod fonts;
+pub mod svg;
 
 pub use crate::primitives::Primitives;
 pub use crate::tree::{Base, Events, LastResolvedSize, Leaf, Tree};

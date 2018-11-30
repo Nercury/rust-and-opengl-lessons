@@ -1,11 +1,9 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use failure;
-
 use crate::*;
 use crate::fonts::*;
-use resources::{ResourcePath, Resources};
+use resources::{Resources};
 
 pub use self::shared::ModificationLogEntry;
 
@@ -179,18 +177,6 @@ pub struct Primitives {
     pub(crate) shared: Rc<RefCell<shared::InnerPrimitives>>,
 }
 
-pub struct Svg {
-    shared: Rc<RefCell<shared::InnerPrimitives>>,
-    slot: shared::PrimitiveSlot,
-    transform: na::Projective3<f32>,
-}
-
-impl Drop for Svg {
-    fn drop(&mut self) {
-        self.shared.borrow_mut().delete_primitive(self.slot);
-    }
-}
-
 impl Primitives {
     pub(crate) fn new(fonts: &Fonts, resources: &Resources, window_scale: f32) -> Primitives {
         Primitives {
@@ -260,7 +246,7 @@ impl Primitives {
     }
 }
 
-mod shared {
+pub mod shared {
     use crate::na;
     use slotmap;
 
@@ -399,7 +385,6 @@ mod shared {
                 .filter_map(|(_, v)| {
                     match v.kind {
                         PrimitiveKind::TextBuffer(ref b) => Some(b),
-                        _ => None,
                     }
                 })
         }
@@ -413,7 +398,6 @@ mod shared {
                     v.invalidated = false;
                     match v.kind {
                         PrimitiveKind::TextBuffer(ref b) => Some(b),
-                        _ => None,
                     }
                 })
         }
@@ -428,7 +412,6 @@ mod shared {
                         v.invalidated = false;
                         match v.kind {
                             PrimitiveKind::TextBuffer(ref b) => Some(b),
-                            _ => None,
                         }
                     } else {
                         None

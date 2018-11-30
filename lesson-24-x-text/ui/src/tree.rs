@@ -371,11 +371,6 @@ mod shared {
         }
     }
 
-    pub enum PivotPoint {
-        Fractional { x: f32, y: f32 },
-        Fixed { x: i32, y: i32 },
-    }
-
     pub struct Child {
         id: Ix,
         translation2d: ResolvedSize,
@@ -998,9 +993,6 @@ mod shared {
             }
         }
     }
-
-    pub struct ElementDummy;
-    impl Element for ElementDummy {}
 
     pub struct NodeBody {
         children: Children,
