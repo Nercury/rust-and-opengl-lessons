@@ -1,4 +1,4 @@
-use camera::TargetCamera;
+use crate::camera::TargetCamera;
 use nalgebra as na;
 use sdl2::event::Event;
 use sdl2::keyboard::Scancode;

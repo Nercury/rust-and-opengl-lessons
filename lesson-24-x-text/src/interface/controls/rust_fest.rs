@@ -1,5 +1,5 @@
 use ui::*;
-use na;
+use crate::na;
 use super::presentation::*;
 
 pub struct RustFest {
@@ -761,7 +761,7 @@ impl CreditsSlide {
     }
 
     fn update_animation(&mut self, delta: f32) {
-        for (i, (text, item)) in self.text_items.iter_mut().enumerate() {
+        for (_i, (text, item)) in self.text_items.iter_mut().enumerate() {
             item.angle += 0.5 * delta;
             let transform = na::Rotation3::from_axis_angle(&na::Unit::new_normalize(na::Vector3::new(1.0, 1.0, 1.0)), item.angle);
             text.set_transform(&(
@@ -824,7 +824,7 @@ impl Element for CreditsSlide {
         }
     }
 
-    fn update(&mut self, base: &mut Base, delta: f32) {
+    fn update(&mut self, _base: &mut Base, delta: f32) {
         self.update_animation(delta);
     }
 }

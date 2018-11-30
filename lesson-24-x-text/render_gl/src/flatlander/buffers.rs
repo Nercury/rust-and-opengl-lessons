@@ -1,7 +1,7 @@
-use na;
-use data;
-use buffer::Buffer;
-use buffer::VertexArray;
+use crate::na;
+use crate::data;
+use crate::buffer::Buffer;
+use crate::buffer::VertexArray;
 
 #[derive(VertexAttribPointers, Copy, Clone, Debug)]
 #[repr(C, packed)]

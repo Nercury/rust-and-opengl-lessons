@@ -11,8 +11,8 @@ pub mod render_gl;
 pub mod resources;
 
 use failure::err_msg;
-use render_gl::data;
-use resources::Resources;
+use crate::render_gl::data;
+use crate::resources::Resources;
 use std::path::Path;
 
 #[derive(VertexAttribPointers, Copy, Clone, Debug)]

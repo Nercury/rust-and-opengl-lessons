@@ -1,9 +1,9 @@
 use gl;
-use na;
+use crate::na;
 use failure;
 use resources::Resources;
-use ColorBuffer;
-use Program;
+use crate::ColorBuffer;
+use crate::Program;
 use std::rc::Rc;
 use std::cell::RefCell;
 

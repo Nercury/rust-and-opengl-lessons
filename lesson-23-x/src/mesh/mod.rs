@@ -1,6 +1,6 @@
 use nalgebra as na;
 use ncollide3d::bounding_volume::aabb::AABB;
-use resources::ResourcePathBuf;
+use crate::resources::ResourcePathBuf;
 
 #[derive(Clone, Debug)]
 pub struct MeshSet {

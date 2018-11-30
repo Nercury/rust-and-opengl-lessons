@@ -1,7 +1,7 @@
-use backend::{Backend, BackendSyncPoint};
+use crate::backend::{Backend, BackendSyncPoint};
 use std::path::{Path, PathBuf};
 use std::{fs, io};
-use {Error, ResourcePath};
+use crate::{Error, ResourcePath};
 
 pub struct FileSystem {
     root_path: PathBuf,

@@ -27,10 +27,10 @@ pub mod system;
 use failure::err_msg;
 use floating_duration::TimeAsFloat;
 use nalgebra as na;
-use resources::Resources;
+use crate::resources::Resources;
 use std::time::{Duration, Instant};
-use system::profiling::alloc_watch::PeekAlloc;
-use system::profiling::gl_watch;
+use crate::system::profiling::alloc_watch::PeekAlloc;
+use crate::system::profiling::gl_watch;
 
 #[global_allocator]
 static GLOBAL: PeekAlloc = PeekAlloc;

@@ -1,6 +1,6 @@
 use failure;
 use gl;
-use resources::{ResourcePath, Resources};
+use crate::resources::{ResourcePath, Resources};
 use std::os::raw;
 
 pub struct TextureLoadOptions<'a> {

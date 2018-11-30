@@ -1,6 +1,6 @@
-use data;
+use crate::data;
 use gl;
-use na;
+use crate::na;
 
 #[derive(VertexAttribPointers, Copy, Clone, Debug)]
 #[repr(C, packed)]
@@ -11,7 +11,7 @@ pub struct LinePoint {
     pub color: data::u2_u10_u10_u10_rev_float,
 }
 
-use buffer::{Buffer, VertexArray};
+use crate::buffer::{Buffer, VertexArray};
 
 pub struct MultiDrawItem {
     pub model_matrix: na::Matrix4<f32>,

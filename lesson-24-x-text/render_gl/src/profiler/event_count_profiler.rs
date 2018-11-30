@@ -1,10 +1,10 @@
 use super::buffers::{Buffers, LinePoint};
 use failure;
 use gl;
-use na;
-use data;
-use ColorBuffer;
-use Program;
+use crate::na;
+use crate::data;
+use crate::ColorBuffer;
+use crate::Program;
 use resources::Resources;
 use std::collections::VecDeque;
 

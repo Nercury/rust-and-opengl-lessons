@@ -1,7 +1,7 @@
-use camera::TargetCamera;
+use crate::camera::TargetCamera;
 use gl;
-use render::WindowSize;
-use render_gl::Viewport;
+use crate::render::WindowSize;
+use crate::render_gl::Viewport;
 use sdl2::event::{Event, WindowEvent};
 use sdl2::video::Window;
 

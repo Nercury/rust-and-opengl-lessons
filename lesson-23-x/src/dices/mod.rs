@@ -1,9 +1,9 @@
 use failure;
 use gl;
 use nalgebra as na;
-use render_gl::{self, DebugLines};
-use resources::Resources;
-use selection::{self, SelectableAABB, Selectables};
+use crate::render_gl::{self, DebugLines};
+use crate::resources::Resources;
+use crate::selection::{self, SelectableAABB, Selectables};
 
 mod buffers;
 mod dice_material;

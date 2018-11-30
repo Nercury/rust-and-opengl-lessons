@@ -1,6 +1,6 @@
 use int_hash::IntHashMap;
 use slotmap;
-use na;
+use crate::na;
 use super::{FlatlanderVertex, FlatlanderGroupDrawData, DrawIndirectCmd, FlatlandItem};
 
 #[derive(Copy, Clone)]

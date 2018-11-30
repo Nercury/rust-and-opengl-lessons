@@ -1,10 +1,10 @@
 use failure;
 use gl;
-use na;
-use render_gl::data;
-use render_gl::ColorBuffer;
-use render_gl::{DebugLines, RectMarker};
-use render_gl::{Flatlander, Alphabet, FlatlanderVertex, FlatlandGroup, FlatlandItem};
+use crate::na;
+use crate::render_gl::data;
+use crate::render_gl::ColorBuffer;
+use crate::render_gl::{DebugLines, RectMarker};
+use crate::render_gl::{Flatlander, Alphabet, FlatlanderVertex, FlatlandGroup, FlatlandItem};
 use resources;
 use std::collections;
 use int_hash::IntHashSet;
@@ -245,7 +245,7 @@ impl Interface {
                     // this design did not work out that well; redesign is needed
                     info!("Shape add {:?}", shape.slot());
                 }
-                Effect::ShapeUpdate { shape_slot, absolute_transform } => {
+                Effect::ShapeUpdate { shape_slot, absolute_transform: _ } => {
                     info!("Shape update {:?}", shape_slot);
                 }
                 Effect::ShapeRemove { shape_slot } => {

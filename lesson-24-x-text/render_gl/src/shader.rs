@@ -1,5 +1,5 @@
 use gl;
-use na;
+use crate::na;
 use resources::{self, Resource, Resources};
 use std;
 use std::ffi::{CStr, CString};

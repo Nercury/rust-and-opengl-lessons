@@ -1,5 +1,5 @@
-use backend::{Backend, BackendSyncPoint};
-use path::{ResourcePath, ResourcePathBuf};
+use crate::backend::{Backend, BackendSyncPoint};
+use crate::path::{ResourcePath, ResourcePathBuf};
 use slab::Slab;
 use std::collections::BTreeMap;
 use std::collections::HashMap;

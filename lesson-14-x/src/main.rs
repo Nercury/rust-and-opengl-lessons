@@ -14,7 +14,7 @@ pub mod resources;
 
 use failure::err_msg;
 use nalgebra as na;
-use resources::Resources;
+use crate::resources::Resources;
 use std::path::Path;
 
 fn main() {

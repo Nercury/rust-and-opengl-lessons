@@ -1,9 +1,9 @@
 extern crate miniz_oxide as miniz;
 
-use backend::{Backend, BackendSyncPoint};
+use crate::backend::{Backend, BackendSyncPoint};
 use failure;
 use std::io;
-use {Error, ResourcePath, ResourcePathBuf};
+use crate::{Error, ResourcePath, ResourcePathBuf};
 
 #[derive(Debug)]
 pub struct Miniz<T>
@@ -76,7 +76,7 @@ fn write_error(miniz_error: self::miniz::inflate::TINFLStatus) -> Error {
 
 #[cfg(test)]
 mod test {
-    use backend::{Backend, InMemory, Miniz};
+    use crate::backend::{Backend, InMemory, Miniz};
 
     #[test]
     fn test_can_write_and_read() {

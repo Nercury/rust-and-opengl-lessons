@@ -1,5 +1,5 @@
-use mesh;
-use resources::{ResourcePath, ResourcePathBuf};
+use crate::mesh;
+use crate::resources::{ResourcePath, ResourcePathBuf};
 use std::path::Path;
 use tobj;
 

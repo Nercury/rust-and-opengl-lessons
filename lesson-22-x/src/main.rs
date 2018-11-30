@@ -26,7 +26,7 @@ mod system;
 use failure::err_msg;
 use floating_duration::TimeAsFloat;
 use nalgebra as na;
-use resources::Resources;
+use crate::resources::Resources;
 use std::time::Instant;
 
 fn main() {

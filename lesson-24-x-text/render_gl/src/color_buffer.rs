@@ -1,5 +1,5 @@
 use gl;
-use na;
+use crate::na;
 
 pub struct ColorBuffer;
 

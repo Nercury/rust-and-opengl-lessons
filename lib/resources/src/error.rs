@@ -1,6 +1,6 @@
 use failure;
 use std::io;
-use ResourcePathBuf;
+use crate::ResourcePathBuf;
 
 #[derive(Debug, Fail)]
 pub enum Error {

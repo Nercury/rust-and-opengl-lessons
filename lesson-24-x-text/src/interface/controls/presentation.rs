@@ -1,5 +1,5 @@
 use ui::*;
-use na;
+use crate::na;
 
 pub struct CombinedSlide {
     items: Vec<Box<Element>>,

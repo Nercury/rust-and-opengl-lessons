@@ -2,11 +2,11 @@ use failure;
 use gl;
 use nalgebra as na;
 use ncollide3d;
-use render_gl::buffer;
-use render_gl::data;
-use render_gl::ColorBuffer;
-use render_gl::Program;
-use resources::Resources;
+use crate::render_gl::buffer;
+use crate::render_gl::data;
+use crate::render_gl::ColorBuffer;
+use crate::render_gl::Program;
+use crate::resources::Resources;
 
 use std::cell::RefCell;
 use std::rc::Rc;

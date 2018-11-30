@@ -1,6 +1,6 @@
 use gl;
 use nalgebra as na;
-use render_gl::data;
+use crate::render_gl::data;
 
 #[derive(VertexAttribPointers, Copy, Clone, Debug)]
 #[repr(C, packed)]
@@ -11,7 +11,7 @@ pub struct LinePoint {
     pub color: data::u2_u10_u10_u10_rev_float,
 }
 
-use render_gl::buffer::{Buffer, VertexArray};
+use crate::render_gl::buffer::{Buffer, VertexArray};
 
 pub struct MultiDrawItem {
     pub model_matrix: na::Matrix4<f32>,

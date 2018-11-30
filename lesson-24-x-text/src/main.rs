@@ -23,10 +23,10 @@ pub mod system;
 
 use failure::err_msg;
 use floating_duration::TimeAsFloat;
-use interface::Interface;
+use crate::interface::Interface;
 use std::time::{Duration, Instant};
-use profiling::alloc;
-use profiling::gl_calls;
+use crate::profiling::alloc;
+use crate::profiling::gl_calls;
 
 fn main() {
     let mut builder = env_logger::Builder::new();

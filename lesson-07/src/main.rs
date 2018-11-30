@@ -4,7 +4,7 @@ extern crate sdl2;
 pub mod render_gl;
 pub mod resources;
 
-use resources::Resources;
+use crate::resources::Resources;
 use std::path::Path;
 
 fn main() {

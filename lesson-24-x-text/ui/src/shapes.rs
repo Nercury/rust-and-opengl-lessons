@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::fmt;
-use na;
+use crate::na;
 pub use self::shared::ShapeSlot;
 
 #[derive(Clone)]
@@ -73,10 +73,10 @@ impl Drop for Shape {
 }
 
 mod shared {
-    use na;
+    use crate::na;
     use slotmap;
     use lyon_path::PathEvent;
-    use svg;
+    use crate::svg;
     use usvg;
     use usvg::Color;
 
@@ -163,7 +163,7 @@ mod shared {
                 c: NAN, d: NAN,
                 e: NAN, f: NAN,
             };
-            let view_box = rtree.svg_node().view_box;
+            let _view_box = rtree.svg_node().view_box;
 
             for node in rtree.root().descendants() {
                 use usvg::NodeExt;
@@ -199,7 +199,7 @@ mod shared {
                     }
 
                     if let Some(ref stroke) = p.stroke {
-                        let (stroke_color, stroke_opts) = svg::convert_stroke(stroke, &FALLBACK_COLOR);
+                        let (stroke_color, _stroke_opts) = svg::convert_stroke(stroke, &FALLBACK_COLOR);
                         items.push(ShapeItem {
                             entries: svg::convert_path(p).path_iter().collect(),
                             shape_type: ShapeType::Stroke,

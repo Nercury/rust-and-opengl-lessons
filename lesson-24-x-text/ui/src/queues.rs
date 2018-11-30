@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 use std::collections::VecDeque;
-use *;
+use crate::*;
 
 pub struct Queues {
     next_queue_id: Ix,

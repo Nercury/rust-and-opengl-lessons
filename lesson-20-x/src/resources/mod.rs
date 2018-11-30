@@ -1,5 +1,5 @@
 use image;
-use mesh;
+use crate::mesh;
 use std::ffi;
 use std::fs;
 use std::io::Read;

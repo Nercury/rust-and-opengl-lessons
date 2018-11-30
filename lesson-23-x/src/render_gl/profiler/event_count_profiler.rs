@@ -2,10 +2,10 @@ use super::buffers::{Buffers, LinePoint};
 use failure;
 use gl;
 use nalgebra as na;
-use render_gl::data;
-use render_gl::ColorBuffer;
-use render_gl::Program;
-use resources::Resources;
+use crate::render_gl::data;
+use crate::render_gl::ColorBuffer;
+use crate::render_gl::Program;
+use crate::resources::Resources;
 use std::collections::VecDeque;
 
 const FRAME_DATA_CAPACITY: usize = 5;

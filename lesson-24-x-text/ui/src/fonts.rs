@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
-use na;
+use crate::na;
 pub use font_kit::family_name::FamilyName;
 pub use font_kit::properties::{Properties, Weight, Style, Stretch};
 pub use font_kit::hinting::HintingOptions;
@@ -229,7 +229,7 @@ pub struct Measurement {
 }
 
 mod shared {
-    use na;
+    use crate::na;
     use harfbuzz_rs as hb;
 
     use slab::Slab;

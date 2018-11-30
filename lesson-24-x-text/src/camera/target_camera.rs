@@ -1,5 +1,5 @@
 use super::WasdMovement;
-use na;
+use crate::na;
 
 pub struct TargetCamera {
     pub target: na::Point3<f32>,

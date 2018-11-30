@@ -3,17 +3,17 @@ use std::cell::RefCell;
 use std::marker::PhantomData;
 use resources::Resources;
 use std::rc::Rc;
-use *;
+use crate::*;
 
 mod shared {
-    use na;
+    use crate::na;
     use std::collections::{BTreeMap, BTreeSet, VecDeque};
     use resources::Resources;
-    use queues::*;
-    use fonts::Fonts;
+    use crate::queues::*;
+    use crate::fonts::Fonts;
     use std::cell::RefCell;
     use std::rc::Rc;
-    use *;
+    use crate::*;
 
     struct LayoutingOptions {
         force_equal_child_size: bool,

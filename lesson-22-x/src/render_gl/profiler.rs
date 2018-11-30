@@ -2,11 +2,11 @@ use failure;
 use floating_duration::TimeAsFloat;
 use gl;
 use nalgebra as na;
-use render_gl::buffer::{Buffer, VertexArray};
-use render_gl::data;
-use render_gl::ColorBuffer;
-use render_gl::Program;
-use resources::Resources;
+use crate::render_gl::buffer::{Buffer, VertexArray};
+use crate::render_gl::data;
+use crate::render_gl::ColorBuffer;
+use crate::render_gl::Program;
+use crate::resources::Resources;
 use std::collections::VecDeque;
 use std::time::Instant;
 

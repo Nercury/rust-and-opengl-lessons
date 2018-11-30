@@ -1,5 +1,5 @@
 use super::buffers::LinePoint;
-use na;
+use crate::na;
 use std::collections::BTreeMap;
 
 pub struct Container {

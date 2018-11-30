@@ -1,4 +1,4 @@
-use na::Vector3;
+use crate::na::Vector3;
 
 pub fn color_red() -> Vector3<f32> {
     Vector3::<f32>::new(1.0, 0.0, 0.0)

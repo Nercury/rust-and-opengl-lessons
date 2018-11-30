@@ -1,10 +1,10 @@
-use backend::{Backend, BackendSyncPoint};
+use crate::backend::{Backend, BackendSyncPoint};
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::io;
 use std::sync::{Arc, RwLock};
 use twox_hash::XxHash;
-use {Error, ResourcePath, ResourcePathBuf};
+use crate::{Error, ResourcePath, ResourcePathBuf};
 
 #[derive(Debug)]
 struct Shared {

@@ -1,11 +1,11 @@
-use data;
+use crate::data;
 use failure;
 use gl;
-use na;
+use crate::na;
 use ncollide3d;
 use resources::Resources;
-use ColorBuffer;
-use Program;
+use crate::ColorBuffer;
+use crate::Program;
 
 use std::cell::RefCell;
 use std::rc::Rc;

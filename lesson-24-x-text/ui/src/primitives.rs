@@ -3,8 +3,8 @@ use std::rc::Rc;
 
 use failure;
 
-use *;
-use fonts::*;
+use crate::*;
+use crate::fonts::*;
 use resources::{ResourcePath, Resources};
 
 pub use self::shared::ModificationLogEntry;
@@ -288,12 +288,12 @@ impl Primitives {
 }
 
 mod shared {
-    use na;
+    use crate::na;
     use slotmap;
     use usvg;
 
-    use fonts::*;
-    use shapes::{Shape, Shapes, ShapeSlot};
+    use crate::fonts::*;
+    use crate::shapes::{Shape, Shapes, ShapeSlot};
 
     new_key_type! { pub struct PrimitiveSlot; }
 

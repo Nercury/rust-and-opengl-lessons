@@ -1,5 +1,5 @@
 use nalgebra as na;
-use resources::ResourcePathBuf;
+use crate::resources::ResourcePathBuf;
 
 #[derive(Clone, Debug)]
 pub struct MeshSet {

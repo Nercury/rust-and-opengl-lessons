@@ -1,4 +1,4 @@
-use na;
+use crate::na;
 
 pub struct WasdMovement {
     pub left: bool,

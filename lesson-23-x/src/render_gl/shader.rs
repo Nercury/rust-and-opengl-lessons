@@ -1,6 +1,6 @@
 use gl;
 use nalgebra as na;
-use resources::{self, Resources};
+use crate::resources::{self, Resources};
 use std;
 use std::ffi::{CStr, CString};
 

@@ -1,6 +1,6 @@
 use gl;
-use buffer::{Buffer, VertexArray};
-use data;
+use crate::buffer::{Buffer, VertexArray};
+use crate::data;
 
 #[derive(VertexAttribPointers, Copy, Clone, Debug)]
 #[repr(C, packed)]

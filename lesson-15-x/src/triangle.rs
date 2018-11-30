@@ -1,8 +1,8 @@
 use failure;
 use gl;
 use nalgebra as na;
-use render_gl::{self, buffer, data};
-use resources::Resources;
+use crate::render_gl::{self, buffer, data};
+use crate::resources::Resources;
 
 #[derive(VertexAttribPointers, Copy, Clone, Debug)]
 #[repr(C, packed)]

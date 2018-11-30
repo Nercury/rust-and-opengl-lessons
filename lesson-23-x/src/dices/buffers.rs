@@ -1,7 +1,7 @@
 use gl;
-use mesh;
-use render_gl::buffer::{Buffer, VertexArray};
-use render_gl::data;
+use crate::mesh;
+use crate::render_gl::buffer::{Buffer, VertexArray};
+use crate::render_gl::data;
 
 #[derive(VertexAttribPointers, Copy, Clone, Debug)]
 #[repr(C, packed)]

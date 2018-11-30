@@ -7,7 +7,7 @@ pub mod render_gl;
 pub mod resources;
 
 use failure::err_msg;
-use resources::Resources;
+use crate::resources::Resources;
 use std::path::Path;
 
 fn main() {

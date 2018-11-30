@@ -1,5 +1,5 @@
-use camera::TargetCamera;
-use na;
+use crate::camera::TargetCamera;
+use crate::na;
 use sdl2::event::Event;
 use sdl2::keyboard::Scancode;
 

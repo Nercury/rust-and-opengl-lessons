@@ -1,5 +1,5 @@
 use nalgebra as na;
-use render_gl;
+use crate::render_gl;
 
 pub struct Material {
     texture_location: Option<i32>,

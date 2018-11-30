@@ -1,11 +1,11 @@
-use camera::TargetCamera;
+use crate::camera::TargetCamera;
 use nalgebra as na;
 use ncollide3d;
-use render::WindowSize;
+use crate::render::WindowSize;
 use sdl2::event::Event;
 use sdl2::keyboard::Scancode;
 use sdl2::mouse::MouseButton;
-use selection::Selectables;
+use crate::selection::Selectables;
 
 pub fn handle_selectable_events(
     event: &Event,

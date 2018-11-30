@@ -1,11 +1,11 @@
 use failure;
 use gl;
-use mesh;
+use crate::mesh;
 use nalgebra as na;
 use ncollide3d::bounding_volume::aabb::AABB;
-use render_gl::{self, buffer, data, DebugLines};
-use resources::Resources;
-use selection::{self, SelectableAABB, Selectables};
+use crate::render_gl::{self, buffer, data, DebugLines};
+use crate::resources::Resources;
+use crate::selection::{self, SelectableAABB, Selectables};
 
 #[derive(VertexAttribPointers, Copy, Clone, Debug)]
 #[repr(C, packed)]

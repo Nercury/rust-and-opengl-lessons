@@ -1,5 +1,5 @@
-use render_gl::{AabbMarker, DebugLines};
-use selection::Selectables;
+use crate::render_gl::{AabbMarker, DebugLines};
+use crate::selection::Selectables;
 
 pub struct RenderSelectables {
     hover: Option<AabbMarker>,

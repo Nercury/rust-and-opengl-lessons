@@ -1,6 +1,6 @@
 use slab::Slab;
 use std::time::Instant;
-use {ResourcePath, ResourcePathBuf};
+use crate::{ResourcePath, ResourcePathBuf};
 
 /// Information about the latest resource update.
 ///
