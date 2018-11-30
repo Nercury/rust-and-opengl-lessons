@@ -1,4 +1,16 @@
 use failure;
+use env_logger;
+
+pub fn init_logging() {
+    let mut builder = env_logger::Builder::new();
+    builder.filter(None, log::LevelFilter::Trace);
+    builder.default_format_module_path(true);
+    builder.default_format_level(true);
+    if ::std::env::var("RUST_LOG").is_ok() {
+        builder.parse(&::std::env::var("RUST_LOG").unwrap());
+    }
+    builder.init();
+}
 
 pub fn failure_to_string(e: failure::Error) -> String {
     use std::fmt::Write;
