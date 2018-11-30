@@ -1,5 +1,7 @@
 # rust-and-opengl-lessons
 
+__Project requires Rust 1.31__
+
 Collection of example code for learning OpenGL in Rust
 
 - 00 - [Setup](http://nercury.github.io/rust/opengl/tutorial/2018/02/08/opengl-in-rust-from-scratch-00-setup.html)
