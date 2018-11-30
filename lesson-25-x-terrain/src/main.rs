@@ -1,4 +1,5 @@
 use env_logger;
+use log::*;
 use failure;
 
 mod debug;
@@ -14,11 +15,11 @@ fn main() {
     builder.init();
 
     if let Err(e) = run() {
-        println!("{}", debug::failure_to_string(e));
+        error!("{}", debug::failure_to_string(e));
     }
 }
 
 fn run() -> Result<(), failure::Error> {
-    println!("hello");
+    info!("hello");
     Ok(())
 }
