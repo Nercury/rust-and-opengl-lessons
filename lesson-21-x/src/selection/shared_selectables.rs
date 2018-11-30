@@ -128,7 +128,7 @@ impl SharedSelectables {
             }) => {
                 let plane = Plane::new(na::Unit::new_normalize(-camera_dir));
                 let plane_isometry = na::Isometry3::from_parts(
-                    na::Translation3::from_vector(point.coords),
+                    na::Translation3::from(point.coords),
                     na::UnitQuaternion::identity(),
                 );
                 if let Some(toi) = plane.toi_with_ray(&plane_isometry, ray, true) {
@@ -139,7 +139,7 @@ impl SharedSelectables {
                             handle: handle,
                             action: Action::Drag {
                                 new_isometry: na::Isometry3::from_parts(
-                                    na::Translation3::from_vector(drag_vector),
+                                    na::Translation3::from(drag_vector),
                                     na::UnitQuaternion::identity(),
                                 ) * initial_isometry,
                             },

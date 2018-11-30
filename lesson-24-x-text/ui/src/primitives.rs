@@ -175,14 +175,12 @@ impl Drop for Text {
 #[derive(Clone)]
 pub struct Primitives {
     fonts: Fonts,
-    shapes: Shapes,
     resources: Resources,
     pub(crate) shared: Rc<RefCell<shared::InnerPrimitives>>,
 }
 
 pub struct Svg {
     shared: Rc<RefCell<shared::InnerPrimitives>>,
-    shape: Shape,
     slot: shared::PrimitiveSlot,
     transform: na::Projective3<f32>,
 }
@@ -194,37 +192,12 @@ impl Drop for Svg {
 }
 
 impl Primitives {
-    pub(crate) fn new(fonts: &Fonts, shapes: &Shapes, resources: &Resources, window_scale: f32) -> Primitives {
+    pub(crate) fn new(fonts: &Fonts, resources: &Resources, window_scale: f32) -> Primitives {
         Primitives {
             fonts: fonts.clone(),
-            shapes: shapes.clone(),
             resources: resources.clone(),
             shared: Rc::new(RefCell::new(shared::InnerPrimitives::new(window_scale))),
         }
-    }
-
-    pub fn svg<P: AsRef<ResourcePath>>(&mut self, path: P) -> Result<Svg, failure::Error> {
-        let opt = usvg::Options::default();
-        let tree = usvg::Tree::from_str(
-            String::from_utf8_lossy(&self.resources.resource(path).get()?).as_ref(),
-            &opt,
-        )?;
-
-        let (slot, shape) = {
-            let mut shared = self.shared.borrow_mut();
-            shared.create_svg_primitive(
-                &self.shapes,
-                &tree,
-                Some(na::convert::<_, na::Projective3<_>>(na::Similarity3::new(na::zero(), na::zero(), 1.0))),
-            )
-        };
-
-        Ok(Svg {
-            shared: self.shared.clone(),
-            shape,
-            slot,
-            transform: na::Projective3::<f32>::identity(),
-        })
     }
 
     pub fn text<P: ToString>(&mut self, text: P, bold: bool, italic: bool, monospaced: bool, color: na::Vector4<u8>) -> Option<Text> {
@@ -290,10 +263,8 @@ impl Primitives {
 mod shared {
     use crate::na;
     use slotmap;
-    use usvg;
 
     use crate::fonts::*;
-    use crate::shapes::{Shape, Shapes, ShapeSlot};
 
     new_key_type! { pub struct PrimitiveSlot; }
 
@@ -312,9 +283,6 @@ mod shared {
                 PrimitiveKind::TextBuffer(ref mut b) => b.set_transform(
                     self.outer_transform.map(|transform| PrimitiveSlotData::calc_transform(&transform, window_scale))
                 ),
-                PrimitiveKind::SvgPath(ref mut p) => p.set_transform(
-                    self.outer_transform.map(|transform| PrimitiveSlotData::calc_transform(&transform, window_scale))
-                ),
             }
         }
 
@@ -327,14 +295,11 @@ mod shared {
 
     pub enum PrimitiveKind {
         TextBuffer(Buffer),
-        SvgPath(Shape),
     }
 
     pub enum ModificationLogEntry {
         Added { buffer: Buffer },
         Removed { buffer_id: usize },
-        AddedShape { shape: Shape },
-        RemovedShape { shape_slot: ShapeSlot },
     }
 
     pub struct InnerPrimitives {
@@ -383,26 +348,6 @@ mod shared {
             }
         }
 
-        pub fn create_svg_primitive(&mut self, shapes: &Shapes, rtree: &usvg::Tree, transform: Option<na::Projective3<f32>>) -> (PrimitiveSlot, Shape) {
-            let shape = shapes.create_from_svg(
-                rtree,
-                transform.map(|t| PrimitiveSlotData::calc_transform(&t, self.window_scale)));
-
-            let data = PrimitiveSlotData {
-                invalidated: true,
-                kind: PrimitiveKind::SvgPath(shape.clone()),
-                outer_transform: transform,
-            };
-
-            let slot = self.primitive_slots.insert(PrimitiveSlotKeyData {});
-            self.modification_log.push(ModificationLogEntry::AddedShape { shape: shape.clone() });
-
-            self.primitive_data.insert(slot, data);
-            self.invalidated = true;
-
-            (slot, shape)
-        }
-
         pub fn create_text_buffer<P: ToString>(&mut self, font: &Font, text: P, font_transform: Option<na::Projective3<f32>>, color: na::Vector4<u8>) -> (PrimitiveSlot, Buffer) {
             let buffer = font.create_buffer(
                 text,
@@ -431,9 +376,6 @@ mod shared {
                     PrimitiveKind::TextBuffer(b) => {
                         self.modification_log.push(ModificationLogEntry::Removed { buffer_id: b.id() });
                     }
-                    PrimitiveKind::SvgPath(s) => {
-                        self.modification_log.push(ModificationLogEntry::RemovedShape { shape_slot: s.slot() });
-                    }
                 };
             }
 
@@ -451,37 +393,12 @@ mod shared {
             self.modification_log.drain(..)
         }
 
-        pub(crate) fn shapes_keep_invalidated<'r>(&'r mut self) -> impl Iterator<Item=&'r Shape> + 'r {
-            self.primitive_data
-                .iter_mut()
-                .filter_map(|(_, v)| {
-                    match v.kind {
-                        PrimitiveKind::SvgPath(ref s) => Some(s),
-                        _ => None,
-                    }
-                })
-        }
-
         pub(crate) fn buffers_keep_invalidated<'r>(&'r mut self) -> impl Iterator<Item=&'r Buffer> + 'r {
             self.primitive_data
                 .iter_mut()
                 .filter_map(|(_, v)| {
                     match v.kind {
                         PrimitiveKind::TextBuffer(ref b) => Some(b),
-                        _ => None,
-                    }
-                })
-        }
-
-        pub(crate) fn shapes<'r>(&'r mut self) -> impl Iterator<Item=&'r Shape> + 'r {
-            self.invalidated = false;
-
-            self.primitive_data
-                .iter_mut()
-                .filter_map(|(_, v)| {
-                    v.invalidated = false;
-                    match v.kind {
-                        PrimitiveKind::SvgPath(ref s) => Some(s),
                         _ => None,
                     }
                 })
@@ -497,24 +414,6 @@ mod shared {
                     match v.kind {
                         PrimitiveKind::TextBuffer(ref b) => Some(b),
                         _ => None,
-                    }
-                })
-        }
-
-        pub(crate) fn only_invalidated_shapes<'r>(&'r mut self) -> impl Iterator<Item=&'r Shape> + 'r {
-            self.invalidated = false;
-
-            self.primitive_data
-                .iter_mut()
-                .filter_map(|(_, v)| {
-                    if v.invalidated {
-                        v.invalidated = false;
-                        match v.kind {
-                            PrimitiveKind::SvgPath(ref s) => Some(s),
-                            _ => None,
-                        }
-                    } else {
-                        None
                     }
                 })
         }

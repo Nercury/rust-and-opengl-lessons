@@ -11,7 +11,7 @@ use int_hash::IntHashSet;
 use int_hash::IntHashMap;
 use ui::*;
 
-mod controls;
+pub mod controls;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 enum ControlId {
@@ -240,16 +240,6 @@ impl Interface {
                     if let None = self.controls.remove(&ControlId::Text(buffer_id)) {
                         warn!("tried to remove nonexisting flatland group {}", buffer_id);
                     }
-                }
-                Effect::ShapeAdd { shape } => {
-                    // this design did not work out that well; redesign is needed
-                    info!("Shape add {:?}", shape.slot());
-                }
-                Effect::ShapeUpdate { shape_slot, absolute_transform: _ } => {
-                    info!("Shape update {:?}", shape_slot);
-                }
-                Effect::ShapeRemove { shape_slot } => {
-                    info!("Shape remove {:?}", shape_slot);
                 }
             }
         }

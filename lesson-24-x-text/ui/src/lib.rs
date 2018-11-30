@@ -23,12 +23,10 @@ pub mod primitives;
 mod queues;
 mod fonts;
 mod svg;
-mod shapes;
 
 pub use crate::primitives::Primitives;
 pub use crate::tree::{Base, Events, LastResolvedSize, Leaf, Tree};
 pub use crate::fonts::{Fonts, Font, BufferRef, GlyphPosition, HintingOptions};
-pub use crate::shapes::{Shapes, Shape, ShapeSlot};
 
 fn approx_equal(a: f32, b: f32, decimal_places: u8) -> bool {
     let factor = 10.0f32.powi(decimal_places as i32);
@@ -114,16 +112,6 @@ pub enum Effect {
     },
     TextRemove {
         buffer_id: usize,
-    },
-    ShapeAdd {
-        shape: Shape,
-    },
-    ShapeUpdate {
-        shape_slot: shapes::ShapeSlot,
-        absolute_transform: Option<na::Projective3<f32>>,
-    },
-    ShapeRemove {
-        shape_slot: shapes::ShapeSlot,
     },
 }
 

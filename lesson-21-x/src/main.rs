@@ -80,7 +80,7 @@ fn run() -> Result<(), failure::Error> {
         for y in -3..3 {
             let mut dice = dice::Dice::new(&res, &gl, &debug_lines, &selectables)?;
             dice.set_transform(na::Isometry3::from_parts(
-                na::Translation3::from_vector([4.0 * x as f32, 4.0 * y as f32, 0.0].into()),
+                na::Translation3::from(na::Vector3::new(4.0 * x as f32, 4.0 * y as f32, 0.0)),
                 na::UnitQuaternion::identity(),
             ));
             dices.push(dice);

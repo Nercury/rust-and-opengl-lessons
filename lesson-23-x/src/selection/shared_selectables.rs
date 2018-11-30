@@ -137,7 +137,7 @@ impl SharedSelectables {
                 let plane = Plane::new(na::Unit::new_normalize(-camera_dir));
                 let movement_difference = camera_target_pos - drag_start_camera_target_pos;
                 let plane_isometry = na::Isometry3::from_parts(
-                    na::Translation3::from_vector(drag_start_point.coords + movement_difference),
+                    na::Translation3::from(drag_start_point.coords + movement_difference),
                     na::UnitQuaternion::identity(),
                 );
                 if let Some(toi) = plane.toi_with_ray(&plane_isometry, ray, true) {
@@ -145,17 +145,17 @@ impl SharedSelectables {
                     let drag_vector = dragged_to_point_on_plane - drag_start_point;
                     if na::norm_squared(&drag_vector) > DRAG_SNAP_DISTANCE * DRAG_SNAP_DISTANCE {
                         self.query = Some(PendingAction {
-                            handle: handle,
+                            handle,
                             action: Action::Drag {
                                 new_isometry: na::Isometry3::from_parts(
-                                    na::Translation3::from_vector(drag_vector),
+                                    na::Translation3::from(drag_vector),
                                     na::UnitQuaternion::identity(),
                                 ) * initial_isometry,
                             },
                         });
                     } else {
                         self.query = Some(PendingAction {
-                            handle: handle,
+                            handle,
                             action: Action::Drag {
                                 new_isometry: initial_isometry,
                             },

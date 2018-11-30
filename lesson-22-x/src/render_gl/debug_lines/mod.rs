@@ -166,7 +166,7 @@ impl DebugLines {
 
         let new_id = self.containers.borrow_mut().new_container(
             na::Isometry3::from_parts(
-                na::Translation3::from_vector(pos.coords),
+                na::Translation3::from(pos.coords),
                 na::UnitQuaternion::identity(),
             ),
             vec![
@@ -213,7 +213,7 @@ impl DebugLines {
 
         let new_id = self.containers.borrow_mut().new_container(
             na::Isometry3::from_parts(
-                na::Translation3::from_vector(pos.coords),
+                na::Translation3::from(pos.coords),
                 na::UnitQuaternion::identity(),
             ),
             vec![
@@ -523,7 +523,7 @@ impl PointMarker {
     pub fn update_position(&self, pos: na::Point3<f32>) {
         if let Some(data) = self.containers.borrow_mut().get_container_mut(self.id) {
             data.isometry = na::Isometry3::from_parts(
-                na::Translation3::from_vector(pos.coords),
+                na::Translation3::from(pos.coords),
                 na::UnitQuaternion::identity(),
             );
         }

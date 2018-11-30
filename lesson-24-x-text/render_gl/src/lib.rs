@@ -11,7 +11,7 @@ extern crate floating_duration;
 extern crate lyon_tessellation;
 extern crate lyon_path;
 extern crate int_hash;
-#[macro_use] extern crate log;
+extern crate log;
 #[macro_use] extern crate slotmap;
 #[macro_use] extern crate failure;
 #[macro_use] extern crate lesson_24_x_render_gl_derive as render_gl_derive;

@@ -308,7 +308,7 @@ mod shared {
         pub fn primitives(&mut self) -> &mut Primitives {
             if self.children.primitives.is_none() {
                 let window_scale = self.window_scale;
-                let primitives = Primitives::new(self.container.fonts(), self.container.shapes(), &self.container._resources, window_scale);
+                let primitives = Primitives::new(self.container.fonts(), &self.container._resources, window_scale);
                 self.children.primitives = Some(primitives.clone());
             }
 
@@ -446,16 +446,6 @@ mod shared {
                                 buffer_id
                             });
                         }
-                        primitives::ModificationLogEntry::AddedShape { shape } => {
-                            queues.send(Effect::ShapeAdd {
-                                shape
-                            });
-                        }
-                        primitives::ModificationLogEntry::RemovedShape { shape_slot } => {
-                            queues.send(Effect::ShapeRemove {
-                                shape_slot
-                            });
-                        }
                     }
                 }
 
@@ -464,13 +454,6 @@ mod shared {
                         buffer_id: buffer.id(),
                         absolute_transform: None,
                         color: [0, 0, 0, 255].into(),
-                    });
-                }
-
-                for shape in shared.shapes_keep_invalidated() {
-                    queues.send(Effect::ShapeUpdate {
-                        shape_slot: shape.slot(),
-                        absolute_transform: None,
                     });
                 }
             }
@@ -492,16 +475,6 @@ mod shared {
                                 buffer_id
                             });
                         }
-                        primitives::ModificationLogEntry::AddedShape { shape } => {
-                            queues.send(Effect::ShapeAdd {
-                                shape
-                            });
-                        }
-                        primitives::ModificationLogEntry::RemovedShape { shape_slot } => {
-                            queues.send(Effect::ShapeRemove {
-                                shape_slot
-                            });
-                        }
                     }
                 }
 
@@ -510,13 +483,6 @@ mod shared {
                         buffer_id: buffer.id(),
                         absolute_transform: buffer.absolute_transform(absolute_transform),
                         color: buffer.color(),
-                    });
-                }
-
-                for shape in shared.shapes() {
-                    queues.send(Effect::ShapeUpdate {
-                        shape_slot: shape.slot(),
-                        absolute_transform: shape.absolute_transform(absolute_transform),
                     });
                 }
             }
@@ -538,16 +504,6 @@ mod shared {
                                 buffer_id
                             });
                         }
-                        primitives::ModificationLogEntry::AddedShape { shape } => {
-                            queues.send(Effect::ShapeAdd {
-                                shape
-                            });
-                        }
-                        primitives::ModificationLogEntry::RemovedShape { shape_slot } => {
-                            queues.send(Effect::ShapeRemove {
-                                shape_slot
-                            });
-                        }
                     }
                 }
 
@@ -556,13 +512,6 @@ mod shared {
                         buffer_id: buffer.id(),
                         absolute_transform: buffer.absolute_transform(absolute_transform),
                         color: buffer.color(),
-                    });
-                }
-
-                for shape in shared.only_invalidated_shapes() {
-                    queues.send(Effect::ShapeUpdate {
-                        shape_slot: shape.slot(),
-                        absolute_transform: shape.absolute_transform(absolute_transform),
                     });
                 }
             }
@@ -577,7 +526,6 @@ mod shared {
     pub struct Container {
         queues: Rc<RefCell<Queues>>,
         _fonts: Fonts,
-        _shapes: Shapes,
         _resources: Resources,
 
         next_id: Ix,
@@ -596,7 +544,6 @@ mod shared {
             Container {
                 queues: Rc::new(RefCell::new(Queues::new())),
                 _fonts: Fonts::new(),
-                _shapes: Shapes::new(),
                 _resources: resources.clone(),
 
                 next_id: Ix(0),
@@ -614,11 +561,6 @@ mod shared {
         #[inline(always)]
         pub fn fonts(&self) -> &Fonts {
             &self._fonts
-        }
-
-        #[inline(always)]
-        pub fn shapes(&self) -> &Shapes {
-            &self._shapes
         }
 
         #[inline(always)]

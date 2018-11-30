@@ -38,9 +38,9 @@ impl TargetCamera {
 
     /// Calculate position of camera from a view matrix.
     pub fn project_pos(&self) -> na::Point3<f32> {
-        na::Translation3::<f32>::from_vector(self.target.coords)
+        na::Translation3::<f32>::from(self.target.coords)
             * self.rotation
-            * na::Translation3::<f32>::from_vector(na::Vector3::z() * self.distance)
+            * na::Translation3::<f32>::from(na::Vector3::z() * self.distance)
             * na::Point3::<f32>::origin()
     }
 
@@ -50,16 +50,16 @@ impl TargetCamera {
 
     pub fn get_inverse_view_matrix(&self) -> na::Matrix4<f32> {
         (
-            na::Translation3::<f32>::from_vector(self.target.coords)
+            na::Translation3::<f32>::from(self.target.coords)
                 * self.rotation
-                * na::Translation3::<f32>::from_vector(na::Vector3::z() * self.distance)
+                * na::Translation3::<f32>::from(na::Vector3::z() * self.distance)
         ).to_homogeneous()
     }
 
     pub fn get_view_matrix(&self) -> na::Matrix4<f32> {
-        (na::Translation3::<f32>::from_vector(self.target.coords)
+        (na::Translation3::<f32>::from(self.target.coords)
             * self.rotation
-            * na::Translation3::<f32>::from_vector(na::Vector3::z() * self.distance)).inverse()
+            * na::Translation3::<f32>::from(na::Vector3::z() * self.distance)).inverse()
         .to_homogeneous()
     }
 
