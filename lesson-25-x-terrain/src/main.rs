@@ -1,5 +1,5 @@
-extern crate env_logger;
-extern crate failure;
+use env_logger;
+use failure;
 
 mod debug;
 
