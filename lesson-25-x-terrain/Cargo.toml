@@ -5,6 +5,7 @@ authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+resources = { path = "../lib/resources", features = ["backend_filesystem_watch"] }
 gl = { path = "../lib/gl" }
 failure = "0.1.3"
 env_logger = "*"

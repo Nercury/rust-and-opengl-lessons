@@ -6,6 +6,7 @@ use crate::{Error, ResourcePath};
 pub struct FileSystem {
     root_path: PathBuf,
     can_write: bool,
+    #[cfg(feature = "backend_filesystem_watch")]
     watch: bool,
 }
 
@@ -17,6 +18,7 @@ impl FileSystem {
         FileSystem::from_path(resource_name_to_path(root_path.as_ref(), rel_path.as_ref()))
     }
 
+    #[cfg(feature = "backend_filesystem_watch")]
     pub fn from_path<P: AsRef<Path>>(root_path: P) -> FileSystem {
         FileSystem {
             root_path: root_path.as_ref().into(),
@@ -25,11 +27,20 @@ impl FileSystem {
         }
     }
 
+    #[cfg(not(feature = "backend_filesystem_watch"))]
+    pub fn from_path<P: AsRef<Path>>(root_path: P) -> FileSystem {
+        FileSystem {
+            root_path: root_path.as_ref().into(),
+            can_write: false,
+        }
+    }
+
     pub fn with_write(mut self) -> Self {
         self.can_write = true;
         self
     }
 
+    #[cfg(feature = "backend_filesystem_watch")]
     pub fn with_watch(mut self) -> Self {
         self.watch = true;
         self

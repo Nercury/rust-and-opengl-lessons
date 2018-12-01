@@ -48,8 +48,7 @@ fn run() -> Result<(), failure::Error> {
         "core",
         0,
         resources::backend::FileSystem::from_rel_path(env!("CARGO_MANIFEST_DIR"), "core")
-            .with_write()
-            .with_watch(),
+            .with_write(),
     );
 
     let sdl = sdl2::init().map_err(err_msg)?;
