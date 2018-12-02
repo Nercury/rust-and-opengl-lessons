@@ -246,8 +246,7 @@ mod test {
     }
 
     #[test]
-    fn writing_resource_should_produce_change_sync_point_and_other_resource_proxies_should_see_it_as_modified(
-) {
+    fn writing_resource_should_produce_change_sync_point_and_other_resource_proxies_should_see_it_as_modified() {
         let res =
             Resources::new().loaded_from("a", 0, backend::InMemory::new().with("name", b"hello"));
 

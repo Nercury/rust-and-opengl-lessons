@@ -3,6 +3,7 @@ use resources::{
     Resources,
     backend::FileSystem
 };
+use winput;
 
 mod debug;
 mod onion;
