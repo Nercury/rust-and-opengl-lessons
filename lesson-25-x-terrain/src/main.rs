@@ -20,7 +20,8 @@ fn run() -> Result<(), failure::Error> {
         "core",
         0,
         FileSystem::from_rel_path(env!("CARGO_MANIFEST_DIR"), "core")
-            .with_write(),
+            .with_write()
+            .with_watch(),
     );
 
     let res = resources.resource("shaders/quad.frag");
@@ -31,8 +32,7 @@ fn run() -> Result<(), failure::Error> {
             resources.notify_changes_synced(p);
         }
 
-        let mut v = String::new();
-        ::std::io::stdin().read_line(&mut v).unwrap();
+        ::std::thread::sleep_ms(500);
     }
 
     Ok(())

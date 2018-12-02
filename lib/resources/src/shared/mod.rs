@@ -1,8 +1,7 @@
-use crate::backend::{Backend, BackendSyncPoint};
+use crate::backend::{Backend, BackendSyncPoint, Modification};
 use crate::path::{ResourcePath, ResourcePathBuf};
 use slab::Slab;
-use std::collections::BTreeMap;
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap, VecDeque};
 use std::hash::BuildHasherDefault;
 use std::time::Instant;
 use twox_hash::XxHash;
@@ -38,7 +37,7 @@ pub struct UserKey {
     user_id: usize,
 }
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Copy, Clone)]
 pub enum InternalSyncPoint {
     Backend {
         backend_hash: u64,
@@ -54,6 +53,8 @@ pub struct SharedResources {
     path_resource_ids: HashMap<ResourcePathBuf, usize, BuildHasherDefault<XxHash>>,
     backends: BTreeMap<LoaderKey, Box<Backend>>,
     outdated_at: Option<Instant>,
+
+    modification_queue: VecDeque<Modification>,
 }
 
 fn backend_hash(id: &str) -> u64 {
@@ -70,6 +71,8 @@ impl SharedResources {
             path_resource_ids: HashMap::default(),
             backends: BTreeMap::new(),
             outdated_at: None,
+
+            modification_queue: VecDeque::new(),
         }
     }
 
@@ -77,15 +80,80 @@ impl SharedResources {
         if let Some(instant) = self.outdated_at {
             return Some(InternalSyncPoint::Everything { time: instant });
         }
+
+        let mut new_change_point = None;
+        let mut mod_queue = ::std::mem::replace(&mut self.modification_queue, VecDeque::new());
+
         for (key, backend) in self.backends.iter_mut() {
-            if let Some(sync_point) = backend.new_changes() {
-                return Some(InternalSyncPoint::Backend {
+            mod_queue.clear();
+            if let Some(sync_point) = backend.new_changes(&mut mod_queue) {
+                new_change_point = Some(InternalSyncPoint::Backend {
                     backend_hash: backend_hash(&key.id),
                     sync_point,
                 });
+
+                break;
             }
         }
-        None
+
+        if let Some(InternalSyncPoint::Backend { backend_hash: bh, sync_point }) = new_change_point {
+            let mut some_resource_is_modified = false;
+
+            while let Some(modification) = mod_queue.pop_front() {
+                match modification {
+                    Modification::Create(p) => {
+                        if let Some(resource_id) = self.path_resource_ids.get(&p) {
+                            if let Some(ref mut meta) = self.resource_metadata.get_mut(*resource_id) {
+                                meta.everyone_should_reload(sync_point.instant);
+                                some_resource_is_modified = true;
+                            }
+                        }
+                    },
+                    Modification::Write(p) => {
+                        if let Some(resource_id) = self.path_resource_ids.get(&p) {
+                            if let Some(ref mut meta) = self.resource_metadata.get_mut(*resource_id) {
+                                meta.everyone_should_reload(sync_point.instant);
+                                some_resource_is_modified = true;
+                            }
+                        }
+                    },
+                    Modification::Remove(p) => {
+                        if let Some(resource_id) = self.path_resource_ids.get(&p) {
+                            if let Some(ref mut meta) = self.resource_metadata.get_mut(*resource_id) {
+                                meta.everyone_should_reload(sync_point.instant);
+                                some_resource_is_modified = true;
+                            }
+                        }
+                    },
+                    Modification::Rename { from, to } => {
+                        if let (Some(resource_id), Some(resource_id_to)) = (self.path_resource_ids.get(&from), self.path_resource_ids.get(&to)) {
+                            if let Some(ref mut meta) = self.resource_metadata.get_mut(*resource_id) {
+                                meta.everyone_should_reload(sync_point.instant);
+                                some_resource_is_modified = true;
+                            }
+                            if let Some(ref mut meta) = self.resource_metadata.get_mut(*resource_id_to) {
+                                meta.everyone_should_reload(sync_point.instant);
+                                some_resource_is_modified = true;
+                            }
+                        }
+                    },
+                }
+            }
+
+            if let false = some_resource_is_modified {
+                for (key, backend) in self.backends.iter_mut() {
+                    if backend_hash(&key.id) == bh {
+                        backend.notify_changes_synced(sync_point);
+                        break;
+                    }
+                }
+                new_change_point = None;
+            }
+        }
+
+        ::std::mem::replace(&mut self.modification_queue, mod_queue);
+
+        new_change_point
     }
 
     pub fn notify_changes_synced(&mut self, sync_point: InternalSyncPoint) {
@@ -100,6 +168,7 @@ impl SharedResources {
                 for (key, backend) in self.backends.iter_mut() {
                     if backend_hash(&key.id) == bh {
                         backend.notify_changes_synced(sp);
+                        break;
                     }
                 }
             }

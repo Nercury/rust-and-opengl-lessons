@@ -1,4 +1,5 @@
-use crate::path::ResourcePath;
+use crate::path::{ResourcePath, ResourcePathBuf};
+use std::collections::VecDeque;
 use std::io;
 use std::time::Instant;
 use crate::Error;
@@ -20,7 +21,15 @@ pub use self::filesystem::FileSystem;
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub struct BackendSyncPoint {
-    instant: Instant,
+    pub (crate) instant: Instant,
+}
+
+#[derive(Eq, PartialEq,Clone, Debug)]
+pub enum Modification {
+    Create(ResourcePathBuf),
+    Write(ResourcePathBuf),
+    Remove(ResourcePathBuf),
+    Rename { from: ResourcePathBuf, to: ResourcePathBuf },
 }
 
 impl BackendSyncPoint {
@@ -36,7 +45,7 @@ pub trait Backend: Send + Sync {
     fn exists(&self, path: &ResourcePath) -> bool;
 
     fn notify_changes_synced(&mut self, point: BackendSyncPoint);
-    fn new_changes(&mut self) -> Option<BackendSyncPoint>;
+    fn new_changes(&mut self, queue: &mut VecDeque<Modification>) -> Option<BackendSyncPoint>;
 
     fn read_into(&mut self, path: &ResourcePath, output: &mut io::Write) -> Result<(), Error>;
     fn read_vec(&mut self, path: &ResourcePath) -> Result<Vec<u8>, Error> {
