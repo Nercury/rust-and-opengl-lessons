@@ -2,6 +2,11 @@
 extern crate failure;
 extern crate slab;
 extern crate twox_hash;
+#[macro_use]
+extern crate log;
+
+#[cfg(feature = "backend_filesystem_watch")]
+extern crate notify;
 
 mod path;
 
