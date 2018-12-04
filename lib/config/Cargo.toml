@@ -1,0 +1,11 @@
+[package]
+name = "config"
+version = "0.1.0"
+authors = []
+edition = "2018"
+
+[dependencies]
+failure = "0.1.3"
+slab = "0.4"
+metrohash = "1.0.6"
+resources = { path = "../resources" }

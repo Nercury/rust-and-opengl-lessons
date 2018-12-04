@@ -7,6 +7,7 @@ edition = "2018"
 [dependencies]
 resources = { path = "../lib/resources", features = ["backend_filesystem_watch"] }
 winput = { path = "../lib/winput" }
+config = { path = "../lib/config" }
 lesson_25_x_render_gl = { path = "render_gl" }
 lesson_25_x_render_gl_derive = { path = "render_gl_derive" }
 gl = { path = "../lib/gl" }

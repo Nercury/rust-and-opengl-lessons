@@ -6,13 +6,22 @@ use resources::{
 use winput;
 
 mod debug;
-mod onion;
 
 fn main() {
     debug::init_logging();
 
     if let Err(e) = run() {
         error!("{}", debug::failure_to_string(e));
+    }
+}
+
+struct WindowsConfig {
+
+}
+
+impl Default for WindowsConfig {
+    fn default() -> Self {
+        WindowsConfig {}
     }
 }
 
@@ -25,15 +34,27 @@ fn run() -> Result<(), failure::Error> {
             .with_watch(),
     );
 
-    let res = resources.resource("shaders/quad.frag");
+    let config = config::Config::new(resources.resource("Windows.toml"));
+    let windows_config = config.pick::<WindowsConfig>("windows");
 
-    loop {
-        if let Some(p) = resources.new_changes() {
-            println!("res: {}", String::from_utf8_lossy(&res.get().unwrap()));
-            resources.notify_changes_synced(p);
-        }
+    'reload: loop {
 
-        ::std::thread::sleep_ms(500);
+
+
+//        let windows = winput::Windows::new()?;
+//        let window = windows.create(winput::WindowSettings::default());
+//        let window = windows.create(winput::WindowSettings::default());
+//
+//        let res = resources.resource("shaders/quad.frag");
+//
+//        loop {
+//            if let Some(p) = resources.new_changes() {
+//                println!("res: {}", String::from_utf8_lossy(&res.get().unwrap()));
+//                resources.notify_changes_synced(p);
+//            }
+//
+//            ::std::thread::sleep_ms(500);
+//        }
     }
 
     Ok(())
