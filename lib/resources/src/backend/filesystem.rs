@@ -70,6 +70,14 @@ mod watch_impl {
                                     warn!("unrecognised resource path {:?} for {} event", path, "Write")
                                 }
                             },
+                            DebouncedEvent::Chmod(path) => {
+                                if let Some(resource_path) = ResourcePathBuf::from_filesystem_path(&self.root_path, &path) {
+                                    queue.push_back(Modification::Write(resource_path));
+                                    something_outdated = true;
+                                } else {
+                                    warn!("unrecognised resource path {:?} for {} event", path, "Write")
+                                }
+                            },
                             DebouncedEvent::Remove(path) => {
                                 if let Some(resource_path) = ResourcePathBuf::from_filesystem_path(&self.root_path, &path) {
                                     queue.push_back(Modification::Remove(resource_path));
