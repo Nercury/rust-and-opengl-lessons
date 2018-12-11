@@ -1,0 +1,12 @@
+[package]
+name = "winput"
+version = "0.1.0"
+authors = []
+edition = "2018"
+
+[dependencies]
+failure = "0.1.3"
+
+[dependencies.sdl2]
+version = "0.31.0"
+features = ["bundled", "static-link"]

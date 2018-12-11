@@ -5,10 +5,17 @@ authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+resources = { path = "../lib/resources", features = ["backend_filesystem_watch"] }
+winput = { path = "../lib/winput" }
+config = { path = "../lib/config" }
+lesson_25_x_render_gl = { path = "render_gl" }
+lesson_25_x_render_gl_derive = { path = "render_gl_derive" }
 gl = { path = "../lib/gl" }
 failure = "0.1.3"
 env_logger = "*"
 log = "0.4.6"
+
+toml_edit = "0.1.3"
 
 [dependencies.sdl2]
 version = "0.31.0"
