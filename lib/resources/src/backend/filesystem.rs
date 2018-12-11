@@ -201,8 +201,11 @@ impl Backend for FileSystem {
         Ok(())
     }
 
-    fn write_from(&mut self, _path: &ResourcePath, _buffer: &mut io::Read) -> Result<(), Error> {
-        unimplemented!()
+    fn write_from(&mut self, path: &ResourcePath, mut input: &mut io::Read) -> Result<(), Error> {
+        let path = resource_name_to_path(&self.root_path, path);
+        let mut writer = io::BufWriter::new(fs::OpenOptions::new().write(true).append(false).create(true).open(path)?);
+        io::copy(&mut input, &mut writer)?;
+        Ok(())
     }
 }
 

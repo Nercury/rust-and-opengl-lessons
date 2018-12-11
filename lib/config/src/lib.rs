@@ -1,5 +1,27 @@
 use std::rc::Rc;
 use std::cell::RefCell;
+use toml_edit as toml;
+
+mod shared;
+
+impl ConfigItem for i32 {
+    fn serialize(&self, item: &mut toml::Item) {
+        *item = toml::value(*self as i64)
+    }
+
+    fn deserialize(&mut self, item: &toml::Item) {
+        if let Some(v) = item.as_integer() {
+            if v <= std::i32::MAX as i64 {
+                *self = v as i32;
+            }
+        }
+    }
+}
+
+pub trait ConfigItem {
+    fn serialize(&self, item: &mut toml::Item);
+    fn deserialize(&mut self, item: &toml::Item);
+}
 
 pub struct Config {
     shared: Rc<RefCell<shared::InnerConfig>>,
@@ -12,65 +34,63 @@ impl Config {
         }
     }
 
-    pub fn pick<T>(&self, name: &str) -> Pick<T>
-        where T: Default
+    pub fn pick<T>(&self, path: &[&str]) -> Pick<T>
+        where T: Default + ConfigItem
     {
-        let (index, mut data) = self.shared.borrow_mut().pick(name)
-            .unwrap_or_else(|| panic!("config section {:?} is already in use", name));
+        let mut shared = self.shared.borrow_mut();
+        let (slot, data) = shared.pick_create(path);
 
-        let value = if data.is_none() {
-            T::default()
-        } else {
-            unimplemented!("parse value from data")
+        let value = match data {
+            None => T::default(),
+            Some(item) => {
+                let mut value = T::default();
+                value.deserialize(item);
+                value
+            }
         };
 
         Pick {
             value,
+            slot,
             shared: self.shared.clone(),
         }
+    }
+
+    pub fn should_persist(&self) -> bool {
+        let shared = self.shared.borrow();
+        shared.should_persist()
+    }
+
+    pub fn persist(&self) -> Result<(), resources::Error> {
+        let mut shared = self.shared.borrow_mut();
+        shared.persist()
     }
 }
 
 pub struct Pick<T> {
     value: T,
+    slot: usize,
     shared: Rc<RefCell<shared::InnerConfig>>,
 }
 
-mod shared {
-    use slab::Slab;
-    use resources::Resource;
-    use metrohash::MetroHashMap;
-
-    struct SlabData {
+impl<T> Pick<T> where T: ConfigItem {
+    pub fn is_modified(&self) -> bool {
+        false
     }
 
-    pub struct InnerConfig {
-        sections: Slab<SlabData>,
-        section_name_index: MetroHashMap<String, usize>,
-        res: resources::Resource,
+    pub fn modify(&mut self, mut fun: impl FnMut(&mut T)) {
+        fun(&mut self.value);
+        let mut shared = self.shared.borrow_mut();
+        if let Some(item) = shared.pick_mut(self.slot) {
+            self.value.serialize(item)
+        }
     }
+}
 
-    impl InnerConfig {
-        pub fn new(res: Resource) -> InnerConfig {
-            InnerConfig {
-                sections: Slab::new(),
-                section_name_index: MetroHashMap::default(),
-                res
-            }
-        }
+impl<T> std::ops::Deref for Pick<T> {
+    type Target = T;
 
-        pub fn pick(&mut self, section_name: &str) -> Option<(usize, Option<String>)> {
-            let existing_section = self.section_name_index.get(section_name).map(|v| *v);
-
-            match existing_section {
-                Some(_) => None,
-                None => {
-                    let index = self.sections.insert(SlabData {});
-                    self.section_name_index.insert(section_name.to_string(), index);
-
-                    Some((index, None)) // TODO: load and return section config
-                }
-            }
-        }
+    fn deref(&self) -> &Self::Target {
+        &self.value
     }
 }

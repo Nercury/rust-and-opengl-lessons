@@ -4,6 +4,7 @@ use resources::{
     backend::FileSystem
 };
 use winput;
+use toml_edit as toml;
 
 mod debug;
 
@@ -16,12 +17,35 @@ fn main() {
 }
 
 struct WindowsConfig {
+    width: i32,
+    height: i32,
+}
 
+impl config::ConfigItem for WindowsConfig {
+    fn serialize(&self, item: &mut toml::Item) {
+        let table = match item.as_table_mut() {
+            Some(table) => table,
+            None => {
+                *item = toml::table();
+                item.as_table_mut().unwrap()
+            }
+        };
+
+        config::ConfigItem::serialize(&self.width, &mut table.entry("width"));
+        config::ConfigItem::serialize(&self.height, &mut table.entry("height"));
+    }
+
+    fn deserialize(&mut self, item: &toml::Item) {
+
+    }
 }
 
 impl Default for WindowsConfig {
     fn default() -> Self {
-        WindowsConfig {}
+        WindowsConfig {
+            width: 800,
+            height: 600,
+        }
     }
 }
 
@@ -35,11 +59,13 @@ fn run() -> Result<(), failure::Error> {
     );
 
     let config = config::Config::new(resources.resource("Windows.toml"));
-    let windows_config = config.pick::<WindowsConfig>("windows");
+    let mut windows_config = config.pick::<WindowsConfig>(&["windows"]);
+    windows_config.modify(|v| ());
 
     'reload: loop {
-
-
+        if config.should_persist() {
+            config.persist()?;
+        }
 
 //        let windows = winput::Windows::new()?;
 //        let window = windows.create(winput::WindowSettings::default());
