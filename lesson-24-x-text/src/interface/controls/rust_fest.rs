@@ -170,7 +170,7 @@ impl Element for RustFest {
                         r##"
 let mut renderer = TextRenderer::new();
 let buffer: &mut Buffer
-= renderer.create_buffer("Hello");
+    = renderer.create_buffer("Hello");
 "##
                     )
                         .word_wrap(false)
@@ -184,7 +184,7 @@ let buffer: &mut Buffer
                         r##"
 let mut renderer = TextRenderer::new();
 let buffer: &mut Buffer
-= renderer.create_buffer("Hello");
+    = renderer.create_buffer("Hello");
 
 buffer.translate(1.0, 3.3);
 buffer.rotate(90.0);
@@ -202,7 +202,7 @@ buffer.rotate(90.0);
                         r##"
 let mut renderer = TextRenderer::new();
 let buffer: &mut Buffer
-= renderer.create_buffer("Hello");
+    = renderer.create_buffer("Hello");
 
 buffer.translate(1.0, 3.3);
 buffer.rotate(90.0);
@@ -225,11 +225,11 @@ renderer.render(&open_gl);
 let mut renderer = TextRenderer::new();
 
 {
-let buffer: &mut Buffer
-    = renderer.create_buffer("Hello");
+    let buffer: &mut Buffer
+        = renderer.create_buffer("Hello");
 
-buffer.translate(1.0, 3.3);
-buffer.rotate(90.0);
+    buffer.translate(1.0, 3.3);
+    buffer.rotate(90.0);
 }
 
 renderer.render(&open_gl);
@@ -273,7 +273,7 @@ renderer.render(&open_gl);
                         r##"
 let mut renderer = TextRenderer::new();
 let buffer_handle: u32
-= renderer.create_buffer("Hello");
+    = renderer.create_buffer("Hello");
 "##
                     )
                         .word_wrap(false)
@@ -328,7 +328,7 @@ renderer.rotate(buffer_handle, 90.0);
                         r##"
 let mut renderer = SharedTextRenderer::new();
 let buffer_handle: u32 =
-renderer.create_buffer("Hello");
+    renderer.create_buffer("Hello");
 
 renderer.translate(buffer_handle, 1.0, 3.3);
 renderer.rotate(buffer_handle, 90.0);
@@ -352,7 +352,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 struct TextRenderer {
-shared: Rc<RefCell<SharedTextRenderer>>,
+    shared: Rc<RefCell<SharedTextRenderer>>,
 }
 "##
                     )
@@ -373,7 +373,7 @@ use std::cell::RefCell;
 
 #[derive(Clone)]
 struct TextRenderer {
-shared: Rc<RefCell<SharedTextRenderer>>,
+    shared: Rc<RefCell<SharedTextRenderer>>,
 }
 "##
                     )
@@ -392,18 +392,18 @@ shared: Rc<RefCell<SharedTextRenderer>>,
                     TextSlide::new(
                         r##"
 impl TextRenderer {
-pub fn create_buffer(
-    &self, text: &str
-) -> Buffer {
-    let handle = self.shared
-        .borrow_mut()
-        .create_buffer(text);
+    pub fn create_buffer(
+        &self, text: &str
+    ) -> Buffer {
+        let handle = self.shared
+            .borrow_mut()
+            .create_buffer(text);
 
-    Buffer {
-        handle,
-        shared: self.shared.clone(),
+        Buffer {
+            handle,
+            shared: self.shared.clone(),
+        }
     }
-}
 }
 "##
                     )
@@ -418,8 +418,8 @@ pub fn create_buffer(
                     TextSlide::new(
                         r##"
 struct Buffer {
-handle: u32,
-shared: Rc<RefCell<SharedTextRenderer>>,
+    handle: u32,
+    shared: Rc<RefCell<SharedTextRenderer>>,
 }
 "##
                     )
@@ -450,11 +450,11 @@ buffer.translate(1.0, 3.3);
                     TextSlide::new(
                         r##"
 impl Buffer {
-pub fn translate(&self, x: f32, y: f32) {
-    self.shared
-        .borrow_mut()
-        .translate(self.handle, x, y);
-}
+    pub fn translate(&self, x: f32, y: f32) {
+        self.shared
+            .borrow_mut()
+            .translate(self.handle, x, y);
+    }
 }
 "##
                     )
@@ -489,17 +489,17 @@ renderer.render(&open_gl);
                     TextSlide::new(
                         r##"
 impl TextRenderer {
-pub fn render(
-    &self, gl: &Gl
-) -> Buffer {
-    let shared = self.shared.borrow_mut();
+    pub fn render(
+        &self, gl: &Gl
+    ) -> Buffer {
+        let shared = self.shared.borrow_mut();
 
-    if shared.has_invalidated_buffers() {
+        if shared.has_invalidated_buffers() {
 
+        }
+
+        // ...
     }
-
-    // ...
-}
 }
 "##
                     )
@@ -513,17 +513,17 @@ pub fn render(
                     TextSlide::new(
                         r##"
 impl TextRenderer {
-pub fn render(
-    &self, gl: &Gl
-) -> Buffer {
-    let shared = self.shared.borrow_mut();
+    pub fn render(
+        &self, gl: &Gl
+    ) -> Buffer {
+        let shared = self.shared.borrow_mut();
 
-    if shared.has_invalidated_buffers() {
-        self.update_buffers(shared.get_draw_commands());
+        if shared.has_invalidated_buffers() {
+            self.update_buffers(shared.get_draw_commands());
+        }
+
+        // ...
     }
-
-    // ...
-}
 }
 "##
                     )
@@ -543,18 +543,18 @@ pub fn render(
                     TextSlide::new(
                         r##"
 impl TextRenderer {
-pub fn render(
-    &self, gl: &Gl
-) -> Buffer {
-    let shared = self.shared.borrow_mut();
+    pub fn render(
+        &self, gl: &Gl
+    ) -> Buffer {
+        let shared = self.shared.borrow_mut();
 
-    if shared.has_invalidated_buffers() {
-        self.update_buffers(shared.get_draw_commands());
+        if shared.has_invalidated_buffers() {
+            self.update_buffers(shared.get_draw_commands());
+        }
+
+        // render everything with a single draw call:
+        self.draw(gl); // <-- simplifying heavily here
     }
-
-    // render everything with a single draw call:
-    self.draw(gl); // <-- simplifying heavily here
-}
 }
 "##
                     )
@@ -591,11 +591,11 @@ pub fn render(
                     TextSlide::new(
                         r##"
 impl Drop for Buffer {
-fn drop(&mut self) {
-    self.shared
-        .borrow_mut()
-        .remove_buffer(self.handle);
-}
+    fn drop(&mut self) {
+        self.shared
+            .borrow_mut()
+            .remove_buffer(self.handle);
+    }
 }
 "##
                     )
