@@ -21,6 +21,18 @@ Collection of example code for learning OpenGL in Rust
 
 The code directories with `-x` at the end contain experimental hacks where I explore future solutions.
 
+## Running
+
+```
+cargo run --release --bin <project>
+```
+
+Example:
+
+```
+cargo run --release --bin lesson-23-x
+```
+
 ## License
 
 This library is distributed under the terms of either of:
