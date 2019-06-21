@@ -9,7 +9,7 @@ failure = "0.1.3"
 lesson_14_x_render_gl_derive = { path = "render_gl_derive" }
 vec-2-10-10-10 = "0.1.2"
 half = "1.1.1"
-nalgebra = "0.16"
+nalgebra = "0.18"
 
 [dependencies.sdl2]
 version = "0.31.0"

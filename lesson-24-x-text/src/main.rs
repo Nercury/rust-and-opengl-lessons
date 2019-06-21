@@ -12,7 +12,7 @@ extern crate sdl2;
 extern crate ui;
 extern crate lyon_path;
 extern crate lyon_tessellation;
-extern crate int_hash;
+extern crate metrohash;
 extern crate syntect;
 
 pub mod camera;

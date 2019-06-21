@@ -10,7 +10,7 @@ extern crate image;
 extern crate floating_duration;
 extern crate lyon_tessellation;
 extern crate lyon_path;
-extern crate int_hash;
+extern crate metrohash;
 extern crate log;
 #[macro_use] extern crate slotmap;
 #[macro_use] extern crate failure;

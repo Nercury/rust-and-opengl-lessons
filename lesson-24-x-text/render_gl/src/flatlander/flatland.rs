@@ -1,4 +1,4 @@
-use int_hash::IntHashMap;
+use metrohash::MetroHashMap;
 use slotmap;
 use crate::na;
 use super::{FlatlanderVertex, FlatlanderGroupDrawData, DrawIndirectCmd, FlatlandItem};
@@ -9,7 +9,7 @@ pub struct AlphabetSlotData {
 }
 
 pub struct AlphabetData {
-    pub map: IntHashMap<u32, usize>,
+    pub map: MetroHashMap<u32, usize>,
     pub entries: Vec<AlphabetEntry>,
     total_vertices: usize,
     total_indices: usize,
@@ -18,7 +18,7 @@ pub struct AlphabetData {
 impl AlphabetData {
     pub fn new() -> AlphabetData {
         AlphabetData {
-            map: IntHashMap::default(),
+            map: MetroHashMap::default(),
             entries: Vec::with_capacity(4096),
             total_vertices: 0,
             total_indices: 0,

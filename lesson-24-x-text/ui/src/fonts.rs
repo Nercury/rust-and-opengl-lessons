@@ -234,7 +234,6 @@ pub mod shared {
 
     use slab::Slab;
     use metrohash::MetroHashMap;
-    use int_hash::IntHashMap;
     use sha1::{Digest, Sha1};
 
     use font_kit::source::SystemSource;
@@ -361,7 +360,7 @@ pub mod shared {
 
         fonts: Slab<[u8; 20]>,
         fonts_fingerprint_id: MetroHashMap<[u8; 20], usize>,
-        fonts_id_prop: IntHashMap<usize, FontData>,
+        fonts_id_prop: MetroHashMap<usize, FontData>,
 
         buffers: Slab<BufferData>,
     }
@@ -373,7 +372,7 @@ pub mod shared {
 
                 fonts: Slab::new(),
                 fonts_fingerprint_id: MetroHashMap::default(),
-                fonts_id_prop: IntHashMap::default(),
+                fonts_id_prop: MetroHashMap::default(),
 
                 buffers: Slab::new(),
             }

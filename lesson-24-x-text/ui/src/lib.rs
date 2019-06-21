@@ -5,7 +5,6 @@ extern crate nalgebra as na;
 #[macro_use] extern crate slotmap;
 extern crate slab;
 extern crate metrohash;
-extern crate int_hash;
 extern crate sha1;
 extern crate byteorder;
 extern crate font_kit;

@@ -7,8 +7,8 @@ use crate::render_gl::{DebugLines, RectMarker};
 use crate::render_gl::{Flatlander, Alphabet, FlatlanderVertex, FlatlandGroup, FlatlandItem};
 use resources;
 use std::collections;
-use int_hash::IntHashSet;
-use int_hash::IntHashMap;
+use metrohash::MetroHashSet;
+use metrohash::MetroHashMap;
 use ui::*;
 
 pub mod controls;
@@ -117,14 +117,14 @@ pub struct Interface {
     fonts: Fonts,
     fill: Leaf<controls::rust_fest::RustFest>,
     events: Events,
-    controls: IntHashMap<ControlId, ControlInfo>,
+    controls: MetroHashMap<ControlId, ControlInfo>,
     event_read_buffer: Vec<Effect>,
-    flush_updates_set: IntHashSet<ControlId>,
+    flush_updates_set: MetroHashSet<ControlId>,
 
     debug_lines: DebugLines,
     flatlander: Flatlander,
 
-    alphabets: IntHashMap<AlphabetKey, Alphabet>,
+    alphabets: MetroHashMap<AlphabetKey, Alphabet>,
 }
 
 impl Interface {
@@ -147,12 +147,12 @@ impl Interface {
             fonts,
             fill,
             events,
-            controls: IntHashMap::default(),
+            controls: MetroHashMap::default(),
             event_read_buffer: Vec::new(),
-            flush_updates_set: IntHashSet::default(),
+            flush_updates_set: MetroHashSet::default(),
             debug_lines: DebugLines::new(gl, resources)?,
             flatlander: Flatlander::new(gl, resources)?,
-            alphabets: IntHashMap::default(),
+            alphabets: MetroHashMap::default(),
         })
     }
 
