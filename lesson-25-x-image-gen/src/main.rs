@@ -71,7 +71,7 @@ fn run() -> Result<(), failure::Error> {
         height: 600,
         highdpi_width: 960,
         highdpi_height: 600,
-        high_dpi: false,
+        high_dpi: true,
     };
 
     let mut window = video_subsystem
