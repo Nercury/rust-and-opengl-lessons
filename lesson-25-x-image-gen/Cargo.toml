@@ -1,0 +1,31 @@
+[package]
+name = "lesson-25-x-image-gen"
+version = "0.1.0"
+authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
+
+[dependencies]
+gl = { path = "../lib/gl" }
+resources = { path = "../lib/resources", features = ["backend_filesystem"] }
+ui-25 = { path = "ui" }
+lesson_25_x_render = { path = "render" }
+lesson_25_x_render_gl = { path = "render_gl" }
+lesson_25_x_render_gl_derive = { path = "render_gl_derive" }
+failure = "0.1.3"
+nalgebra = "0.18"
+nalgebra-glm = "0.1"
+ncollide3d = "0.19"
+floating-duration = "0.1.2"
+env_logger = "*"
+log = "0.4.6"
+lyon_tessellation = "0.11.0"
+lyon_path = "0.11.0"
+metrohash = "1.0.6"
+syntect = "3.0"
+
+[dependencies.sdl2]
+version = "0.31.0"
+features = ["bundled", "static-link"]
+
+[features]
+gl_debug = ["gl/debug"]
+alloc_debug = []

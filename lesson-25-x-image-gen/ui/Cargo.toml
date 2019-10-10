@@ -1,0 +1,22 @@
+[package]
+name = "ui-25"
+version = "0.1.0"
+authors = ["Nerijus Arlauskas <nercury@gmail.com>"]
+
+[dependencies]
+nalgebra = "0.18"
+log = "0.4.6"
+slab = "0.4"
+metrohash = "1.0.6"
+sha-1 = "0.8.0"
+byteorder = "1.2.7"
+harfbuzz_rs = "0.3.0"
+font-kit = { version = "0.1.0" }
+resources = { path = "../../lib/resources", features = ["backend_filesystem"] }
+lyon_path = "0.11.0"
+lyon_geom = "0.11.0"
+lyon_tessellation = "0.11.0"
+slotmap = "0.3"
+unicode-segmentation = "1.2.1"
+usvg = "0.3"
+failure = "0.1.3"

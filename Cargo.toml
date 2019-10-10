@@ -24,6 +24,7 @@ members = [
     "lesson-22-x",
     "lesson-23-x",
     "lesson-24-x-text",
+    "lesson-25-x-image-gen",
 ]
 
 [profile.dev]

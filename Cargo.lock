@@ -1221,6 +1221,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "lesson-25-x-image-gen"
+version = "0.1.0"
+dependencies = [
+ "env_logger 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "floating-duration 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gl 0.1.0",
+ "lesson_25_x_render 0.1.0",
+ "lesson_25_x_render_gl 0.1.0",
+ "lesson_25_x_render_gl_derive 0.1.0",
+ "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lyon_path 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lyon_tessellation 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "metrohash 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nalgebra 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nalgebra-glm 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ncollide3d 0.19.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "resources 0.1.0",
+ "sdl2 0.31.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syntect 3.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ui-25 0.1.0",
+]
+
+[[package]]
 name = "lesson_10_render_gl_derive"
 version = "0.1.0"
 dependencies = [
@@ -1364,6 +1388,44 @@ dependencies = [
 
 [[package]]
 name = "lesson_24_x_render_gl_derive"
+version = "0.1.0"
+dependencies = [
+ "quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 0.11.11 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "lesson_25_x_render"
+version = "0.1.0"
+dependencies = [
+ "nalgebra 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "lesson_25_x_render_gl"
+version = "0.1.0"
+dependencies = [
+ "euclid 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "floating-duration 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "font-kit 0.1.0 (git+https://github.com/Nercury/font-kit?branch=patch-lyon-deps)",
+ "gl 0.1.0",
+ "half 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "image 0.20.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lesson_25_x_render_gl_derive 0.1.0",
+ "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lyon_path 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lyon_tessellation 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "metrohash 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nalgebra 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ncollide3d 0.19.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "resources 0.1.0",
+ "slotmap 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "vec-2-10-10-10 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "lesson_25_x_render_gl_derive"
 version = "0.1.0"
 dependencies = [
  "quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2945,6 +3007,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "ui"
+version = "0.1.0"
+dependencies = [
+ "byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "font-kit 0.1.0 (git+https://github.com/Nercury/font-kit?branch=patch-lyon-deps)",
+ "harfbuzz_rs 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lyon_geom 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lyon_path 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lyon_tessellation 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "metrohash 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nalgebra 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "resources 0.1.0",
+ "sha-1 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "slab 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "slotmap 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "unicode-segmentation 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "usvg 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "ui-25"
 version = "0.1.0"
 dependencies = [
  "byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
