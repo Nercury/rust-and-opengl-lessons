@@ -71,7 +71,7 @@ fn run() -> Result<(), failure::Error> {
         height: 600,
         highdpi_width: 960,
         highdpi_height: 600,
-        high_dpi: false,
+        high_dpi: true,
     };
 
     let mut window = video_subsystem
@@ -96,7 +96,7 @@ fn run() -> Result<(), failure::Error> {
     }
 
     let mut scale = window_size.highdpi_width as f32 / window_size.width as f32;
-    let mut scale_modifier = 1.0;
+    let mut scale_modifier = 0.6;
 
     let _gl_context = window.gl_create_context().map_err(err_msg)?;
     let gl = gl::Gl::load_with(|s| {
