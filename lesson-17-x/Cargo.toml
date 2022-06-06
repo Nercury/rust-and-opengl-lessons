@@ -11,7 +11,7 @@ vec-2-10-10-10 = "0.1.2"
 half = "1.1.1"
 nalgebra = "0.18"
 floating-duration = "0.1.2"
-image = "0.20"
+image = "0.23"
 
 [dependencies.sdl2]
 version = "0.31.0"

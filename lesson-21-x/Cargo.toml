@@ -13,7 +13,7 @@ nalgebra = "0.18"
 ncollide3d = "0.19"
 slab = "0.4"
 floating-duration = "0.1.2"
-image = "0.20"
+image = "0.23"
 tobj = "0.1.6"
 
 [dependencies.sdl2]
